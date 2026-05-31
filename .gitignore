@@ -33,3 +33,7 @@ node_modules
 .DS_Store
 .vercel
 tsconfig.tsbuildinfo
+
+# Local temp/runtime folders
+.tmp.*
+supabase/.temp/
