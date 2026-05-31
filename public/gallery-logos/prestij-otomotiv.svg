@@ -1,0 +1,10 @@
+<svg width="640" height="220" viewBox="0 0 640 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="640" height="220" rx="28" fill="#101113"/>
+  <rect x="22" y="22" width="596" height="176" rx="20" fill="#15171A" stroke="#2A2E33"/>
+  <rect x="46" y="56" width="108" height="108" rx="20" fill="#E5484D"/>
+  <path d="M79 122H121" stroke="#FDFDFD" stroke-width="8" stroke-linecap="round"/>
+  <path d="M88 96H112" stroke="#FDFDFD" stroke-width="8" stroke-linecap="round"/>
+  <path d="M88 148H112" stroke="#FDFDFD" stroke-width="8" stroke-linecap="round"/>
+  <text x="184" y="103" fill="#F3F5F6" font-family="Arial, Helvetica, sans-serif" font-size="44" font-weight="700">PRESTIJ</text>
+  <text x="184" y="148" fill="#A6ADB5" font-family="Arial, Helvetica, sans-serif" font-size="27" font-weight="500">OTOMOTIV GROUP</text>
+</svg>

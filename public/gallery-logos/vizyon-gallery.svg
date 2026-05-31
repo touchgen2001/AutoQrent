@@ -1,0 +1,8 @@
+<svg width="640" height="220" viewBox="0 0 640 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="640" height="220" rx="28" fill="#0E1A13"/>
+  <rect x="22" y="22" width="596" height="176" rx="20" fill="#132419" stroke="#264732"/>
+  <rect x="46" y="56" width="108" height="108" rx="20" fill="#31B86E"/>
+  <path d="M74 86L100 140L126 86" stroke="#F3FFF8" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="184" y="103" fill="#EFFCF4" font-family="Arial, Helvetica, sans-serif" font-size="42" font-weight="700">VIZYON</text>
+  <text x="184" y="148" fill="#A0CBB0" font-family="Arial, Helvetica, sans-serif" font-size="27" font-weight="500">GALLERY</text>
+</svg>

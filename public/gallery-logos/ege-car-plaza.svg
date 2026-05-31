@@ -1,0 +1,10 @@
+<svg width="640" height="220" viewBox="0 0 640 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="640" height="220" rx="28" fill="#0C1820"/>
+  <rect x="22" y="22" width="596" height="176" rx="20" fill="#10232D" stroke="#1E3F4D"/>
+  <rect x="46" y="56" width="108" height="108" rx="20" fill="#0FB4A8"/>
+  <circle cx="100" cy="110" r="27" stroke="#F4FFFE" stroke-width="9"/>
+  <path d="M100 83V137" stroke="#F4FFFE" stroke-width="9" stroke-linecap="round"/>
+  <path d="M74 110H126" stroke="#F4FFFE" stroke-width="9" stroke-linecap="round"/>
+  <text x="184" y="103" fill="#ECFBFA" font-family="Arial, Helvetica, sans-serif" font-size="42" font-weight="700">EGE CAR</text>
+  <text x="184" y="148" fill="#94C5C0" font-family="Arial, Helvetica, sans-serif" font-size="27" font-weight="500">PLAZA</text>
+</svg>

@@ -1,0 +1,18 @@
+# Sensitive files to encrypt and store in security/vault/encrypted
+# One path per line, relative to project root.
+
+.env
+.env.local
+.env.production
+.env.staging
+.env.development
+
+supabase/.env
+supabase/functions/.env
+
+service-account.json
+service-account-prod.json
+firebase-service-account.json
+google-credentials.json
+
+credentials.json

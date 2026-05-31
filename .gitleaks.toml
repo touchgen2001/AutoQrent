@@ -1,0 +1,9 @@
+title = "AutoQrent gitleaks config"
+
+[allowlist]
+description = "Allow placeholder env wrappers and documented sample values"
+regexes = [
+  '''env\([A-Z0-9_]+\)''',
+  '''replace-with-long-random-passphrase''',
+  '''test-passphrase-for-local-check''',
+]
