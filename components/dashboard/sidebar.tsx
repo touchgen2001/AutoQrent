@@ -1,13 +1,15 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { useEffect, useState } from "react"
+import { usePathname, useRouter } from "next/navigation"
 import { 
   LayoutDashboard, 
   Car, 
   QrCode, 
   Users, 
   BarChart3, 
+  ShieldCheck,
   Settings,
   LogOut,
   ChevronLeft,
@@ -15,12 +17,23 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { clearPanelAuthSession } from "@/lib/client/panel-auth"
 
 interface SidebarProps {
   isCollapsed: boolean
   onToggle: () => void
   isMobileOpen: boolean
   onMobileClose: () => void
+}
+
+type PanelSettingsSummaryResponse = {
+  ok?: boolean
+  message?: string
+  settings?: {
+    name: string
+    vehicleCount: number
+    activeVehicleCount: number
+  }
 }
 
 const navItems = [
@@ -50,6 +63,11 @@ const navItems = [
     icon: BarChart3
   },
   {
+    title: "Audit Logları",
+    href: "/panel/audit-logs",
+    icon: ShieldCheck
+  },
+  {
     title: "Ayarlar",
     href: "/panel/ayarlar",
     icon: Settings
@@ -58,6 +76,63 @@ const navItems = [
 
 export function DashboardSidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: SidebarProps) {
   const pathname = usePathname()
+  const router = useRouter()
+  const [galleryName, setGalleryName] = useState<string | null>(null)
+  const [vehicleCount, setVehicleCount] = useState<number | null>(null)
+  const [activeVehicleCount, setActiveVehicleCount] = useState<number | null>(null)
+  const [isSummaryLoading, setIsSummaryLoading] = useState(true)
+
+  useEffect(() => {
+    const abortController = new AbortController()
+
+    const fetchSummary = async () => {
+      setIsSummaryLoading(true)
+      try {
+        const response = await fetch("/api/panel/settings", {
+          cache: "no-store",
+          signal: abortController.signal,
+        })
+        const data = (await response.json()) as PanelSettingsSummaryResponse
+
+        if (!response.ok || !data.ok || !data.settings) {
+          setGalleryName(null)
+          setVehicleCount(null)
+          setActiveVehicleCount(null)
+          return
+        }
+
+        setGalleryName(data.settings.name || null)
+        setVehicleCount(data.settings.vehicleCount)
+        setActiveVehicleCount(data.settings.activeVehicleCount)
+      } catch {
+        if (abortController.signal.aborted) return
+        setGalleryName(null)
+        setVehicleCount(null)
+        setActiveVehicleCount(null)
+      } finally {
+        if (!abortController.signal.aborted) {
+          setIsSummaryLoading(false)
+        }
+      }
+    }
+
+    void fetchSummary()
+
+    return () => {
+      abortController.abort()
+    }
+  }, [])
+
+  const usagePercent = (() => {
+    if (vehicleCount === null || activeVehicleCount === null || vehicleCount <= 0) return 0
+    return Math.max(0, Math.min(100, Math.round((activeVehicleCount / vehicleCount) * 100)))
+  })()
+
+  const handleLogout = () => {
+    void clearPanelAuthSession()
+    onMobileClose()
+    router.push("/giris")
+  }
 
   return (
     <>
@@ -144,25 +219,32 @@ export function DashboardSidebar({ isCollapsed, onToggle, isMobileOpen, onMobile
           <div className="p-3 border-t border-sidebar-border">
             {!isCollapsed && (
               <div className="mb-3 p-3 bg-sidebar-accent rounded-lg">
-                <p className="text-xs text-sidebar-muted mb-1">Plan: Profesyonel</p>
-                <p className="text-sm font-medium text-sidebar-foreground">32/50 Araç</p>
+                <p className="text-xs text-sidebar-muted mb-1">Canlı Galeri Özeti</p>
+                {isSummaryLoading ? (
+                  <p className="text-sm font-medium text-sidebar-foreground">Yükleniyor...</p>
+                ) : (
+                  <p className="text-sm font-medium text-sidebar-foreground">
+                    {activeVehicleCount ?? 0}/{vehicleCount ?? 0} Yayında Araç
+                  </p>
+                )}
+                {galleryName && (
+                  <p className="mt-1 text-xs text-sidebar-muted truncate">{galleryName}</p>
+                )}
                 <div className="mt-2 h-1.5 bg-sidebar-border rounded-full overflow-hidden">
-                  <div className="h-full w-[64%] bg-sidebar-primary rounded-full" />
+                  <div className="h-full bg-sidebar-primary rounded-full" style={{ width: `${usagePercent}%` }} />
                 </div>
               </div>
             )}
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               className={cn(
                 "w-full justify-start text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent",
                 isCollapsed && "justify-center px-0"
               )}
-              asChild
+              onClick={handleLogout}
             >
-              <Link href="/">
-                <LogOut className="w-5 h-5 shrink-0" />
-                {!isCollapsed && <span className="ml-3 text-sm">Çıkış Yap</span>}
-              </Link>
+              <LogOut className="w-5 h-5 shrink-0" />
+              {!isCollapsed && <span className="ml-3 text-sm">Çıkış Yap</span>}
             </Button>
           </div>
         </div>

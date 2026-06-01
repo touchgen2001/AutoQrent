@@ -10,6 +10,11 @@ const eslintConfig = defineConfig([
     'out/**',
     'build/**',
     'next-env.d.ts',
+    '.tmp.*/**',
+    'playwright-report/**',
+    'test-results/**',
+    'coverage/**',
+    'dist/**',
     'supabase/functions/**',
   ]),
 ])

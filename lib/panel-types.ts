@@ -15,6 +15,7 @@ export type PanelVehicle = {
   scans: number
   leads: number
   image: string | null
+  description?: string
 }
 
 export type PanelLeadSource = 'qr' | 'showroom' | 'whatsapp' | 'telefon' | 'form' | 'test-surusu'
@@ -46,6 +47,7 @@ export type VehicleCreateInput = {
   transmission: string
   color?: string
   description?: string
+  photos?: string[]
 }
 
 export type PanelAuditAction =
@@ -56,8 +58,11 @@ export type PanelAuditAction =
   | 'lead_note_add'
   | 'contact_form_submit'
   | 'contact_form_blocked'
+  | 'landing_cta_impression'
+  | 'landing_cta_click'
+  | 'landing_cta_config_update'
 
-export type PanelAuditEntityType = 'vehicle' | 'lead' | 'contact' | 'system'
+export type PanelAuditEntityType = 'vehicle' | 'lead' | 'contact' | 'system' | 'marketing'
 
 export type PanelAuditLog = {
   id: number
@@ -97,7 +102,7 @@ export type PanelLeadFunnelSnapshot = {
 }
 
 export type PanelLeadFunnelResponse = {
-  source: 'mock' | 'supabase'
+  source: 'supabase'
   range: '7days' | '30days' | '90days' | 'year'
   current: PanelLeadFunnelSnapshot
   previous: PanelLeadFunnelSnapshot
@@ -105,4 +110,102 @@ export type PanelLeadFunnelResponse = {
     conversionRateDelta: number
     wonLeadDelta: number
   }
+}
+
+export type PanelLandingCtaSurface = 'header' | 'hero' | 'cta_section' | 'mobile_sticky' | 'pricing'
+
+export type PanelLandingCtaSurfaceStat = {
+  surface: PanelLandingCtaSurface
+  label: string
+  impressions: number
+  clicks: number
+  ctr: number
+}
+
+export type PanelLandingCtaVariantStat = {
+  variant: 'A' | 'B'
+  impressions: number
+  clicks: number
+  ctr: number
+}
+
+export type LandingCtaMode = 'auto' | 'forced'
+
+export type PanelLandingCtaConfig = {
+  galleryId: string
+  mode: LandingCtaMode
+  forcedVariant: 'A' | 'B' | null
+  updatedAt: string | null
+}
+
+export type PanelLandingCtaSnapshot = {
+  periodLabel: string
+  impressions: number
+  clicks: number
+  ctr: number
+  uniqueSessions: number
+  observedDays: number
+  surfaceStats: PanelLandingCtaSurfaceStat[]
+  variantStats: PanelLandingCtaVariantStat[]
+}
+
+export type PanelLandingCtaAnalyticsResponse = {
+  source: 'supabase'
+  range: '7days' | '30days' | '90days' | 'year'
+  current: PanelLandingCtaSnapshot
+  previous: PanelLandingCtaSnapshot
+  trend: {
+    ctrDelta: number
+    clickDelta: number
+    impressionDelta: number
+  }
+  summary: {
+    winnerVariant: 'A' | 'B' | null
+    winnerCtrGap: number
+    minimumSampleReached: boolean
+    minimumDurationReached: boolean
+    minimumSessionReached: boolean
+    requiredDurationDays: number
+    requiredUniqueSessions: number
+    observedDays: number
+    observedUniqueSessions: number
+    rolloutEligible: boolean
+    confidence: 'low' | 'medium' | 'high'
+  }
+  recommendations: Array<{
+    level: 'info' | 'warning' | 'success'
+    title: string
+    detail: string
+  }>
+}
+
+export type PanelAlertSeverity = 'critical' | 'high' | 'medium' | 'low'
+export type PanelAlertType = 'lead_drop' | 'unanswered_leads' | 'low_conversion'
+
+export type PanelAlert = {
+  id: string
+  type: PanelAlertType
+  severity: PanelAlertSeverity
+  title: string
+  description: string
+  metricValue: string
+  threshold: string
+  actionLabel: string
+  actionHref: string
+  createdAt: string
+}
+
+export type PanelAlertSummary = {
+  open: number
+  critical: number
+  high: number
+  medium: number
+  low: number
+}
+
+export type PanelAlertCenterResponse = {
+  source: 'supabase'
+  generatedAt: string
+  alerts: PanelAlert[]
+  summary: PanelAlertSummary
 }
