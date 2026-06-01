@@ -1,37 +1,82 @@
+export type FaqCategory = "Kurulum" | "QR Kod" | "Panel" | "Lead Takibi" | "Fiyatlandırma" | "Destek"
+
 export type FaqItem = {
+  category: FaqCategory
   question: string
   answer: string
 }
 
 export const faqItems: FaqItem[] = [
   {
-    question: 'Kurulum ne kadar sürer?',
+    category: "Kurulum",
+    question: "Kurulum süreci nasıl ilerliyor?",
     answer:
-      'Standart kurulumda galeri hesabı, temel profil ayarları ve ilk araç kartlarının yayına alınması ortalama 5-15 dakika sürer.',
+      "Galeri hesabı, profil ayarları ve ilk araç kartlarının yayına alınması birlikte planlanır. Demo sonrası kurulum akışı operasyonunuza göre net takvime bağlanır.",
   },
   {
-    question: 'QR kodları nasıl kullanıyoruz?',
+    category: "Kurulum",
+    question: "Mevcut araç verilerimizi taşıyabilir miyiz?",
     answer:
-      'Her araç için otomatik üretilen QR kodları panelden tek tıkla indirip etiket olarak yazdırabilirsiniz. Müşteri kodu okuttuğunda araç sayfası direkt açılır.',
+      "Evet. Araç bilgileri ve medya içerikleri mevcut yapınıza göre aktarım planıyla taşınabilir; geçiş adımı destek ekibiyle birlikte yürütülür.",
   },
   {
-    question: 'WhatsApp ve telefon talepleri takip ediliyor mu?',
+    category: "QR Kod",
+    question: "QR kodlar nasıl üretiliyor ve kullanılıyor?",
     answer:
-      'Evet. Araç bazında WhatsApp ve arama aksiyonları takip edilir, lead akışında hangi aracın ne kadar ilgi aldığı açık şekilde görüntülenir.',
+      "Her araç için panelde QR kod üretilir. Kodlar indirilebilir ve etiket formatında yazdırılabilir; müşteri okuttuğunda ilgili araç sayfası açılır.",
   },
   {
-    question: 'Mobil uyumluluk nasıl?',
+    category: "QR Kod",
+    question: "QR tarama sonrası neyi izleyebiliriz?",
     answer:
-      'Vitrin ve araç sayfaları mobil öncelikli tasarlanır. Yüksek trafikte bile hızlı açılan bir deneyim için görsel ve içerik blokları optimize edilir.',
+      "Tarama kaynağı, ilgili araç ve etkileşim akışı panel ekranlarında takip edilir. Böylece araç bazlı müşteri ilgisi net görünür.",
   },
   {
-    question: 'Birden fazla kullanıcı ile yönetebilir miyiz?',
+    category: "Panel",
+    question: "Panelden hangi alanları yönetiyoruz?",
     answer:
-      'Planınıza göre farklı ekip üyeleri ekleyebilir, operasyonu birlikte yönetebilirsiniz. Rol tabanlı erişim ile yetki kontrolü yapılır.',
+      "Araç vitrini, galeri iletişim bilgileri, çalışma saatleri, lead süreçleri ve QR çıktıları panelden merkezi olarak yönetilir.",
   },
   {
-    question: 'Canlı destek alabiliyor muyuz?',
+    category: "Panel",
+    question: "Ekip içinde birlikte kullanım mümkün mü?",
     answer:
-      'Evet. Onboarding, tema düzeni, veri aktarımı ve satış akışı iyileştirmeleri için ekibimizle iletişim sayfasından doğrudan destek talebi oluşturabilirsiniz.',
+      "Evet. Plan kapsamına göre ekip üyeleriyle birlikte yönetim yapılabilir; operasyon adımları ortak süreç üzerinden ilerler.",
+  },
+  {
+    category: "Lead Takibi",
+    question: "WhatsApp ve telefon talepleri nasıl toplanıyor?",
+    answer:
+      "Müşteri temasları lead akışında araç kaydıyla eşleşir. Not, takip tarihi ve durum güncellemesi tek kayıtta ilerler.",
+  },
+  {
+    category: "Lead Takibi",
+    question: "Lead durumları satış sürecinde nasıl kullanılıyor?",
+    answer:
+      "Yeni, görüşülüyor ve satışa döndü gibi durum adımlarıyla ekip aynı müşteri sürecini takip eder; aksiyonlar kayda bağlı kalır.",
+  },
+  {
+    category: "Fiyatlandırma",
+    question: "Sabit fiyat listesi yerine nasıl teklif alıyoruz?",
+    answer:
+      "Paket kapsamı galeri ölçeği, ekip sayısı ve operasyon ihtiyaçlarına göre şekillenir. Demo görüşmesi sonrası kapsam ve teklif netleştirilir.",
+  },
+  {
+    category: "Fiyatlandırma",
+    question: "Hangi plan bize uygun olduğunu nasıl belirleriz?",
+    answer:
+      "Araç hacmi, lead yoğunluğu ve ekip akışı birlikte değerlendirilir. Bu analizle en uygun plan seviyesi birlikte seçilir.",
+  },
+  {
+    category: "Destek",
+    question: "Canlı destek alabiliyor muyuz?",
+    answer:
+      "Evet. Onboarding, tema düzeni, veri aktarımı ve operasyon iyileştirme konularında destek ekibiyle doğrudan iletişim kurabilirsiniz.",
+  },
+  {
+    category: "Destek",
+    question: "Satış sonrası destek kapsamı nedir?",
+    answer:
+      "Plan seviyesine göre operasyon desteği, öncelik ve iletişim modeli değişir; süreçler başlangıçta net olarak paylaşılır.",
   },
 ]

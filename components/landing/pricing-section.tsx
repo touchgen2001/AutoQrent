@@ -1,129 +1,190 @@
+'use client'
+
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Check } from "lucide-react"
+import { Check, Dot } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useLandingCtaExperiment } from "@/components/landing/use-landing-cta-experiment"
 
 const plans = [
   {
+    key: "starter",
     name: "Başlangıç",
-    price: "299",
-    period: "ay",
-    description: "Küçük galeriler için ideal başlangıç paketi",
-    features: [
-      "10 araç kaydı",
-      "10 QR kod",
-      "Temel araç sayfaları",
-      "E-posta desteği"
+    focus: "Temel dijital vitrin akışı",
+    support: "Standart destek",
+    cta: "Teklif Al",
+    popular: false,
+    highlights: [
+      "QR kodlu araç vitrini",
+      "Temel araç ve galeri yönetimi",
+      "İlk kurulum yönlendirmesi",
     ],
-    cta: "Başla",
-    popular: false
   },
   {
+    key: "pro",
     name: "Profesyonel",
-    price: "599",
-    period: "ay",
-    description: "Büyüyen galeriler için tam özellikli paket",
-    features: [
-      "50 araç kaydı",
-      "50 QR kod",
-      "Lead takibi",
-      "Detaylı analitik",
-      "Özel galeri sayfası",
+    focus: "Aktif operasyon ve ekip yönetimi",
+    support: "Öncelikli destek",
+    cta: "Demo Planla",
+    popular: true,
+    highlights: [
+      "Lead takibi ve operasyon analitiği",
       "Toplu QR yazdırma",
-      "3 kullanıcı",
-      "Öncelikli destek"
+      "Çoklu ekip kullanımı",
     ],
-    cta: "Başla",
-    popular: true
   },
   {
+    key: "plus",
     name: "Galeri Plus",
-    price: "999",
-    period: "ay",
-    description: "Büyük galeriler için sınırsız paket",
-    features: [
-      "Sınırsız araç",
-      "Sınırsız QR kod",
-      "Tüm Profesyonel özellikleri",
-      "10 kullanıcı",
-      "API erişimi",
-      "Özel entegrasyonlar",
-      "Telefon desteği"
+    focus: "Kurumsal ve geniş kapsam",
+    support: "Telefon ve kapsamlı destek",
+    cta: "Teklif Al",
+    popular: false,
+    highlights: [
+      "Gelişmiş yetkilendirme",
+      "API ve entegrasyon desteği",
+      "Özel operasyon kurgusu",
     ],
-    cta: "Başla",
-    popular: false
-  }
+  },
+]
+
+const comparisonRows = [
+  {
+    title: "QR Kod ve Vitrin Yönetimi",
+    values: {
+      starter: "Temel",
+      pro: "Gelişmiş",
+      plus: "Tam kapsam",
+    },
+  },
+  {
+    title: "Lead Takibi",
+    values: {
+      starter: "Temel akış",
+      pro: "Detaylı durum yönetimi",
+      plus: "Gelişmiş akış ve ölçek",
+    },
+  },
+  {
+    title: "Ekip Kullanımı",
+    values: {
+      starter: "Sınırlı",
+      pro: "Çoklu ekip desteği",
+      plus: "Kurumsal ekip yapısı",
+    },
+  },
+  {
+    title: "Destek Seviyesi",
+    values: {
+      starter: "Standart",
+      pro: "Öncelikli",
+      plus: "Telefon + öncelikli",
+    },
+  },
 ]
 
 export function PricingSection() {
+  const { variant, trackClick } = useLandingCtaExperiment("pricing")
+
+  const getPricingHref = (planKey: string, cta: string) => {
+    if (cta === "Demo Planla") {
+      return variant === "B"
+        ? `/demo?utm_campaign=landing_cta_pricing_b&utm_source=pricing&utm_content=${planKey}`
+        : `/demo?utm_source=pricing&utm_content=${planKey}`
+    }
+
+    return variant === "B"
+      ? `/iletisim?konu=teklif&utm_campaign=landing_cta_pricing_b&utm_source=pricing&utm_content=${planKey}`
+      : `/iletisim?konu=teklif&utm_source=pricing&utm_content=${planKey}`
+  }
+
   return (
     <section id="fiyatlar" className="py-20 md:py-28 bg-muted/30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <h2 className="text-3xl sm:text-4xl font-bold text-foreground">
-            Şeffaf Fiyatlandırma
-          </h2>
-          <p className="mt-4 text-lg text-muted-foreground">
-            Gizli ücret yok. İstediğiniz zaman iptal edin.
+        <div className="max-w-3xl">
+          <h2 className="text-3xl sm:text-4xl font-bold text-foreground">Kapsam odaklı plan yapısı</h2>
+          <p className="mt-4 text-base leading-relaxed text-muted-foreground">
+            Sabit fiyat etiketi yerine galeri ölçeği, ekip yapısı ve operasyon ihtiyacına göre netleşen bir teklif modeli uygulanır.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          {plans.map((plan, index) => (
-            <div
-              key={index}
-              className={cn(
-                "relative p-8 bg-card rounded-2xl border transition-all",
-                plan.popular 
-                  ? "border-accent shadow-lg scale-105" 
-                  : "border-border hover:border-accent/30 hover:shadow-md"
-              )}
-            >
-              {plan.popular && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-accent text-accent-foreground text-sm font-medium rounded-full">
-                  En Popüler
-                </div>
-              )}
-              
-              <div className="text-center mb-6">
-                <h3 className="text-xl font-bold text-foreground">{plan.name}</h3>
-                <p className="text-muted-foreground text-sm mt-1">{plan.description}</p>
-              </div>
-              
-              <div className="text-center mb-6">
-                <span className="text-4xl font-bold text-foreground">₺{plan.price}</span>
-                <span className="text-muted-foreground">/{plan.period}</span>
-              </div>
-              
-              <ul className="space-y-3 mb-8">
-                {plan.features.map((feature, featureIndex) => (
-                  <li key={featureIndex} className="flex items-center gap-3">
-                    <div className="w-5 h-5 bg-accent/10 rounded-full flex items-center justify-center shrink-0">
-                      <Check className="w-3 h-3 text-accent" />
-                    </div>
-                    <span className="text-sm text-foreground">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-              
-              <Button 
-                asChild 
+        <div className="mt-10 grid gap-4 md:grid-cols-3">
+          {plans.map((plan) => {
+            const href = getPricingHref(plan.key, plan.cta)
+            return (
+              <article
+                key={plan.key}
                 className={cn(
-                  "w-full",
-                  plan.popular 
-                    ? "bg-accent hover:bg-accent/90 text-accent-foreground" 
-                    : ""
+                  "rounded-xl border bg-card p-6 transition-all",
+                  plan.popular ? "border-accent/60 shadow-sm" : "border-border/70",
                 )}
-                variant={plan.popular ? "default" : "outline"}
               >
-                <Link href="/kayit">{plan.cta}</Link>
-              </Button>
-            </div>
-          ))}
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-semibold text-foreground">{plan.name}</h3>
+                  {plan.popular ? (
+                    <span className="rounded-full bg-accent/10 px-2.5 py-1 text-xs font-medium text-accent">
+                      Önerilen
+                    </span>
+                  ) : null}
+                </div>
+                <p className="mt-3 text-sm text-muted-foreground">{plan.focus}</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground">Destek:</span> {plan.support}
+                </p>
+
+                <ul className="mt-4 space-y-2">
+                  {plan.highlights.map((item) => (
+                    <li key={item} className="flex items-start gap-2 text-sm text-muted-foreground">
+                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <Button asChild className="mt-6 w-full bg-accent hover:bg-accent/90 text-accent-foreground">
+                  <Link
+                    href={href}
+                    onClick={() => trackClick("plan_start", href, `${plan.name} ${plan.cta}`)}
+                  >
+                    {plan.cta}
+                  </Link>
+                </Button>
+              </article>
+            )
+          })}
         </div>
-        
-        <p className="text-center text-muted-foreground mt-8">
-          Tüm planlar 14 gün ücretsiz deneme içerir. Kredi kartı gerektirmez.
+
+        <div className="mt-8 overflow-x-auto rounded-xl border border-border/70 bg-card">
+          <table className="min-w-full border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-border/70 bg-muted/30">
+                <th className="px-4 py-3 text-left font-semibold text-foreground">Karşılaştırma</th>
+                <th className="px-4 py-3 text-left font-semibold text-foreground">Başlangıç</th>
+                <th className="px-4 py-3 text-left font-semibold text-foreground">Profesyonel</th>
+                <th className="px-4 py-3 text-left font-semibold text-foreground">Galeri Plus</th>
+              </tr>
+            </thead>
+            <tbody>
+              {comparisonRows.map((row) => (
+                <tr key={row.title} className="border-b border-border/60 last:border-b-0">
+                  <td className="px-4 py-3 text-foreground">{row.title}</td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    <span className="inline-flex items-center gap-1"><Dot className="h-4 w-4 text-accent" />{row.values.starter}</span>
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    <span className="inline-flex items-center gap-1"><Dot className="h-4 w-4 text-accent" />{row.values.pro}</span>
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    <span className="inline-flex items-center gap-1"><Dot className="h-4 w-4 text-accent" />{row.values.plus}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <p className="mt-6 text-sm text-muted-foreground">
+          Plan kapsamı ve teklif koşulları, demo görüşmesinde mevcut galeri operasyonuna göre netleştirilir.
         </p>
       </div>
     </section>

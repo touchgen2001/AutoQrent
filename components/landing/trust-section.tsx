@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import { Building2, ScanLine, ShieldCheck, TrendingUp } from 'lucide-react'
+import { IMAGE_PRESETS } from '@/lib/image-presets'
 
 const partnerBrands = [
   {
@@ -96,7 +97,8 @@ export function TrustSection() {
                       alt={`${brand.name} logo`}
                       width={640}
                       height={220}
-                      sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 220px"
+                      sizes={IMAGE_PRESETS.trustLogo.sizes}
+                      quality={IMAGE_PRESETS.trustLogo.quality}
                       className="h-14 w-full object-cover"
                       loading="lazy"
                     />

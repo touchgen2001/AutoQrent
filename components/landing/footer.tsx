@@ -3,8 +3,10 @@ import { ArrowRight, Mail, Phone, QrCode } from "lucide-react"
 
 const footerLinks = {
   product: [
-    { name: "Özellikler", href: "/#ozellikler" },
-    { name: "Fiyatlandırma", href: "/#fiyatlar" },
+    { name: "Özellikler", href: "/ozellikler" },
+    { name: "Nasıl Çalışır", href: "/nasil-calisir" },
+    { name: "Fiyatlandırma", href: "/fiyatlar" },
+    { name: "SSS", href: "/sss" },
     { name: "Canlı Demo", href: "/demo" },
   ],
   company: [

@@ -1,68 +1,102 @@
-import { QrCode, Smartphone, BarChart3, MessageCircle, Shield, Zap } from "lucide-react"
+import {
+  BarChart3,
+  CheckCircle2,
+  LockKeyhole,
+  MessageCircle,
+  QrCode,
+  Settings2,
+  Smartphone,
+  SquareStack,
+} from "lucide-react"
 
-const features = [
+const modules = [
   {
     icon: QrCode,
-    title: "QR Kod Sistemi",
-    description: "Her araç için benzersiz QR kod oluşturun. Müşteriler kodu tarayarak detaylı araç bilgilerine anında ulaşsın."
+    title: "QR Kod Yönetimi",
+    summary: "Her araç için dijital vitrine yönlenen QR kimliği üretilir ve panelden yönetilir.",
+    benefit: "Araç başındaki ilgiyi doğrudan ölçülebilir müşteri temasına dönüştürür.",
+    workflow: "Araç eklenir -> QR kod üretilir -> Etiket yazdırılır -> Tarama panelde izlenir.",
   },
   {
     icon: Smartphone,
-    title: "Mobil Uyumlu Sayfalar",
-    description: "Araç sayfaları tamamen mobil uyumlu. WhatsApp, arama ve konum butonları tek tıkla erişilebilir."
-  },
-  {
-    icon: BarChart3,
-    title: "Detaylı Analitik",
-    description: "Hangi araçların ilgi gördüğünü, tarama sayılarını ve müşteri davranışlarını takip edin."
+    title: "Mobil Araç Vitrini",
+    summary: "Araç detayları mobil uyumlu sayfada, hızlı açılan ve aksiyon odaklı sunulur.",
+    benefit: "Müşteri beklemeden iletişime geçer, araç bilgisi kaybolmadan aktarılır.",
+    workflow: "Müşteri QR okutur -> Araç sayfasını görür -> Arama/WhatsApp aksiyonu başlatır.",
   },
   {
     icon: MessageCircle,
-    title: "Lead Takibi",
-    description: "WhatsApp, telefon ve form üzerinden gelen tüm müşteri ilgilerini tek panelden yönetin."
+    title: "Lead Yönetimi",
+    summary: "Telefon, WhatsApp ve form kaynakları aynı lead akışında toplanır.",
+    benefit: "Tekrar arama ve takip kaybı azalır; ekip aynı müşteri kaydı üzerinden ilerler.",
+    workflow: "Lead oluşur -> Durum atanır -> Not/follow-up eklenir -> Satış adımı güncellenir.",
   },
   {
-    icon: Shield,
-    title: "Güvenli Altyapı",
-    description: "Verileriniz güvende. SSL şifrelemesi ve düzenli yedekleme ile koruma altında."
+    icon: BarChart3,
+    title: "Operasyon Analitiği",
+    summary: "Araç ilgisi, lead akışı ve kanal performansı panel ekranlarında izlenir.",
+    benefit: "Hangi aracın ve hangi kanalın daha etkili olduğu net şekilde görülür.",
+    workflow: "Tarama/lead verisi toplanır -> Panel grafikleri güncellenir -> Karar aksiyonu alınır.",
   },
   {
-    icon: Zap,
-    title: "Hızlı Kurulum",
-    description: "5 dakikada galerinizi oluşturun. Teknik bilgi gerektirmez, hemen kullanmaya başlayın."
-  }
+    icon: Settings2,
+    title: "Galeri Ayarları",
+    summary: "Galeri profili, iletişim bilgileri, çalışma saatleri ve dijital kanallar yönetilir.",
+    benefit: "Müşteriye her temas noktasında tutarlı marka bilgisi sunulur.",
+    workflow: "Profil bilgisi girilir -> Değişiklik kaydedilir -> Vitrin sayfalarına yansıtılır.",
+  },
+  {
+    icon: SquareStack,
+    title: "Toplu QR Yazdırma",
+    summary: "Araç listesi için toplu etiket çıktısı alınır ve format bazlı yazdırma yapılır.",
+    benefit: "Saha hazırlık süresi kısalır, vitrin düzeni standart hale gelir.",
+    workflow: "Araçlar seçilir -> Şablon seçilir -> Yazdırma çıktısı alınır.",
+  },
+  {
+    icon: LockKeyhole,
+    title: "Güvenlik ve Kayıt",
+    summary: "Panel erişimi, olay kayıtları ve temel güvenlik kontrolleri birlikte yönetilir.",
+    benefit: "Operasyon değişiklikleri izlenebilir olur, hesap güvenliği güçlenir.",
+    workflow: "Kullanıcı oturum açar -> İşlem kaydı oluşur -> Yönetici denetimi yapılır.",
+  },
 ]
 
 export function FeaturesSection() {
   return (
     <section id="ozellikler" className="py-20 md:py-28 bg-muted/30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <h2 className="text-3xl sm:text-4xl font-bold text-foreground">
-            Galerinizi Dijitale Taşıyın
-          </h2>
-          <p className="mt-4 text-lg text-muted-foreground">
-            Modern galeri yönetimi için ihtiyacınız olan tüm araçlar tek platformda
+        <div className="max-w-3xl">
+          <h2 className="text-3xl sm:text-4xl font-bold text-foreground">Ürün modülleri ve galeriye etkisi</h2>
+          <p className="mt-4 text-base leading-relaxed text-muted-foreground">
+            Her modül yalnızca bir özellik listesi değil; doğrudan günlük operasyonu kolaylaştıran ve müşteri akışını hızlandıran bir çalışma düzeni sunar.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {features.map((feature, index) => (
-            <div 
-              key={index}
-              className="p-6 bg-card rounded-2xl border border-border hover:border-accent/30 hover:shadow-lg transition-all"
-            >
-              <div className="w-12 h-12 bg-accent/10 rounded-xl flex items-center justify-center mb-4">
-                <feature.icon className="w-6 h-6 text-accent" />
+        <div className="mt-10 grid gap-4 md:grid-cols-2">
+          {modules.map((module) => (
+            <article key={module.title} className="rounded-xl border border-border/70 bg-card p-6">
+              <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10 text-accent">
+                <module.icon className="h-5 w-5" />
               </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">
-                {feature.title}
-              </h3>
-              <p className="text-muted-foreground leading-relaxed">
-                {feature.description}
+              <h3 className="mt-4 text-lg font-semibold text-foreground">{module.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{module.summary}</p>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                <span className="font-medium text-foreground">Galeriye faydası:</span> {module.benefit}
               </p>
-            </div>
+              <div className="mt-3 rounded-lg border border-border/60 bg-muted/35 px-3 py-2 text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">Kısa iş akışı:</span> {module.workflow}
+              </div>
+            </article>
           ))}
+        </div>
+
+        <div className="mt-8 rounded-xl border border-border/70 bg-card p-5">
+          <div className="flex items-start gap-3">
+            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-accent" />
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              İçerikler, sahte başarı oranları yerine ürünün gerçek işleyişine odaklanır. Demo görüşmesinde mevcut sürecinizle eşleştirilecek operasyon modelini birlikte netleştirirsiniz.
+            </p>
+          </div>
         </div>
       </div>
     </section>

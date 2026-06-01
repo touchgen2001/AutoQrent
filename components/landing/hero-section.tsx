@@ -1,7 +1,7 @@
 import Image from "next/image"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { ArrowRight, QrCode, Smartphone, BarChart3 } from "lucide-react"
+import { QrCode, Smartphone, BarChart3 } from "lucide-react"
+import { HeroCtaActions } from "@/components/landing/hero-cta-actions"
+import { IMAGE_PRESETS } from "@/lib/image-presets"
 
 export function HeroSection() {
   return (
@@ -23,7 +23,7 @@ export function HeroSection() {
           <div className="text-center lg:text-left">
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-accent/10 text-accent rounded-full text-sm font-medium mb-6">
               <QrCode className="w-4 h-4" />
-              <span>Türkiye&apos;nin 1 Numaralı Galeri Yazılımı</span>
+              <span>QR odaklı galeri dijital vitrin altyapısı</span>
             </div>
             
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground leading-tight tracking-tight text-balance">
@@ -37,33 +37,20 @@ export function HeroSection() {
               profesyonel galeri yazılımı.
             </p>
             
-            <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <Button size="lg" asChild className="bg-accent hover:bg-accent/90 text-accent-foreground h-12 px-8 text-base">
-                <Link href="/kayit">
-                  Ücretsiz Başla
-                  <ArrowRight className="ml-2 w-5 h-5" />
-                </Link>
-              </Button>
-              <Button size="lg" variant="outline" asChild className="h-12 px-8 text-base">
-                <Link href="#nasil-calisir">
-                  Nasıl Çalışır?
-                </Link>
-              </Button>
-            </div>
+            <HeroCtaActions />
             
-            {/* Stats */}
             <div className="mt-12 grid grid-cols-3 gap-8 pt-8 border-t border-border">
               <div>
-                <div className="text-2xl sm:text-3xl font-bold text-foreground">500+</div>
-                <div className="text-sm text-muted-foreground mt-1">Aktif Galeri</div>
+                <div className="text-base sm:text-lg font-semibold text-foreground">Gerçek Zamanlı QR Akışı</div>
+                <div className="text-sm text-muted-foreground mt-1">Tarama ve yönlendirme araç bazında izlenir</div>
               </div>
               <div>
-                <div className="text-2xl sm:text-3xl font-bold text-foreground">25K+</div>
-                <div className="text-sm text-muted-foreground mt-1">Araç Kaydı</div>
+                <div className="text-base sm:text-lg font-semibold text-foreground">Panelden Tek Nokta Yönetim</div>
+                <div className="text-sm text-muted-foreground mt-1">Araç, lead ve içerik aynı panelde güncellenir</div>
               </div>
               <div>
-                <div className="text-2xl sm:text-3xl font-bold text-foreground">1M+</div>
-                <div className="text-sm text-muted-foreground mt-1">QR Tarama</div>
+                <div className="text-base sm:text-lg font-semibold text-foreground">Mobil Müşteri Teması</div>
+                <div className="text-sm text-muted-foreground mt-1">WhatsApp, arama ve konum aksiyonları hazır gelir</div>
               </div>
             </div>
           </div>
@@ -78,7 +65,10 @@ export function HeroSection() {
                   width={900}
                   height={1200}
                   preload
-                  sizes="(max-width: 640px) 90vw, (max-width: 1024px) 70vw, 420px"
+                  loading="eager"
+                  fetchPriority="high"
+                  quality={IMAGE_PRESETS.landingHero.quality}
+                  sizes={IMAGE_PRESETS.landingHero.sizes}
                   className="h-auto w-full"
                 />
               </div>
@@ -90,8 +80,8 @@ export function HeroSection() {
                     <QrCode className="w-5 h-5 text-accent" />
                   </div>
                   <div>
-                    <div className="text-sm font-medium">QR Tarandı</div>
-                    <div className="text-xs text-muted-foreground">Az önce</div>
+                    <div className="text-sm font-medium">QR Ziyaret Akışı</div>
+                    <div className="text-xs text-muted-foreground">Anlık panel kaydı</div>
                   </div>
                 </div>
               </div>
@@ -102,8 +92,8 @@ export function HeroSection() {
                     <Smartphone className="w-5 h-5 text-accent" />
                   </div>
                   <div>
-                    <div className="text-sm font-medium">Yeni Lead</div>
-                    <div className="text-xs text-muted-foreground">+3 bugün</div>
+                    <div className="text-sm font-medium">Lead Kaydı</div>
+                    <div className="text-xs text-muted-foreground">Form, telefon, WhatsApp</div>
                   </div>
                 </div>
               </div>
@@ -114,8 +104,8 @@ export function HeroSection() {
                     <BarChart3 className="w-5 h-5 text-accent" />
                   </div>
                   <div>
-                    <div className="text-sm font-medium">%45 Artış</div>
-                    <div className="text-xs text-muted-foreground">Bu hafta</div>
+                    <div className="text-sm font-medium">Analitik İzleme</div>
+                    <div className="text-xs text-muted-foreground">Araç bazlı takip görünümü</div>
                   </div>
                 </div>
               </div>

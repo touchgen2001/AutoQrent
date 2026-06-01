@@ -4,18 +4,19 @@ import Link from "next/link"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { QrCode, Menu, X } from "lucide-react"
+import { useLandingCtaExperiment } from "@/components/landing/use-landing-cta-experiment"
 
 const navLinks = [
-  { name: "Güven", href: "/#guven" },
-  { name: "Özellikler", href: "/#ozellikler" },
-  { name: "Nasıl Çalışır", href: "/#nasil-calisir" },
-  { name: "Fiyatlar", href: "/#fiyatlar" },
-  { name: "SSS", href: "/#sss" },
+  { name: "Özellikler", href: "/ozellikler" },
+  { name: "Nasıl Çalışır", href: "/nasil-calisir" },
+  { name: "Fiyatlar", href: "/fiyatlar" },
+  { name: "SSS", href: "/sss" },
   { name: "İletişim", href: "/iletisim" },
 ]
 
 export function LandingHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const { config, trackClick } = useLandingCtaExperiment('header')
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
@@ -45,7 +46,12 @@ export function LandingHeader() {
               <Link href="/giris">Giriş Yap</Link>
             </Button>
             <Button asChild className="bg-accent hover:bg-accent/90 text-accent-foreground">
-              <Link href="/kayit">Ücretsiz Başla</Link>
+              <Link
+                href={config.primaryHref}
+                onClick={() => trackClick('primary', config.primaryHref, config.primaryLabel)}
+              >
+                {config.primaryLabel}
+              </Link>
             </Button>
           </div>
 
@@ -77,7 +83,12 @@ export function LandingHeader() {
                 <Link href="/giris">Giriş Yap</Link>
               </Button>
               <Button asChild className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
-                <Link href="/kayit">Ücretsiz Başla</Link>
+                <Link
+                  href={config.primaryHref}
+                  onClick={() => trackClick('primary', config.primaryHref, config.primaryLabel)}
+                >
+                  {config.primaryLabel}
+                </Link>
               </Button>
             </div>
           </nav>

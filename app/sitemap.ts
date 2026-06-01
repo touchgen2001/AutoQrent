@@ -26,6 +26,30 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.9,
     },
     {
+      url: absoluteUrl('/ozellikler'),
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.85,
+    },
+    {
+      url: absoluteUrl('/nasil-calisir'),
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.85,
+    },
+    {
+      url: absoluteUrl('/fiyatlar'),
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.85,
+    },
+    {
+      url: absoluteUrl('/sss'),
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    },
+    {
       url: absoluteUrl('/blog'),
       lastModified: now,
       changeFrequency: 'weekly',
@@ -71,10 +95,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   const blogRoutes: MetadataRoute.Sitemap = blogPosts.map((post) => ({
     url: absoluteUrl(`/blog/${post.slug}`),
-    lastModified: now,
+    lastModified: new Date(post.updatedAt || post.publishedAt),
     changeFrequency: 'monthly',
     priority: 0.7,
   }))
 
+  // Public showroom and vehicle detail URLs are dynamic and data-driven.
+  // They are discovered by crawling internal links instead of hardcoding
+  // placeholder slugs that may not exist in production.
   return [...staticRoutes, ...blogRoutes]
 }

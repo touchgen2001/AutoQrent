@@ -1,70 +1,102 @@
-import { QrCode, Smartphone, Users, TrendingUp } from "lucide-react"
+import { CheckCircle2, QrCode, ScanLine, Settings2, Smartphone, Target, Users } from "lucide-react"
 
 const steps = [
   {
-    number: "01",
-    icon: QrCode,
-    title: "Araç Ekleyin",
-    description: "Araç bilgilerini ve fotoğraflarını yükleyin. Sistem otomatik olarak benzersiz bir QR kod oluşturur."
+    step: "01",
+    title: "Galeri kurulumu",
+    detail: "Galeri adı, iletişim kanalları ve temel vitrin ayarları panelde tamamlanır.",
+    icon: Settings2,
   },
   {
-    number: "02",
-    icon: Smartphone,
-    title: "QR Kodu Yazdırın",
-    description: "Oluşturulan QR kodları araç camına veya vitrinine yapıştırmak için yazdırın."
-  },
-  {
-    number: "03",
+    step: "02",
+    title: "Araç kartı hazırlığı",
+    detail: "Araç bilgisi ve medya içeriği eklenir; vitrin sayfası satış görüşmesine hazır hale getirilir.",
     icon: Users,
-    title: "Müşteri Gelsin",
-    description: "Müşteriler QR kodu tarayarak araç detaylarına, fiyatına ve iletişim bilgilerine ulaşır."
   },
   {
-    number: "04",
-    icon: TrendingUp,
-    title: "Satışa Dönüştürün",
-    description: "Gelen leadleri takip edin, notlar ekleyin ve satış sürecini yönetin."
-  }
+    step: "03",
+    title: "QR üretimi ve saha yerleşimi",
+    detail: "Araç bazlı QR kodlar üretilir, vitrin ve araç camına uygun şablonlarla yazdırılır.",
+    icon: QrCode,
+  },
+  {
+    step: "04",
+    title: "Müşteri etkileşimi",
+    detail: "Müşteri QR okutur, mobil araç sayfasına geçer ve doğrudan iletişim aksiyonu başlatır.",
+    icon: Smartphone,
+  },
+  {
+    step: "05",
+    title: "Lead takibi",
+    detail: "Temas kaynağı, notlar ve takip adımları tek lead akışında güncellenir.",
+    icon: ScanLine,
+  },
+  {
+    step: "06",
+    title: "Satış sonrası yönetim",
+    detail: "Durum kapanışı, ekip değerlendirmesi ve bir sonraki aksiyonlar operasyon panelinde düzenlenir.",
+    icon: Target,
+  },
+]
+
+const perspective = [
+  {
+    title: "Araç başında müşteri ne görür?",
+    points: [
+      "Mobil uyumlu araç vitrini ve temel araç detayları",
+      "Tek dokunuşla arama ve WhatsApp aksiyonları",
+      "Galeri iletişim ve çalışma bilgileri",
+    ],
+  },
+  {
+    title: "Panelde ekip ne yapar?",
+    points: [
+      "Araç kartlarını ve QR yönlendirmesini günceller",
+      "Lead durumlarını, notları ve takip tarihlerini yönetir",
+      "Operasyon verisini ekranlardan izleyip aksiyon alır",
+    ],
+  },
 ]
 
 export function HowItWorksSection() {
   return (
     <section id="nasil-calisir" className="py-20 md:py-28">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <h2 className="text-3xl sm:text-4xl font-bold text-foreground">
-            Nasıl Çalışır?
-          </h2>
-          <p className="mt-4 text-lg text-muted-foreground">
-            4 basit adımda dijital vitrin oluşturun
+        <div className="max-w-3xl">
+          <h2 className="text-3xl sm:text-4xl font-bold text-foreground">Operasyon akışı adım adım</h2>
+          <p className="mt-4 text-base leading-relaxed text-muted-foreground">
+            Kurulumdan satış sonrası takibe kadar süreç iki tarafta netleşir: araç başındaki müşteri deneyimi ve paneldeki ekip yönetimi.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {steps.map((step, index) => (
-            <div key={index} className="relative">
-              {/* Connector Line */}
-              {index < steps.length - 1 && (
-                <div className="hidden lg:block absolute top-12 left-1/2 w-full h-0.5 bg-border" />
-              )}
-              
-              <div className="relative text-center">
-                <div className="relative inline-block mb-6">
-                  <div className="w-24 h-24 bg-card rounded-2xl border border-border flex items-center justify-center mx-auto shadow-sm">
-                    <step.icon className="w-10 h-10 text-accent" />
-                  </div>
-                  <div className="absolute -top-2 -right-2 w-8 h-8 bg-accent rounded-full flex items-center justify-center text-accent-foreground text-sm font-bold">
-                    {step.number}
-                  </div>
+        <div className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {steps.map((step) => (
+            <article key={step.step} className="rounded-xl border border-border/70 bg-card p-6">
+              <div className="flex items-center justify-between">
+                <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10 text-accent">
+                  <step.icon className="h-5 w-5" />
                 </div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">
-                  {step.title}
-                </h3>
-                <p className="text-muted-foreground">
-                  {step.description}
-                </p>
+                <span className="text-sm font-semibold text-muted-foreground">{step.step}</span>
               </div>
-            </div>
+              <h3 className="mt-4 text-lg font-semibold text-foreground">{step.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{step.detail}</p>
+            </article>
+          ))}
+        </div>
+
+        <div className="mt-8 grid gap-4 lg:grid-cols-2">
+          {perspective.map((item) => (
+            <article key={item.title} className="rounded-xl border border-border/70 bg-muted/30 p-6">
+              <h3 className="text-lg font-semibold text-foreground">{item.title}</h3>
+              <ul className="mt-4 space-y-2">
+                {item.points.map((point) => (
+                  <li key={point} className="flex items-start gap-2 text-sm text-muted-foreground">
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+                    <span>{point}</span>
+                  </li>
+                ))}
+              </ul>
+            </article>
           ))}
         </div>
       </div>
