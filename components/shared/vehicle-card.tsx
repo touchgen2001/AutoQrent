@@ -1,10 +1,10 @@
 'use client'
 
-import Image from 'next/image'
 import Link from 'next/link'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { VehicleImageFrame } from '@/components/shared/vehicle-image-frame'
 import { 
   Calendar, 
   Gauge, 
@@ -13,11 +13,12 @@ import {
   Eye,
   ArrowRight
 } from 'lucide-react'
-import { formatPrice, formatMileage, getFuelTypeLabel, getTransmissionLabel } from '@/lib/mock-data'
-import type { Vehicle } from '@/lib/mock-data'
+import { formatPrice, formatMileage, getFuelTypeLabel, getTransmissionLabel } from '@/lib/vehicle-display'
+import { IMAGE_PRESETS } from '@/lib/image-presets'
+import type { PublicVehicle } from '@/lib/public-catalog-types'
 
 interface VehicleCardProps {
-  vehicle: Vehicle
+  vehicle: PublicVehicle
   showStats?: boolean
   linkPrefix?: string
 }
@@ -26,12 +27,13 @@ export function VehicleCard({ vehicle, showStats = false, linkPrefix = '/arac' }
   return (
     <Card className="group overflow-hidden bg-card hover:shadow-lg transition-all duration-300">
       <div className="relative aspect-[16/10] overflow-hidden bg-muted">
-        <Image
-          src={vehicle.images[0] || '/placeholder.jpg'}
+        <VehicleImageFrame
+          src={vehicle.images[0]}
           alt={vehicle.title}
-          fill
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1536px) 33vw, 25vw"
-          className="object-cover group-hover:scale-105 transition-transform duration-500"
+          sizes={IMAGE_PRESETS.vehicleCard.sizes}
+          quality={IMAGE_PRESETS.vehicleCard.quality}
+          loading="lazy"
+          imageClassName="group-hover:scale-105 transition-transform duration-500"
         />
         {vehicle.featured && (
           <Badge className="absolute top-3 left-3 bg-accent text-accent-foreground">
@@ -89,7 +91,7 @@ export function VehicleCard({ vehicle, showStats = false, linkPrefix = '/arac' }
         )}
 
         <Button asChild variant="outline" className="w-full group-hover:bg-accent group-hover:text-accent-foreground transition-colors">
-          <Link href={`${linkPrefix}/${vehicle.id}`}>
+          <Link href={`${linkPrefix}/${vehicle.routeId || vehicle.id}`}>
             Detayları Gör
             <ArrowRight className="ml-2 h-4 w-4" />
           </Link>
@@ -99,9 +101,9 @@ export function VehicleCard({ vehicle, showStats = false, linkPrefix = '/arac' }
   )
 }
 
-// Public (Showroom) Version
+// Herkese açık galeri sayfası kartı
 interface PublicVehicleCardProps {
-  vehicle: Vehicle
+  vehicle: PublicVehicle
   dealerSlug: string
 }
 
@@ -109,12 +111,13 @@ export function PublicVehicleCard({ vehicle, dealerSlug }: PublicVehicleCardProp
   return (
     <Card className="group overflow-hidden bg-card hover:shadow-xl transition-all duration-300 border-border/50">
       <div className="relative aspect-[16/10] overflow-hidden bg-muted">
-        <Image
-          src={vehicle.images[0] || '/placeholder.jpg'}
+        <VehicleImageFrame
+          src={vehicle.images[0]}
           alt={vehicle.title}
-          fill
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1536px) 33vw, 25vw"
-          className="object-cover group-hover:scale-105 transition-transform duration-500"
+          sizes={IMAGE_PRESETS.vehicleCard.sizes}
+          quality={IMAGE_PRESETS.vehicleCard.quality}
+          loading="lazy"
+          imageClassName="group-hover:scale-105 transition-transform duration-500"
         />
         {vehicle.featured && (
           <Badge className="absolute top-3 left-3 bg-accent text-accent-foreground shadow-lg">
@@ -153,7 +156,7 @@ export function PublicVehicleCard({ vehicle, dealerSlug }: PublicVehicleCardProp
         </div>
 
         <Button asChild className="w-full bg-foreground text-background hover:bg-foreground/90">
-          <Link href={`/arac/${vehicle.id}?ref=${dealerSlug}`}>
+          <Link href={`/arac/${vehicle.routeId || vehicle.id}?ref=${dealerSlug}&src=showroom`}>
             Detayları Gör
             <ArrowRight className="ml-2 h-4 w-4" />
           </Link>

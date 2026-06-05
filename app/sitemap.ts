@@ -1,9 +1,11 @@
 import type { MetadataRoute } from 'next'
 
 import { blogPosts } from '@/lib/blog-posts'
+import { DEMO_VEHICLE_ROUTE_ID, getDemoShowroomHref } from '@/lib/demo-public-experience'
+import { getPublicSitemapEntries } from '@/lib/public-sitemap'
 import { absoluteUrl } from '@/lib/seo'
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date()
 
   const staticRoutes: MetadataRoute.Sitemap = [
@@ -24,6 +26,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: now,
       changeFrequency: 'weekly',
       priority: 0.9,
+    },
+    {
+      url: absoluteUrl(getDemoShowroomHref()),
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.65,
+    },
+    {
+      url: absoluteUrl(`/arac/${DEMO_VEHICLE_ROUTE_ID}`),
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.65,
     },
     {
       url: absoluteUrl('/ozellikler'),
@@ -100,8 +114,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.7,
   }))
 
-  // Public showroom and vehicle detail URLs are dynamic and data-driven.
-  // They are discovered by crawling internal links instead of hardcoding
-  // placeholder slugs that may not exist in production.
-  return [...staticRoutes, ...blogRoutes]
+  const publicRoutes = await getPublicSitemapEntries(now)
+
+  return [...staticRoutes, ...blogRoutes, ...publicRoutes]
 }

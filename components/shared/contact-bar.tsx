@@ -5,10 +5,17 @@ import { Phone, MessageCircle, Navigation } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface StickyContactBarProps {
-  phone: string
-  whatsapp: string
+  phone?: string
+  whatsapp?: string
   mapsUrl?: string
   vehicleTitle?: string
+  callLabel?: string
+  whatsappLabel?: string
+  locationLabel?: string
+  whatsappMessage?: string
+  onCallClick?: () => void
+  onWhatsappClick?: () => void
+  onMapClick?: () => void
   className?: string
 }
 
@@ -17,11 +24,24 @@ export function StickyContactBar({
   whatsapp, 
   mapsUrl,
   vehicleTitle,
+  callLabel = 'Ara',
+  whatsappLabel = 'WhatsApp',
+  locationLabel = 'Konum',
+  whatsappMessage,
+  onCallClick,
+  onWhatsappClick,
+  onMapClick,
   className 
 }: StickyContactBarProps) {
-  const whatsappMessage = vehicleTitle 
+  const hasPhone = Boolean(phone?.replace(/\D/g, ''))
+  const hasWhatsapp = Boolean(whatsapp?.replace(/\D/g, ''))
+  const encodedWhatsappMessage = whatsappMessage
+    ? encodeURIComponent(whatsappMessage)
+    : vehicleTitle 
     ? encodeURIComponent(`Merhaba, ${vehicleTitle} aracı hakkında bilgi almak istiyorum.`)
     : encodeURIComponent('Merhaba, araçlarınız hakkında bilgi almak istiyorum.')
+
+  if (!hasPhone && !hasWhatsapp && !mapsUrl) return null
 
   return (
     <div className={cn(
@@ -30,29 +50,37 @@ export function StickyContactBar({
       className
     )}>
       <div className="flex items-center justify-around p-3 gap-2">
-        <Link
-          href={`tel:${phone.replace(/\s/g, '')}`}
-          className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-foreground text-background font-medium transition-colors hover:bg-foreground/90"
-        >
-          <Phone className="h-5 w-5" />
-          <span>Ara</span>
-        </Link>
+        {hasPhone && phone ? (
+          <Link
+            href={`tel:${phone.replace(/\s/g, '')}`}
+            onClick={onCallClick}
+            className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-foreground text-background font-medium transition-colors hover:bg-foreground/90"
+          >
+            <Phone className="h-5 w-5" />
+            <span>{callLabel}</span>
+          </Link>
+        ) : null}
         
-        <Link
-          href={`https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}?text=${whatsappMessage}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-green-600 text-white font-medium transition-colors hover:bg-green-700"
-        >
-          <MessageCircle className="h-5 w-5" />
-          <span>WhatsApp</span>
-        </Link>
+        {hasWhatsapp && whatsapp ? (
+          <Link
+            href={`https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}?text=${encodedWhatsappMessage}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={onWhatsappClick}
+            className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-green-600 text-white font-medium transition-colors hover:bg-green-700"
+          >
+            <MessageCircle className="h-5 w-5" />
+            <span>{whatsappLabel}</span>
+          </Link>
+        ) : null}
 
         {mapsUrl && (
           <Link
             href={mapsUrl}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={onMapClick}
+            aria-label={locationLabel}
             className="flex items-center justify-center p-3 rounded-lg border border-border text-foreground transition-colors hover:bg-muted"
           >
             <Navigation className="h-5 w-5" />

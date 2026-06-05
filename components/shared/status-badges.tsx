@@ -1,14 +1,14 @@
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-import type { Lead } from '@/lib/mock-data'
+import type { PanelLeadSource, PanelLeadStatus } from '@/lib/panel-types'
 
 interface LeadStatusBadgeProps {
-  status: Lead['status']
+  status: PanelLeadStatus
   className?: string
 }
 
 export function LeadStatusBadge({ status, className }: LeadStatusBadgeProps) {
-  const styles: Record<Lead['status'], string> = {
+  const styles: Record<PanelLeadStatus, string> = {
     'yeni': 'bg-blue-500/10 text-blue-600 border-blue-500/20',
     'arandi': 'bg-orange-500/10 text-orange-600 border-orange-500/20',
     'gorusuluyor': 'bg-purple-500/10 text-purple-600 border-purple-500/20',
@@ -17,7 +17,7 @@ export function LeadStatusBadge({ status, className }: LeadStatusBadgeProps) {
     'kayip': 'bg-muted text-muted-foreground border-muted'
   }
 
-  const labels: Record<Lead['status'], string> = {
+  const labels: Record<PanelLeadStatus, string> = {
     'yeni': 'Yeni',
     'arandi': 'Arandı',
     'gorusuluyor': 'Görüşülüyor',
@@ -34,14 +34,14 @@ export function LeadStatusBadge({ status, className }: LeadStatusBadgeProps) {
 }
 
 interface LeadSourceBadgeProps {
-  source: Lead['source']
+  source: PanelLeadSource
   className?: string
 }
 
 export function LeadSourceBadge({ source, className }: LeadSourceBadgeProps) {
-  const labels: Record<Lead['source'], string> = {
+  const labels: Record<PanelLeadSource, string> = {
     'qr': 'QR Kod',
-    'showroom': 'Showroom',
+    'showroom': 'Galeri Sayfası',
     'whatsapp': 'WhatsApp',
     'telefon': 'Telefon',
     'form': 'Form',
