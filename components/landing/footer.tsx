@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { ArrowRight, Mail, Phone, QrCode } from "lucide-react"
+import { BrandLogo } from "@/components/brand/brand-logo"
 
 const footerLinks = {
   product: [
@@ -47,14 +48,14 @@ export function LandingFooter() {
                 href="/kayit"
                 className="inline-flex items-center rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent/90"
               >
-                Ücretsiz Başla
+                14 Gün Ücretsiz Başla
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
               <Link
                 href="/demo"
                 className="inline-flex items-center rounded-lg border border-primary-foreground/20 px-4 py-2.5 text-sm font-medium text-primary-foreground/90 transition-colors hover:bg-primary-foreground/10"
               >
-                Demoyu İncele
+                Demo Planla
               </Link>
             </div>
           </div>
@@ -62,12 +63,7 @@ export function LandingFooter() {
 
         <div className="grid md:grid-cols-4 gap-8 md:gap-12">
           <div className="md:col-span-1">
-            <Link href="/" className="flex items-center gap-2 mb-4">
-              <div className="w-9 h-9 bg-accent rounded-lg flex items-center justify-center">
-                <QrCode className="w-5 h-5 text-accent-foreground" />
-              </div>
-              <span className="text-lg font-bold tracking-tight">Cebindegaleri</span>
-            </Link>
+            <BrandLogo href="/" tone="dark" className="mb-4" />
             <p className="text-primary-foreground/70 text-sm leading-relaxed">
               Araç galerileri için QR kodlu dijital showroom, stok yönetimi, lead takibi ve satış analitiği.
             </p>

@@ -1,56 +1,41 @@
-import { Quote, Star } from 'lucide-react'
+import { CheckCircle2, MessageSquareText } from 'lucide-react'
 
-const testimonials = [
+const feedbackTopics = [
   {
-    quote:
-      'QR kodlu vitrinle müşteriler araç başında tüm detayı görüyor. Satış danışmanlarımızın ilk görüşme süresi kısaldı, dönüşüm oranı yükseldi.',
-    author: 'Emre K.',
-    role: 'Satış Müdürü',
-    company: 'Prestij Otomotiv',
+    title: 'Araç başında müşteri deneyimi',
+    description: 'Demo sırasında QR okutulduğunda müşteri hangi bilgileri görür, hangi aksiyonları alır birlikte test edilir.',
   },
   {
-    quote:
-      'Araçları tek panelden güncellemek ve lead akışını takip etmek ekip içi dağınıklığı bitirdi. Özellikle WhatsApp taleplerini kaçırmıyoruz.',
-    author: 'Seda T.',
-    role: 'İşletme Sahibi',
-    company: 'Anadolu Motor',
+    title: 'Satış ekibi lead takibi',
+    description: 'Telefon, WhatsApp ve form taleplerinin panelde nasıl ayrıştığı gerçek akış üzerinden gösterilir.',
   },
   {
-    quote:
-      'Müşteri bize gelmeden önce ilan detayını inceleyip hazır geliyor. Test sürüşü planlamamız daha verimli hale geldi.',
-    author: 'Murat A.',
-    role: 'Genel Koordinatör',
-    company: 'Ege Car Plaza',
+    title: 'Galeri marka görünümü',
+    description: 'Logo, iletişim, konum ve çalışma saatleri gibi alanların showroom sayfasına nasıl yansıdığı doğrulanır.',
   },
 ]
 
 export function TestimonialsSection() {
   return (
-    <section className="py-20 md:py-24 bg-muted/25">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="bg-muted/25 py-20 md:py-24">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="max-w-3xl">
-          <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Galerilerin doğrudan saha geri bildirimleri</h2>
+          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-foreground">
+            <MessageSquareText className="h-3.5 w-3.5" />
+            Demo görüşmesinde doğrulanır
+          </div>
+          <h2 className="mt-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Sahte yorum yerine gerçek akış kontrolü</h2>
           <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-            Platformu aktif kullanan ekiplerden gelen yorumlar; hız, güven ve satış verimliliğinde en çok nerede fark oluşturduğumuzu gösteriyor.
+            Doğrulanmamış müşteri yorumu veya yıldız puanı göstermiyoruz. Demo sırasında galeri operasyonunuz için önemli olan akışlar birlikte test edilir.
           </p>
         </div>
 
         <div className="mt-10 grid gap-5 lg:grid-cols-3">
-          {testimonials.map((item) => (
-            <article key={item.author + item.company} className="relative rounded-2xl border border-border/70 bg-card p-6 shadow-sm">
-              <Quote className="h-7 w-7 text-accent/80" />
-              <p className="mt-4 text-sm leading-relaxed text-muted-foreground">“{item.quote}”</p>
-
-              <div className="mt-5 flex items-center gap-1 text-accent">
-                {Array.from({ length: 5 }).map((_, index) => (
-                  <Star key={index} className="h-3.5 w-3.5 fill-current" />
-                ))}
-              </div>
-
-              <div className="mt-4 border-t border-border/70 pt-4">
-                <p className="text-sm font-semibold text-foreground">{item.author}</p>
-                <p className="text-xs text-muted-foreground">{item.role} · {item.company}</p>
-              </div>
+          {feedbackTopics.map((item) => (
+            <article key={item.title} className="relative rounded-2xl border border-border/70 bg-card p-6 shadow-sm">
+              <CheckCircle2 className="h-7 w-7 text-foreground" />
+              <h3 className="mt-4 text-lg font-semibold text-foreground">{item.title}</h3>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{item.description}</p>
             </article>
           ))}
         </div>

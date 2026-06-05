@@ -8,8 +8,8 @@ export function CtaSection() {
           Galerinizi Bugün Dijitale Taşıyın
         </h2>
         <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-          Demo görüşmesinde mevcut süreçlerinizi birlikte analiz edelim;
-          QR akışı, panel yönetimi ve geçiş planını galerinize özel netleştirelim.
+          14 günlük ücretsiz deneme ile galeri hesabınız, paneliniz ve QR vitrin altyapınız hazır başlar.
+          Demo isterseniz ikinci adımda birlikte akışı inceleyebiliriz.
         </p>
         <SectionCtaActions />
       </div>

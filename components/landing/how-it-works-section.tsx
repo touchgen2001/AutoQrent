@@ -34,7 +34,7 @@ const steps = [
   {
     step: "06",
     title: "Satış sonrası yönetim",
-    detail: "Durum kapanışı, ekip değerlendirmesi ve bir sonraki aksiyonlar operasyon panelinde düzenlenir.",
+    detail: "Durum kapanışı, görüşme notları ve bir sonraki aksiyonlar operasyon panelinde düzenlenir.",
     icon: Target,
   },
 ]
@@ -49,7 +49,7 @@ const perspective = [
     ],
   },
   {
-    title: "Panelde ekip ne yapar?",
+    title: "Panelde ne yönetilir?",
     points: [
       "Araç kartlarını ve QR yönlendirmesini günceller",
       "Lead durumlarını, notları ve takip tarihlerini yönetir",
@@ -65,7 +65,7 @@ export function HowItWorksSection() {
         <div className="max-w-3xl">
           <h2 className="text-3xl sm:text-4xl font-bold text-foreground">Operasyon akışı adım adım</h2>
           <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-            Kurulumdan satış sonrası takibe kadar süreç iki tarafta netleşir: araç başındaki müşteri deneyimi ve paneldeki ekip yönetimi.
+            Kurulumdan satış sonrası takibe kadar süreç iki tarafta netleşir: araç başındaki müşteri deneyimi ve paneldeki galeri yönetimi.
           </p>
         </div>
 

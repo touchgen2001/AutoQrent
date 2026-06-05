@@ -1,4 +1,3 @@
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { faqItems, type FaqCategory } from '@/lib/faq-items'
 
 const categoryOrder: FaqCategory[] = ["Kurulum", "QR Kod", "Panel", "Lead Takibi", "Fiyatlandırma", "Destek"]
@@ -23,16 +22,14 @@ export function FaqSection() {
           {groupedFaqs.map((group) => (
             <article key={group.category} className="rounded-xl border border-border/70 bg-card p-5 sm:p-6">
               <h3 className="text-lg font-semibold text-foreground">{group.category}</h3>
-              <Accordion type="single" collapsible className="mt-3 w-full">
-                {group.items.map((item, index) => (
-                  <AccordionItem key={item.question} value={`${group.category}-${index}`} className="border-border/70">
-                    <AccordionTrigger className="text-sm sm:text-base">{item.question}</AccordionTrigger>
-                    <AccordionContent className="text-sm leading-relaxed text-muted-foreground">
-                      {item.answer}
-                    </AccordionContent>
-                  </AccordionItem>
+              <div className="mt-4 space-y-4">
+                {group.items.map((item) => (
+                  <div key={item.question} className="rounded-lg border border-border/60 bg-background/60 p-4">
+                    <h4 className="text-sm font-semibold leading-6 text-foreground sm:text-base">{item.question}</h4>
+                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.answer}</p>
+                  </div>
                 ))}
-              </Accordion>
+              </div>
             </article>
           ))}
         </div>

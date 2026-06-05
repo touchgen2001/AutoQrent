@@ -7,9 +7,9 @@ import { createPageMetadata } from "@/lib/seo"
 export const metadata: Metadata = createPageMetadata({
   title: "Fiyatlar",
   description:
-    "Cebindegaleri paket kapsamları ve fiyat yaklaşımı: galeri ihtiyaçlarına göre plan karşılaştırması ve teklif süreci.",
+    "Cebindegaleri fiyatları: Başlangıç 999 TL, Pro 2.500 TL, Premium 4.990 TL ve kurumsal teklif seçeneklerini karşılaştırın.",
   path: "/fiyatlar",
-  keywords: ["galeri fiyatlandırma", "paket karşılaştırma", "teklif al", "qr galeri planı"],
+  keywords: ["galeri fiyatlandırma", "999 TL galeri paketi", "pro galeri paketi", "qr galeri planı"],
 })
 
 export default function PricingPage() {

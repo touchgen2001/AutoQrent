@@ -1,0 +1,10 @@
+<svg width="640" height="220" viewBox="0 0 640 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="640" height="220" rx="30" fill="#080808"/>
+  <rect x="22" y="22" width="596" height="176" rx="24" fill="#111111" stroke="#2A2A2A"/>
+  <path d="M78 101C106 70 139 55 181 55H222C250 55 274 64 296 83L319 103C331 114 346 119 365 119" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M153 55C176 39 215 39 243 55" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="139" cy="121" r="18" stroke="#FFFFFF" stroke-width="8"/>
+  <circle cx="278" cy="121" r="18" stroke="#FFFFFF" stroke-width="8"/>
+  <text x="396" y="96" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" font-size="36" font-weight="800" letter-spacing="-1">Demo Galeri</text>
+  <text x="397" y="137" fill="#B8B8B8" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="500">QR arac vitrini</text>
+</svg>

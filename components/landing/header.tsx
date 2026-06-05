@@ -3,7 +3,8 @@
 import Link from "next/link"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { QrCode, Menu, X } from "lucide-react"
+import { Menu, X } from "lucide-react"
+import { BrandLogo } from "@/components/brand/brand-logo"
 import { useLandingCtaExperiment } from "@/components/landing/use-landing-cta-experiment"
 
 const navLinks = [
@@ -22,12 +23,7 @@ export function LandingHeader() {
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center">
-              <QrCode className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="text-lg font-bold text-foreground tracking-tight">Cebindegaleri</span>
-          </Link>
+          <BrandLogo href="/" tone="light" />
 
           <nav className="hidden md:flex items-center gap-8">
             {navLinks.map((link) => (

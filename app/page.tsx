@@ -1,10 +1,13 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ArrowRight, BookOpen, ClipboardList, Layers3, Sparkles } from "lucide-react"
+import { ArrowRight, BookOpen, ClipboardList, Layers3, Newspaper, PlayCircle, Sparkles } from "lucide-react"
 import { LandingHeader } from "@/components/landing/header"
 import { HeroSection } from "@/components/landing/hero-section"
 import { CtaSection } from "@/components/landing/cta-section"
 import { HomeRichSections } from "@/components/landing/home-rich-sections"
+import { HomeDemoExperience } from "@/components/landing/home-demo-experience"
+import { HomePricingPreview } from "@/components/landing/home-pricing-preview"
+import { HomeBlogPreview } from "@/components/landing/home-blog-preview"
 import { MobileStickyCta } from "@/components/landing/mobile-sticky-cta"
 import { LandingFooter } from "@/components/landing/footer"
 import { absoluteUrl, createPageMetadata } from "@/lib/seo"
@@ -52,14 +55,20 @@ function toJsonLd(data: unknown) {
 }
 
 export const metadata: Metadata = createPageMetadata({
-  title: "Galerinin Cebindeki Dijital Vitrin",
+  title: "QR Kodlu Galeri Yazılımı ve Dijital Showroom",
   description:
-    "Cebindegaleri ile araç galeriniz için QR kodlu dijital vitrin, lead yönetimi ve mobil showroom deneyimini tek platformda yönetin.",
+    "Cebindegaleri ile araç galeriniz için QR kodlu dijital showroom, public galeri sitesi, müşteri talebi takibi ve 14 gün ücretsiz deneme akışını tek platformda yönetin.",
   path: "/",
   keywords: ["galeri yazılımı", "qr kodlu araç vitrini", "oto galeri crm", "mobil showroom"],
 })
 
 const categoryCards = [
+  {
+    title: "Canlı Demo",
+    description: "Demo galeri logosu, araç sayfası ve standart QR kod akışını müşteri gözüyle deneyin.",
+    href: "/demo",
+    icon: PlayCircle,
+  },
   {
     title: "Özellikler",
     description: "QR, araç vitrini, lead takibi ve yönetim modüllerini galeri operasyonuna göre detaylı inceleyin.",
@@ -68,15 +77,21 @@ const categoryCards = [
   },
   {
     title: "Nasıl Çalışır",
-    description: "Kurulumdan satış sonrası takibe kadar müşteri ve ekip akışını adım adım görün.",
+    description: "Kurulumdan satış sonrası takibe kadar müşteri ve panel akışını adım adım görün.",
     href: "/nasil-calisir",
     icon: ClipboardList,
   },
   {
     title: "Fiyatlar",
-    description: "Sabit fiyat yerine paket kapsamı, destek seviyesi ve geçiş modelini karşılaştırın.",
+    description: "999 TL, 2.500 TL, 4.990 TL ve kurumsal teklif seçeneklerini net kapsamlarıyla karşılaştırın.",
     href: "/fiyatlar",
     icon: Sparkles,
+  },
+  {
+    title: "Blog",
+    description: "Otomobil haberleri, galeri web sitesi, araç fotoğrafı ve QR vitrin rehberlerini okuyun.",
+    href: "/blog",
+    icon: Newspaper,
   },
   {
     title: "SSS",
@@ -100,18 +115,21 @@ export default function LandingPage() {
           dangerouslySetInnerHTML={{ __html: toJsonLd(websiteJsonLd) }}
         />
         <HeroSection />
+        <HomeDemoExperience />
         <HomeRichSections />
+        <HomePricingPreview />
+        <HomeBlogPreview />
         <section className="border-y border-border/60 bg-muted/20 py-16 md:py-20">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="max-w-3xl">
               <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-                Kategorilere ayrılmış detaylı içerik
+                Detayları doğru sayfada inceleyin
               </h2>
               <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-                Anasayfa karar sürecini hızlandırır; ürün detayları ve operasyon anlatımları ayrı sayfalarda odaklı şekilde sunulur.
+                Anasayfa hızlı karar aldırır; ürün detayları, demo, fiyat ve rehber içerikleri ayrı sayfalarda odaklı şekilde sunulur.
               </p>
             </div>
-            <div className="mt-8 grid gap-4 md:grid-cols-2">
+            <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {categoryCards.map((card) => (
                 <Link
                   key={card.title}

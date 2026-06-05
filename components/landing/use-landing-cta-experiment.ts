@@ -45,20 +45,20 @@ const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30
 
 const VARIANT_CONFIGS: Record<LandingCtaVariant, VariantConfig> = {
   A: {
-    primaryLabel: 'Ücretsiz Başla',
+    primaryLabel: '14 Gün Ücretsiz Başla',
     primaryHref: '/kayit',
-    heroSecondaryLabel: 'Nasıl Çalışır?',
-    heroSecondaryHref: '/nasil-calisir',
-    sectionSecondaryLabel: 'Demo İncele',
+    heroSecondaryLabel: 'Demo Planla',
+    heroSecondaryHref: '/demo',
+    sectionSecondaryLabel: 'Demo Planla',
     sectionSecondaryHref: '/demo',
   },
   B: {
-    primaryLabel: 'Demo Görüşmesi Planla',
-    primaryHref: '/demo?utm_campaign=landing_cta_ab_b&utm_source=homepage',
-    heroSecondaryLabel: 'Canlı Demo İzle',
-    heroSecondaryHref: '/demo?utm_campaign=landing_cta_ab_b&utm_source=homepage',
-    sectionSecondaryLabel: 'Uzmanla Görüş',
-    sectionSecondaryHref: '/iletisim?konu=demo&utm_campaign=landing_cta_ab_b',
+    primaryLabel: '14 Gün Ücretsiz Başla',
+    primaryHref: '/kayit',
+    heroSecondaryLabel: 'Demo Planla',
+    heroSecondaryHref: '/demo',
+    sectionSecondaryLabel: 'Demo Planla',
+    sectionSecondaryHref: '/demo',
   },
 }
 

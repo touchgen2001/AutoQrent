@@ -1,5 +1,6 @@
 import Image from "next/image"
-import { QrCode, Smartphone, BarChart3 } from "lucide-react"
+import Link from "next/link"
+import { ArrowRight, QrCode } from "lucide-react"
 import { HeroCtaActions } from "@/components/landing/hero-cta-actions"
 import { IMAGE_PRESETS } from "@/lib/image-presets"
 
@@ -23,34 +24,41 @@ export function HeroSection() {
           <div className="text-center lg:text-left">
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-accent/10 text-accent rounded-full text-sm font-medium mb-6">
               <QrCode className="w-4 h-4" />
-              <span>QR odaklı galeri dijital vitrin altyapısı</span>
+              <span>14 gün ücretsiz deneme + QR odaklı dijital showroom</span>
             </div>
             
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground leading-tight tracking-tight text-balance">
-              Galerinin Cebindeki{" "}
-              <span className="text-accent">Dijital Vitrini</span>
+              QR Okutan Müşteriyi{" "}
+              <span className="text-accent">Araç Sayfasına</span> Taşıyın
             </h1>
             
             <p className="mt-6 text-lg text-muted-foreground max-w-xl mx-auto lg:mx-0 leading-relaxed">
-              Araç camındaki QR kod ile müşteriyi direkt mobil ilana bağlayan, 
-              stok yönetimi ve müşteri takibini tek panelden yapmanızı sağlayan 
-              profesyonel galeri yazılımı.
+              Cebindegaleri; public galeri sitenizi, araç detay sayfalarınızı, standart QR yönlendirmesini ve müşteri talebi takibini tek panelde toplar.
+              Galerici aracı yönetir, müşteri telefondan doğru bilgiye ulaşır.
             </p>
             
             <HeroCtaActions />
+
+            <p className="mt-4 text-sm text-muted-foreground">
+              Kredi kartı gerekmeden başlayın veya{" "}
+              <Link href="/demo" className="font-medium text-accent hover:underline">
+                demo QR deneyimini açın
+                <ArrowRight className="ml-1 inline h-3.5 w-3.5" />
+              </Link>
+            </p>
             
-            <div className="mt-12 grid grid-cols-3 gap-8 pt-8 border-t border-border">
-              <div>
-                <div className="text-base sm:text-lg font-semibold text-foreground">Gerçek Zamanlı QR Akışı</div>
-                <div className="text-sm text-muted-foreground mt-1">Tarama ve yönlendirme araç bazında izlenir</div>
+            <div className="mt-10 grid gap-4 border-t border-border pt-8 sm:grid-cols-3">
+              <div className="rounded-xl border border-border/70 bg-card/70 p-4">
+                <div className="text-base font-semibold text-foreground">Public Galeri Sitesi</div>
+                <div className="mt-1 text-sm text-muted-foreground">Her galeri kendi logosu, iletişimi ve araçlarıyla yayınlanır</div>
               </div>
-              <div>
-                <div className="text-base sm:text-lg font-semibold text-foreground">Panelden Tek Nokta Yönetim</div>
-                <div className="text-sm text-muted-foreground mt-1">Araç, lead ve içerik aynı panelde güncellenir</div>
+              <div className="rounded-xl border border-border/70 bg-card/70 p-4">
+                <div className="text-base font-semibold text-foreground">Standart QR Kod</div>
+                <div className="mt-1 text-sm text-muted-foreground">Araç başındaki QR doğrudan ilgili mobil araç sayfasını açar</div>
               </div>
-              <div>
-                <div className="text-base sm:text-lg font-semibold text-foreground">Mobil Müşteri Teması</div>
-                <div className="text-sm text-muted-foreground mt-1">WhatsApp, arama ve konum aksiyonları hazır gelir</div>
+              <div className="rounded-xl border border-border/70 bg-card/70 p-4">
+                <div className="text-base font-semibold text-foreground">Tekil Kullanıcı Paneli</div>
+                <div className="mt-1 text-sm text-muted-foreground">Araç, müşteri talebi ve abonelik işlemleri tek hesapta yönetilir</div>
               </div>
             </div>
           </div>
@@ -60,10 +68,10 @@ export function HeroSection() {
             <div className="relative w-full max-w-[420px]">
               <div className="relative overflow-hidden rounded-[2rem] border border-border/70 bg-card shadow-2xl">
                 <Image
-                  src="/hero-showroom-preview.svg"
-                  alt="Cebindegaleri mobil vitrin ekranı"
-                  width={900}
-                  height={1200}
+                  src="/landing-hero-qr-flow.jpg"
+                  alt="Cebindegaleri QR ziyaret, lead kaydı ve analitik akışını gösteren mobil vitrin görseli"
+                  width={1024}
+                  height={1024}
                   preload
                   loading="eager"
                   fetchPriority="high"
@@ -71,43 +79,6 @@ export function HeroSection() {
                   sizes={IMAGE_PRESETS.landingHero.sizes}
                   className="h-auto w-full"
                 />
-              </div>
-
-              {/* Floating Elements */}
-              <div className="absolute -left-8 top-20 p-4 bg-card rounded-xl shadow-lg border border-border hidden sm:block">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
-                    <QrCode className="w-5 h-5 text-accent" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium">QR Ziyaret Akışı</div>
-                    <div className="text-xs text-muted-foreground">Anlık panel kaydı</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="absolute -right-8 top-1/2 p-4 bg-card rounded-xl shadow-lg border border-border hidden sm:block">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
-                    <Smartphone className="w-5 h-5 text-accent" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium">Lead Kaydı</div>
-                    <div className="text-xs text-muted-foreground">Form, telefon, WhatsApp</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="absolute -left-4 bottom-20 p-4 bg-card rounded-xl shadow-lg border border-border hidden sm:block">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
-                    <BarChart3 className="w-5 h-5 text-accent" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium">Analitik İzleme</div>
-                    <div className="text-xs text-muted-foreground">Araç bazlı takip görünümü</div>
-                  </div>
-                </div>
               </div>
             </div>
           </div>

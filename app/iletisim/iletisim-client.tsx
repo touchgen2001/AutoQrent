@@ -16,6 +16,8 @@ type ContactFormData = {
   phone: string
   subject: string
   message: string
+  website: string
+  formStartedAt: number
 }
 
 const channels = [
@@ -48,6 +50,8 @@ const initialFormData: ContactFormData = {
   phone: '',
   subject: '',
   message: '',
+  website: '',
+  formStartedAt: Date.now(),
 }
 
 export default function IletisimPage() {
@@ -69,7 +73,13 @@ export default function IletisimPage() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
-    if (isSubmitting || !canSubmit) {
+    if (isSubmitting) {
+      return
+    }
+
+    if (!canSubmit) {
+      setSubmitState('error')
+      setSubmitMessage('Lütfen zorunlu alanları kontrol edin ve tekrar deneyin.')
       return
     }
 
@@ -103,7 +113,10 @@ export default function IletisimPage() {
       setSubmitState('success')
       setSubmitMessage(data.message ?? 'Mesajınız başarıyla alındı.')
       setManualFollowupUrl(data.fallbackWhatsAppUrl ?? null)
-      setFormData(initialFormData)
+      setFormData({
+        ...initialFormData,
+        formStartedAt: Date.now(),
+      })
     } catch {
       setSubmitState('error')
       setSubmitMessage('Ağ hatası oluştu. Lütfen tekrar deneyin.')
@@ -143,6 +156,16 @@ export default function IletisimPage() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+                <input
+                  type="text"
+                  name="website"
+                  autoComplete="off"
+                  tabIndex={-1}
+                  aria-hidden="true"
+                  value={formData.website}
+                  onChange={(event) => setFormData((prev) => ({ ...prev, website: event.target.value }))}
+                  className="absolute left-[-9999px] top-[-9999px] h-0 w-0 opacity-0"
+                />
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label htmlFor="name" className="mb-2 block text-sm font-medium text-foreground">
@@ -239,7 +262,7 @@ export default function IletisimPage() {
                   </a>
                 )}
 
-                <Button type="submit" disabled={isSubmitting || !canSubmit} className="bg-accent hover:bg-accent/90 text-accent-foreground">
+                <Button type="submit" disabled={isSubmitting} className="bg-accent hover:bg-accent/90 text-accent-foreground">
                   <Send className="mr-2 h-4 w-4" />
                   {isSubmitting ? 'Gönderiliyor...' : 'Mesajı Gönder'}
                 </Button>

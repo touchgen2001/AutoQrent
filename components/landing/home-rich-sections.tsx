@@ -3,7 +3,7 @@ import { CheckCircle2, Headset, PhoneCall, QrCode, ScanLine, Settings2, ShieldCh
 const problemSolutionItems = [
   {
     title: "Dağınık müşteri akışı",
-    problem: "QR tarama, WhatsApp ve telefon temasları farklı kanallarda kalınca ekip aynı müşteriyi farklı kişilerle takip ediyor.",
+    problem: "QR tarama, WhatsApp ve telefon temasları farklı kanallarda kalınca aynı müşterinin takibi dağınık hale geliyor.",
     solution: "Cebindegaleri, araç sayfası temaslarını lead kaydıyla aynı operasyon paneline toplar.",
   },
   {
@@ -17,7 +17,7 @@ const qrJourney = [
   {
     title: "Araç başında ilk temas",
     customer: "Müşteri QR kodu okutur ve mobil araç sayfasını açar.",
-    team: "Ekip panelde hangi aracın görüntülendiğini ve temas kaynağını görür.",
+    team: "Panelde hangi aracın görüntülendiği ve temas kaynağı görünür.",
     icon: QrCode,
   },
   {
@@ -54,7 +54,7 @@ const operations = [
 
 const trustItems = [
   "Sahte başarı oranı veya uydurma performans yüzdesi kullanılmaz.",
-  "Galeri operasyonu, panel verisiyle ölçülür ve ekip tarafından doğrulanabilir.",
+  "Galeri operasyonu panel verisiyle ölçülür ve doğrulanabilir.",
   "Süreçler demo görüşmesinde gerçek işleyişinize göre netleştirilir.",
 ]
 
@@ -68,7 +68,7 @@ export function HomeRichSections() {
               Problemden operasyona, satış odaklı net çözüm
             </h2>
             <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-              Galerilerin günlük satış sürecinde en çok zaman kaybettiren alanları sadeleştirir; müşteri temasını hızlı, ekip yönetimini düzenli hale getirir.
+              Galerilerin günlük satış sürecinde en çok zaman kaybettiren alanları sadeleştirir; müşteri temasını hızlı, panel yönetimini düzenli hale getirir.
             </p>
           </div>
           <div className="mt-8 grid gap-4 md:grid-cols-2">
@@ -92,7 +92,7 @@ export function HomeRichSections() {
           <div className="max-w-3xl">
             <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">QR müşteri akışı nasıl işler?</h2>
             <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-              Müşteri deneyimi ile ekip operasyonu aynı akışta birleşir; temasın nerede başladığı ve satışın nasıl ilerlediği kaybolmaz.
+              Müşteri deneyimi ile panel operasyonu aynı akışta birleşir; temasın nerede başladığı ve satışın nasıl ilerlediği kaybolmaz.
             </p>
           </div>
           <div className="mt-8 grid gap-4 lg:grid-cols-3">
@@ -106,7 +106,7 @@ export function HomeRichSections() {
                   <span className="font-medium text-foreground">Müşteri:</span> {step.customer}
                 </p>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  <span className="font-medium text-foreground">Panel Ekibi:</span> {step.team}
+                  <span className="font-medium text-foreground">Panel:</span> {step.team}
                 </p>
               </article>
             ))}

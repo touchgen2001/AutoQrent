@@ -28,7 +28,7 @@ const modules = [
     icon: MessageCircle,
     title: "Lead Yönetimi",
     summary: "Telefon, WhatsApp ve form kaynakları aynı lead akışında toplanır.",
-    benefit: "Tekrar arama ve takip kaybı azalır; ekip aynı müşteri kaydı üzerinden ilerler.",
+    benefit: "Tekrar arama ve takip kaybı azalır; tüm süreç aynı müşteri kaydı üzerinden ilerler.",
     workflow: "Lead oluşur -> Durum atanır -> Not/follow-up eklenir -> Satış adımı güncellenir.",
   },
   {
