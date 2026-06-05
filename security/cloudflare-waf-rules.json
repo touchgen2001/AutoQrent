@@ -1,0 +1,36 @@
+{
+  "name": "autoqrent-public-api-hardening",
+  "description": "Suggested Cloudflare WAF custom rules for public abuse protection.",
+  "rules": [
+    {
+      "id": "rule_contact_rate_limit",
+      "action": "managed_challenge",
+      "expression": "(http.request.uri.path eq \"/api/contact\" and http.request.method eq \"POST\")",
+      "notes": "Apply WAF rate limiting: 15 requests / 10 minutes per IP."
+    },
+    {
+      "id": "rule_vehicle_events_rate_limit",
+      "action": "managed_challenge",
+      "expression": "(http.request.uri.path eq \"/api/public/vehicle-events\" and http.request.method eq \"POST\")",
+      "notes": "Apply WAF rate limiting: 120 requests / 5 minutes per IP."
+    },
+    {
+      "id": "rule_showroom_events_rate_limit",
+      "action": "managed_challenge",
+      "expression": "(http.request.uri.path eq \"/api/public/showroom-events\" and http.request.method eq \"POST\")",
+      "notes": "Apply WAF rate limiting: 120 requests / 5 minutes per IP."
+    },
+    {
+      "id": "rule_auth_login_rate_limit",
+      "action": "managed_challenge",
+      "expression": "(http.request.uri.path eq \"/api/auth/login\" and http.request.method eq \"POST\")",
+      "notes": "Apply WAF rate limiting: 20 requests / 10 minutes per IP."
+    },
+    {
+      "id": "rule_block_known_bots_on_public_forms",
+      "action": "block",
+      "expression": "(http.request.uri.path in {\"/api/contact\" \"/api/public/vehicle-events\" \"/api/public/showroom-events\" \"/api/auth/login\"} and cf.client.bot)",
+      "notes": "Block known automated traffic on abuse-prone endpoints."
+    }
+  ]
+}

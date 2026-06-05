@@ -1,0 +1,57 @@
+name: Monthly Supabase Backup
+
+on:
+  schedule:
+    - cron: '30 2 1 * *'
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      BACKUP_ROOT: security/backups/supabase
+      BACKUP_RETENTION_DAYS: '60'
+      SUPABASE_STORAGE_BACKUP_DOWNLOAD: '1'
+      SUPABASE_STORAGE_BACKUP_MAX_OBJECTS: '2000'
+      SUPABASE_STORAGE_BACKUP_MAX_BYTES: '2147483648'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate secret
+        run: |
+          if [ -z "${SUPABASE_DB_URL}" ]; then
+            echo "SUPABASE_DB_URL secret is missing."
+            exit 1
+          fi
+          if [ -z "${SUPABASE_URL}" ]; then
+            echo "SUPABASE_URL secret is missing."
+            exit 1
+          fi
+          if [ -z "${SUPABASE_SERVICE_ROLE_KEY}" ]; then
+            echo "SUPABASE_SERVICE_ROLE_KEY secret is missing."
+            exit 1
+          fi
+
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Run backup
+        run: bash scripts/security/supabase-backup.sh
+
+      - name: Verify latest backup
+        run: bash scripts/security/supabase-backup-verify.sh
+
+      - name: Run storage backup and integrity check
+        run: node scripts/security/supabase-storage-backup.mjs
+
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-backup-${{ github.run_id }}
+          path: security/backups/supabase/
+          if-no-files-found: error
+          retention-days: 30

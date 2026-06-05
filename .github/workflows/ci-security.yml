@@ -18,9 +18,9 @@ concurrency:
 
 jobs:
   quality:
-    name: Lint + Build + Security Scan
+    name: Verify + Smoke + Safe E2E
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -41,14 +41,50 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Lint
-        run: pnpm lint
+      - name: Verify (lint + typecheck + build + secret-scan + node-leak-check)
+        run: pnpm verify
 
-      - name: Build
-        run: pnpm build
+      - name: Panel API smoke (safe mode)
+        run: SMOKE_SKIP_BUILD=1 pnpm smoke:panel-api
 
-      - name: Secret scan (project rules)
-        run: pnpm security:scan
+      - name: Safe E2E (single-worker)
+        run: E2E_SKIP_BUILD=1 pnpm e2e:safe
+
+  deploy_predeploy_gate:
+    name: Deploy Predeploy Gate (local + Vercel env parity)
+    if: github.event_name != 'pull_request'
+    needs:
+      - quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Predeploy security gate
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          PREDEPLOY_ENV_SOURCE: process
+        run: pnpm security:predeploy
 
   gitleaks:
     name: Gitleaks Scan
