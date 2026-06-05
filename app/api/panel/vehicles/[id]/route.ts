@@ -6,6 +6,12 @@ import { findPlaceholderTextField } from '@/lib/server/panel-input-guard'
 import { requireSupabaseAdminConfig, supabaseAdminFetch } from '@/lib/server/supabase-admin'
 import { getClientIp } from '@/lib/security/request-guards'
 import { panelAuthErrorResponse, requirePanelSessionOrThrow } from '@/lib/server/panel-auth-guard'
+import { deleteVehicleImageObjectsForGallery } from '@/lib/server/storage-images'
+import {
+  markUploadedAssetsAttached,
+  markUploadedAssetsDeleted,
+} from '@/lib/server/uploaded-assets'
+import { updateVehicleSchema } from '@/lib/server/vehicle-input-schema'
 
 export const runtime = 'nodejs'
 
@@ -13,18 +19,10 @@ const paramsSchema = z.object({
   id: z.string().trim().min(1),
 })
 
-const updateVehicleSchema = z.object({
-  brand: z.string().trim().min(1),
-  model: z.string().trim().min(1),
-  variant: z.string().trim().max(160).optional(),
-  year: z.coerce.number().int().min(1980).max(2100),
-  price: z.coerce.number().int().min(0),
-  mileage: z.coerce.number().int().min(0),
-  fuel: z.string().trim().min(1).max(80),
-  transmission: z.string().trim().min(1).max(80),
-  color: z.string().trim().max(80).optional(),
-  description: z.string().trim().max(3000).optional(),
-})
+type VehiclePhotoRow = {
+  id: string
+  photos: string[] | null
+}
 
 async function parseVehicleId(context: { params: Promise<unknown> }) {
   const resolved = await context.params
@@ -33,7 +31,7 @@ async function parseVehicleId(context: { params: Promise<unknown> }) {
 
 export async function GET(_request: Request, context: { params: Promise<unknown> }) {
   try {
-    const session = requirePanelSessionOrThrow(_request)
+    const session = await requirePanelSessionOrThrow(_request)
 
     const parsed = await parseVehicleId(context)
     if (!parsed.success) {
@@ -80,7 +78,16 @@ export async function GET(_request: Request, context: { params: Promise<unknown>
 
 export async function PATCH(request: Request, context: { params: Promise<unknown> }) {
   try {
-    const session = requirePanelSessionOrThrow(request)
+    const session = await requirePanelSessionOrThrow(request)
+    if (!session.galleryId) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message: 'Galeri kimliği bulunamadı.',
+        },
+        { status: 400 },
+      )
+    }
 
     const parsedParams = await parseVehicleId(context)
     if (!parsedParams.success) {
@@ -127,6 +134,23 @@ export async function PATCH(request: Request, context: { params: Promise<unknown
     }
 
     requireSupabaseAdminConfig()
+    const currentRows = parsedBody.data.photos
+      ? await supabaseAdminFetch<VehiclePhotoRow[]>({
+          path: '/rest/v1/vehicles',
+          query: {
+            select: 'id,photos',
+            id: `eq.${parsedParams.data.id}`,
+            gallery_id: `eq.${session.galleryId}`,
+            limit: 1,
+          },
+        })
+      : []
+    const currentPhotos = currentRows[0]?.photos?.filter(Boolean) || []
+    const nextPhotos = parsedBody.data.photos?.filter(Boolean) || []
+    const removedPhotos = parsedBody.data.photos
+      ? currentPhotos.filter((photo) => !nextPhotos.includes(photo))
+      : []
+
     await supabaseAdminFetch<unknown>({
       method: 'PATCH',
       path: '/rest/v1/vehicles',
@@ -146,8 +170,30 @@ export async function PATCH(request: Request, context: { params: Promise<unknown
         transmission: parsedBody.data.transmission,
         color: parsedBody.data.color || '',
         description: parsedBody.data.description || '',
+        ...(parsedBody.data.photos ? { photos: nextPhotos } : {}),
       },
     })
+
+    if (parsedBody.data.photos && session.galleryId) {
+      await markUploadedAssetsAttached({
+        galleryId: session.galleryId,
+        vehicleId: parsedParams.data.id,
+        publicUrls: nextPhotos,
+      })
+    }
+
+    if (removedPhotos.length > 0 && session.galleryId) {
+      await deleteVehicleImageObjectsForGallery({
+        galleryId: session.galleryId,
+        publicUrls: removedPhotos,
+        allowOwnedLegacyPanelPaths: true,
+      })
+      await markUploadedAssetsDeleted({
+        galleryId: session.galleryId,
+        publicUrls: removedPhotos,
+        allowOwnedLegacyPanelPaths: true,
+      })
+    }
 
     const result = await listPanelVehicles(session.email)
     const item = result.items.find((vehicle) => vehicle.id === parsedParams.data.id)
@@ -202,7 +248,7 @@ export async function PATCH(request: Request, context: { params: Promise<unknown
 
 export async function DELETE(request: Request, context: { params: Promise<unknown> }) {
   try {
-    const session = requirePanelSessionOrThrow(request)
+    const session = await requirePanelSessionOrThrow(request)
 
     const parsed = await parseVehicleId(context)
     if (!parsed.success) {
@@ -215,7 +261,7 @@ export async function DELETE(request: Request, context: { params: Promise<unknow
       )
     }
 
-    await deletePanelVehicle(parsed.data.id, session.email)
+    const deleteResult = await deletePanelVehicle(parsed.data.id, session.email)
     const ip = getClientIp(request)
     const userAgent = request.headers.get('user-agent') ?? 'unknown'
 
@@ -229,11 +275,15 @@ export async function DELETE(request: Request, context: { params: Promise<unknow
       userAgent,
       metadata: {
         galleryId: session.galleryId,
+        deletedImages: deleteResult.deletedImages,
+        deletedAssetRows: deleteResult.deletedAssetRows,
       },
     })
 
     return NextResponse.json({
       ok: true,
+      deletedImages: deleteResult.deletedImages,
+      deletedAssetRows: deleteResult.deletedAssetRows,
     })
   } catch (error) {
     const authErrorResponse = panelAuthErrorResponse(error)

@@ -5,6 +5,8 @@ import { getClientIp } from '@/lib/security/request-guards'
 import { containsPlaceholderText } from '@/lib/server/panel-input-guard'
 import { updatePanelLead } from '@/lib/server/panel-repository'
 import { panelAuthErrorResponse, requirePanelSessionOrThrow } from '@/lib/server/panel-auth-guard'
+import { assertFeatureAccess } from '@/lib/server/subscription-repository'
+import { subscriptionGateErrorResponse } from '@/lib/server/subscription-response'
 
 export const runtime = 'nodejs'
 
@@ -24,7 +26,7 @@ const updateLeadSchema = z
 
 export async function PATCH(request: Request, context: { params: Promise<unknown> }) {
   try {
-    const session = requirePanelSessionOrThrow(request)
+    const session = await requirePanelSessionOrThrow(request)
 
     const resolved = await context.params
     const parsedParams = paramsSchema.safeParse(resolved)
@@ -32,7 +34,7 @@ export async function PATCH(request: Request, context: { params: Promise<unknown
       return NextResponse.json(
         {
           ok: false,
-          message: 'Geçersiz lead kimliği.',
+          message: 'Geçersiz müşteri talebi kimliği.',
         },
         { status: 400 },
       )
@@ -44,7 +46,7 @@ export async function PATCH(request: Request, context: { params: Promise<unknown
       return NextResponse.json(
         {
           ok: false,
-          message: parsedBody.error.issues[0]?.message ?? 'Geçersiz lead güncelleme verisi.',
+          message: parsedBody.error.issues[0]?.message ?? 'Geçersiz müşteri talebi güncelleme verisi.',
         },
         { status: 400 },
       )
@@ -54,11 +56,17 @@ export async function PATCH(request: Request, context: { params: Promise<unknown
       return NextResponse.json(
         {
           ok: false,
-          message: 'Lead not alanında örnek/sahte içerik kullanılamaz.',
+          message: 'Müşteri talebi not alanında örnek/sahte içerik kullanılamaz.',
         },
         { status: 400 },
       )
     }
+
+    await assertFeatureAccess({
+      galleryId: session.galleryId,
+      ownerEmail: session.email,
+      feature: 'leads.advanced',
+    })
 
     const updated = await updatePanelLead(parsedParams.data.id, parsedBody.data, session.email)
     const ip = getClientIp(request)
@@ -103,11 +111,13 @@ export async function PATCH(request: Request, context: { params: Promise<unknown
   } catch (error) {
     const authErrorResponse = panelAuthErrorResponse(error)
     if (authErrorResponse) return authErrorResponse
+    const subscriptionErrorResponse = subscriptionGateErrorResponse(error)
+    if (subscriptionErrorResponse) return subscriptionErrorResponse
 
     return NextResponse.json(
       {
         ok: false,
-        message: error instanceof Error ? error.message : 'Lead güncellenemedi.',
+        message: error instanceof Error ? error.message : 'Müşteri talebi güncellenemedi.',
       },
       { status: 500 },
     )

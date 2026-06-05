@@ -6,7 +6,6 @@ import { useSearchParams } from "next/navigation"
 import {
   ArrowLeft,
   Printer,
-  QrCode,
   Settings,
   Grid3X3,
   RefreshCcw,
@@ -16,12 +15,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
+import { QrCodeImage } from "@/components/shared/qr-code-image"
 import { cn } from "@/lib/utils"
 import { formatPrice } from "@/lib/vehicle-display"
 
 type QrVehicle = {
   vehicleId: string
   routeId: string
+  publicUrl: string
   vehicleTitle: string
   price: number
   qrCode: string
@@ -245,9 +246,12 @@ function PrintQRPageContent() {
                   {vehicles.map((vehicle) => (
                     <div key={vehicle.vehicleId} className="aspect-square border-2 border-dashed border-border rounded-xl p-4 flex flex-col items-center justify-center text-center print:border-solid print:border-foreground/20">
                       {showGalleryLogo && <div className="text-xs font-bold text-muted-foreground mb-2 print:text-foreground">{galleryName}</div>}
-                      <div className="w-24 h-24 bg-foreground rounded-lg flex items-center justify-center mb-3">
-                        <QrCode className="w-20 h-20 text-background" />
-                      </div>
+                      <QrCodeImage
+                        value={vehicle.publicUrl}
+                        alt={`${vehicle.vehicleTitle} QR kodu`}
+                        size={220}
+                        className="mb-3 h-24 w-24"
+                      />
                       {showVehicleInfo && <div className="text-xs font-medium text-foreground line-clamp-2">{vehicle.vehicleTitle}</div>}
                       {showPrice && <div className="text-sm font-bold text-accent mt-1">{formatPrice(vehicle.price)}</div>}
                       <div className="text-xs text-muted-foreground mt-2 font-mono">{vehicle.qrCode}</div>
@@ -259,9 +263,12 @@ function PrintQRPageContent() {
                   {vehicles.map((vehicle) => (
                     <div key={vehicle.vehicleId} className="border-2 border-dashed border-border rounded-lg p-3 print:border-solid print:border-foreground/20">
                       <div className="flex items-start gap-3">
-                        <div className="w-14 h-14 bg-foreground rounded flex items-center justify-center shrink-0">
-                          <QrCode className="w-12 h-12 text-background" />
-                        </div>
+                        <QrCodeImage
+                          value={vehicle.publicUrl}
+                          alt={`${vehicle.vehicleTitle} QR kodu`}
+                          size={160}
+                          className="h-14 w-14 rounded"
+                        />
                         <div className="min-w-0">
                           {showGalleryLogo && <div className="text-[10px] font-bold text-muted-foreground">{galleryName}</div>}
                           {showVehicleInfo && <div className="text-xs font-medium text-foreground truncate">{vehicle.vehicleTitle}</div>}
@@ -275,9 +282,12 @@ function PrintQRPageContent() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 print:grid-cols-2 print:gap-6">
                   {vehicles.map((vehicle) => (
                     <div key={vehicle.vehicleId} className="border-2 border-dashed border-border rounded-xl p-4 flex items-center gap-4 print:border-solid print:border-foreground/20">
-                      <div className="w-20 h-20 bg-foreground rounded-lg flex items-center justify-center shrink-0">
-                        <QrCode className="w-16 h-16 text-background" />
-                      </div>
+                      <QrCodeImage
+                        value={vehicle.publicUrl}
+                        alt={`${vehicle.vehicleTitle} QR kodu`}
+                        size={200}
+                        className="h-20 w-20"
+                      />
                       <div className="flex-1 min-w-0">
                         {showGalleryLogo && <div className="text-xs font-bold text-muted-foreground mb-1">{galleryName}</div>}
                         {showVehicleInfo && <div className="font-semibold text-foreground line-clamp-2">{vehicle.vehicleTitle}</div>}
@@ -293,9 +303,12 @@ function PrintQRPageContent() {
                     <div key={vehicle.vehicleId} className="border-2 border-dashed border-border rounded-2xl p-8 print:border-solid print:border-foreground/20 print:break-after-page">
                       <div className="text-center">
                         {showGalleryLogo && <div className="text-lg font-bold text-muted-foreground mb-4">{galleryName}</div>}
-                        <div className="w-48 h-48 bg-foreground rounded-2xl flex items-center justify-center mx-auto mb-6">
-                          <QrCode className="w-40 h-40 text-background" />
-                        </div>
+                        <QrCodeImage
+                          value={vehicle.publicUrl}
+                          alt={`${vehicle.vehicleTitle} QR kodu`}
+                          size={420}
+                          className="mx-auto mb-6 h-48 w-48 rounded-2xl"
+                        />
                         {showVehicleInfo && <h2 className="text-2xl font-bold text-foreground">{vehicle.vehicleTitle}</h2>}
                         {showPrice && <div className="text-3xl font-bold text-accent mt-4">{formatPrice(vehicle.price)}</div>}
                         <div className="mt-6 text-muted-foreground">

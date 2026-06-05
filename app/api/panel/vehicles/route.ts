@@ -1,30 +1,18 @@
 import { NextResponse } from 'next/server'
-import { z } from 'zod'
 import { insertAuditLog } from '@/lib/security/audit'
 import { createPanelVehicle, listPanelVehicles } from '@/lib/server/panel-repository'
 import { getClientIp } from '@/lib/security/request-guards'
 import { findPlaceholderTextField, findPlaceholderUrlField } from '@/lib/server/panel-input-guard'
 import { panelAuthErrorResponse, requirePanelSessionOrThrow } from '@/lib/server/panel-auth-guard'
+import { createVehicleSchema } from '@/lib/server/vehicle-input-schema'
+import { assertVehicleCreateAllowed } from '@/lib/server/subscription-repository'
+import { subscriptionGateErrorResponse } from '@/lib/server/subscription-response'
 
 export const runtime = 'nodejs'
 
-const createVehicleSchema = z.object({
-  brand: z.string().trim().min(1),
-  model: z.string().trim().min(1),
-  variant: z.string().trim().max(160).optional(),
-  year: z.coerce.number().int().min(1980).max(2100),
-  price: z.coerce.number().int().min(0),
-  mileage: z.coerce.number().int().min(0),
-  fuel: z.string().trim().min(1).max(80),
-  transmission: z.string().trim().min(1).max(80),
-  color: z.string().trim().max(80).optional(),
-  description: z.string().trim().max(3000).optional(),
-  photos: z.array(z.string().trim().url().max(1500)).max(30).optional(),
-})
-
 export async function GET(request: Request) {
   try {
-    const session = requirePanelSessionOrThrow(request)
+    const session = await requirePanelSessionOrThrow(request)
     const result = await listPanelVehicles(session.email)
     return NextResponse.json({
       ok: true,
@@ -47,7 +35,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const session = requirePanelSessionOrThrow(request)
+    const session = await requirePanelSessionOrThrow(request)
     const body = await request.json()
     const parsed = createVehicleSchema.safeParse(body)
 
@@ -68,6 +56,11 @@ export async function POST(request: Request) {
       { label: 'Yakıt', value: parsed.data.fuel },
       { label: 'Vites', value: parsed.data.transmission },
       { label: 'Renk', value: parsed.data.color },
+      { label: 'Kasa tipi', value: parsed.data.bodyType },
+      { label: 'Motor hacmi', value: parsed.data.engineSize },
+      { label: 'Beygir gücü', value: parsed.data.horsePower },
+      { label: 'Plaka', value: parsed.data.plateNumber },
+      { label: 'Hasar detayı', value: parsed.data.damageDetails },
       { label: 'Açıklama', value: parsed.data.description },
     ])
 
@@ -94,6 +87,11 @@ export async function POST(request: Request) {
         { status: 400 },
       )
     }
+
+    await assertVehicleCreateAllowed({
+      galleryId: session.galleryId,
+      ownerEmail: session.email,
+    })
 
     const vehicle = await createPanelVehicle(parsed.data, session.email)
     const ip = getClientIp(request)
@@ -122,6 +120,8 @@ export async function POST(request: Request) {
   } catch (error) {
     const authErrorResponse = panelAuthErrorResponse(error)
     if (authErrorResponse) return authErrorResponse
+    const subscriptionErrorResponse = subscriptionGateErrorResponse(error)
+    if (subscriptionErrorResponse) return subscriptionErrorResponse
 
     return NextResponse.json(
       {

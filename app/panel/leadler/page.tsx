@@ -1,18 +1,17 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select'
 import {
   Dialog,
@@ -28,8 +27,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { 
-  Search, 
+import {
+  Search,
   SlidersHorizontal,
   X,
   Phone,
@@ -38,10 +37,10 @@ import {
   Calendar,
   User,
   Car,
-  Clock,
   Plus,
   ChevronRight,
-  FileText
+  FileText,
+  RefreshCcw,
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -50,57 +49,136 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { 
-  mockLeads, 
-  formatDateTime,
-  getLeadStatusLabel,
-  getLeadSourceLabel
-} from '@/lib/mock-data'
+import { formatDateTime } from '@/lib/vehicle-display'
 import { LeadStatusBadge, LeadSourceBadge } from '@/components/shared/status-badges'
 import { EmptyLeads } from '@/components/shared/empty-state'
 import { LeadListSkeleton } from '@/components/shared/loading-skeleton'
-import type { Lead } from '@/lib/mock-data'
+import { LiveDataStatus } from '@/components/shared/live-data-status'
+import type { PanelLead } from '@/lib/panel-types'
+
+type WhatsappTemplateKey = 'price-info' | 'test-drive' | 'call-back'
+
+const LIVE_REFRESH_INTERVAL_MS = 30 * 1000
+
+const whatsappTemplates: Array<{ key: WhatsappTemplateKey; label: string }> = [
+  { key: 'price-info', label: 'Fiyat Bilgisi Gönder' },
+  { key: 'test-drive', label: 'Test Sürüşü Planla' },
+  { key: 'call-back', label: 'Geri Arama Saatini Sor' },
+]
+
+function isAbortError(error: unknown) {
+  return error instanceof DOMException && error.name === 'AbortError'
+}
 
 export default function LeadsPage() {
-  const [leads] = useState<Lead[]>(mockLeads)
+  const fetchInFlightRef = useRef(false)
+  const [leads, setLeads] = useState<PanelLead[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [showFilters, setShowFilters] = useState(false)
   const [statusFilter, setStatusFilter] = useState('all')
   const [sourceFilter, setSourceFilter] = useState('all')
-  const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
-  const [isLoading] = useState(false)
+  const [selectedLead, setSelectedLead] = useState<PanelLead | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [newNote, setNewNote] = useState('')
+  const [isUpdatingLeadId, setIsUpdatingLeadId] = useState<string | null>(null)
 
-  // Filter leads
+  const fetchLeads = useCallback(async (
+    options: { background?: boolean; signal?: AbortSignal } = {},
+  ) => {
+    if (fetchInFlightRef.current) return
+
+    const isBackgroundRefresh = Boolean(options.background)
+    fetchInFlightRef.current = true
+    if (isBackgroundRefresh) {
+      setIsRefreshing(true)
+    } else {
+      setIsLoading(true)
+    }
+    setErrorMessage(null)
+
+    try {
+      const response = await fetch('/api/panel/leads', {
+        cache: 'no-store',
+        signal: options.signal,
+      })
+      const data = (await response.json()) as {
+        ok?: boolean
+        message?: string
+        items?: PanelLead[]
+      }
+
+      if (!response.ok || !data.ok) {
+        setErrorMessage(data.message ?? 'Müşteri talebi listesi alınamadı.')
+        return
+      }
+
+      const nextLeads = data.items || []
+      setLeads(nextLeads)
+      setSelectedLead((current) => {
+        if (!current) return current
+        return nextLeads.find((lead) => lead.id === current.id) ?? current
+      })
+      setLastUpdatedAt(new Date().toISOString())
+    } catch (error) {
+      if (isAbortError(error)) return
+      setErrorMessage('Ağ hatası nedeniyle müşteri talebi listesi alınamadı.')
+    } finally {
+      fetchInFlightRef.current = false
+      if (isBackgroundRefresh) {
+        setIsRefreshing(false)
+      } else {
+        setIsLoading(false)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    const timer = window.setTimeout(() => {
+      void fetchLeads({ signal: controller.signal })
+    }, 0)
+    const intervalId = window.setInterval(() => {
+      if (document.visibilityState === 'hidden') return
+      void fetchLeads({ background: true })
+    }, LIVE_REFRESH_INTERVAL_MS)
+
+    return () => {
+      controller.abort()
+      window.clearTimeout(timer)
+      window.clearInterval(intervalId)
+    }
+  }, [fetchLeads])
+
   const filteredLeads = useMemo(() => {
-    return leads.filter(lead => {
-      // Search
+    return leads.filter((lead) => {
       if (searchQuery) {
         const query = searchQuery.toLowerCase()
-        const matchesSearch = 
+        const matchesSearch =
           lead.customerName.toLowerCase().includes(query) ||
           lead.customerPhone.includes(query) ||
           lead.vehicleTitle?.toLowerCase().includes(query)
         if (!matchesSearch) return false
       }
 
-      // Status filter
       if (statusFilter !== 'all' && lead.status !== statusFilter) return false
-
-      // Source filter
       if (sourceFilter !== 'all' && lead.source !== sourceFilter) return false
 
       return true
     })
   }, [leads, searchQuery, statusFilter, sourceFilter])
 
-  // Stats
-  const stats = useMemo(() => ({
-    total: leads.length,
-    new: leads.filter(l => l.status === 'yeni').length,
-    inProgress: leads.filter(l => ['arandi', 'gorusuluyor', 'test-surusu'].includes(l.status)).length,
-    converted: leads.filter(l => l.status === 'satisa-dondu').length
-  }), [leads])
+  const stats = useMemo(
+    () => ({
+      total: leads.length,
+      new: leads.filter((l) => l.status === 'yeni').length,
+      inProgress: leads.filter((l) => ['arandi', 'gorusuluyor', 'test-surusu'].includes(l.status)).length,
+      converted: leads.filter((l) => l.status === 'satisa-dondu').length,
+    }),
+    [leads],
+  )
 
   const clearFilters = () => {
     setSearchQuery('')
@@ -110,18 +188,118 @@ export default function LeadsPage() {
 
   const hasActiveFilters = searchQuery || statusFilter !== 'all' || sourceFilter !== 'all'
 
-  const handleAddNote = () => {
+  const patchLead = async (
+    leadId: string,
+    payload: {
+      status?: PanelLead['status']
+      addNote?: string
+      followUpDate?: string | null
+    },
+  ) => {
+    setIsUpdatingLeadId(leadId)
+    setErrorMessage(null)
+    try {
+      const response = await fetch(`/api/panel/leads/${leadId}`, {
+        method: 'PATCH',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      })
+      const data = (await response.json()) as {
+        ok?: boolean
+        message?: string
+        item?: PanelLead
+      }
+
+      if (!response.ok || !data.ok || !data.item) {
+        setErrorMessage(data.message ?? 'Müşteri talebi güncellenemedi.')
+        return null
+      }
+
+      const updatedItem = data.item
+
+      setLeads((prev) =>
+        prev.map((item) =>
+          item.id === leadId
+            ? {
+                ...item,
+                ...updatedItem,
+                vehicleTitle: updatedItem.vehicleTitle ?? item.vehicleTitle,
+                vehicleId: updatedItem.vehicleId ?? item.vehicleId,
+              }
+            : item,
+        ),
+      )
+      if (selectedLead?.id === leadId) {
+        setSelectedLead({
+          ...selectedLead,
+          ...updatedItem,
+          vehicleTitle: updatedItem.vehicleTitle ?? selectedLead.vehicleTitle,
+          vehicleId: updatedItem.vehicleId ?? selectedLead.vehicleId,
+        })
+      }
+      setLastUpdatedAt(new Date().toISOString())
+      return updatedItem
+    } catch {
+      setErrorMessage('Ağ hatası nedeniyle müşteri talebi güncellenemedi.')
+      return null
+    } finally {
+      setIsUpdatingLeadId(null)
+    }
+  }
+
+  const handleAddNote = async () => {
     if (!newNote.trim() || !selectedLead) return
-    // Mock action - would save to backend
-    console.log('[v0] Adding note:', newNote, 'to lead:', selectedLead.id)
-    setNewNote('')
+    const updated = await patchLead(selectedLead.id, { addNote: newNote.trim() })
+    if (updated) {
+      setNewNote('')
+    }
+  }
+
+  const handleLeadStatusChange = async (lead: PanelLead, nextStatus: PanelLead['status']) => {
+    await patchLead(lead.id, { status: nextStatus })
+  }
+
+  const sanitizePhoneForWhatsApp = (phone: string) => phone.replace(/[^0-9]/g, '')
+
+  const buildWhatsappTemplateMessage = (lead: PanelLead, templateKey: WhatsappTemplateKey) => {
+    const customerFirstName = lead.customerName.split(' ')[0] || lead.customerName
+    const vehicleText = lead.vehicleTitle || 'ilgili araç'
+
+    if (templateKey === 'price-info') {
+      return `Merhaba ${customerFirstName}, ${vehicleText} için güncel fiyat ve ödeme seçeneklerini paylaşabilirim. Uygunsanız hemen detayları ileteyim.`
+    }
+
+    if (templateKey === 'test-drive') {
+      return `Merhaba ${customerFirstName}, ${vehicleText} için test sürüşü planlayabiliriz. Uygun olduğunuz gün ve saat aralığını paylaşır mısınız?`
+    }
+
+    return `Merhaba ${customerFirstName}, size kısa bir geri dönüş araması yapmak istiyorum. Uygun olduğunuz saat aralığını yazabilir misiniz?`
+  }
+
+  const openWhatsAppConversation = (lead: PanelLead, message?: string) => {
+    const phone = sanitizePhoneForWhatsApp(lead.customerPhone)
+
+    if (!phone) {
+      setErrorMessage('Bu müşteri talebi için geçerli bir telefon numarası bulunamadı.')
+      return
+    }
+
+    const messageQuery = message ? `?text=${encodeURIComponent(message)}` : ''
+    window.open(`https://wa.me/${phone}${messageQuery}`, '_blank', 'noopener,noreferrer')
+  }
+
+  const handleWhatsappTemplate = (lead: PanelLead, templateKey: WhatsappTemplateKey) => {
+    const message = buildWhatsappTemplateMessage(lead, templateKey)
+    openWhatsAppConversation(lead, message)
   }
 
   if (isLoading) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-foreground">Leadler</h1>
+          <h1 className="text-2xl font-bold text-foreground">Müşteri Talepleri</h1>
         </div>
         <LeadListSkeleton />
       </div>
@@ -130,20 +308,33 @@ export default function LeadsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Leadler</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Müşteri ilgilerini yönetin ve takip edin
-          </p>
+          <h1 className="text-2xl font-bold text-foreground">Müşteri Talepleri</h1>
+          <p className="text-sm text-muted-foreground mt-1">Araçlarınız için gelen müşteri taleplerini yönetin ve takip edin</p>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <LiveDataStatus
+            lastUpdatedAt={lastUpdatedAt}
+            isRefreshing={isRefreshing}
+            intervalSeconds={LIVE_REFRESH_INTERVAL_MS / 1000}
+          />
+          <Button variant="outline" onClick={() => void fetchLeads()} disabled={isLoading || isRefreshing}>
+            <RefreshCcw className="mr-2 h-4 w-4" />
+            Yenile
+          </Button>
         </div>
       </div>
 
-      {/* Stats Cards */}
+      {errorMessage && (
+        <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {errorMessage}
+        </div>
+      )}
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="p-4 bg-card border-border/50">
-          <p className="text-sm text-muted-foreground">Toplam Lead</p>
+          <p className="text-sm text-muted-foreground">Toplam Talep</p>
           <p className="text-2xl font-bold text-foreground mt-1">{stats.total}</p>
         </Card>
         <Card className="p-4 bg-blue-500/5 border-blue-500/20">
@@ -160,13 +351,12 @@ export default function LeadsPage() {
         </Card>
       </div>
 
-      {/* Search & Filters */}
       <div className="space-y-4">
         <div className="flex gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Lead ara... (isim, telefon, araç)"
+              placeholder="Müşteri talebi ara... (isim, telefon, araç)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
@@ -211,7 +401,7 @@ export default function LeadsPage() {
               <SelectContent>
                 <SelectItem value="all">Tüm Kaynaklar</SelectItem>
                 <SelectItem value="qr">QR Kod</SelectItem>
-                <SelectItem value="showroom">Showroom</SelectItem>
+                <SelectItem value="showroom">Galeri Sayfası</SelectItem>
                 <SelectItem value="whatsapp">WhatsApp</SelectItem>
                 <SelectItem value="telefon">Telefon</SelectItem>
                 <SelectItem value="form">Form</SelectItem>
@@ -222,7 +412,6 @@ export default function LeadsPage() {
         )}
       </div>
 
-      {/* Leads Table */}
       {filteredLeads.length > 0 ? (
         <Card className="overflow-hidden border-border/50">
           <div className="overflow-x-auto">
@@ -234,13 +423,13 @@ export default function LeadsPage() {
                   <TableHead className="text-muted-foreground">Kaynak</TableHead>
                   <TableHead className="text-muted-foreground">Durum</TableHead>
                   <TableHead className="text-muted-foreground">Tarih</TableHead>
-                  <TableHead className="text-muted-foreground text-right">Aksiyonlar</TableHead>
+                  <TableHead className="text-muted-foreground text-right">İşlemler</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredLeads.map((lead) => (
-                  <TableRow 
-                    key={lead.id} 
+                  <TableRow
+                    key={lead.id}
                     className="border-border cursor-pointer hover:bg-muted/50"
                     onClick={() => setSelectedLead(lead)}
                   >
@@ -259,9 +448,7 @@ export default function LeadsPage() {
                       {lead.vehicleTitle ? (
                         <div className="flex items-center gap-2">
                           <Car className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm text-foreground truncate max-w-[200px]">
-                            {lead.vehicleTitle}
-                          </span>
+                          <span className="text-sm text-foreground truncate max-w-[200px]">{lead.vehicleTitle}</span>
                         </div>
                       ) : (
                         <span className="text-sm text-muted-foreground">-</span>
@@ -297,17 +484,33 @@ export default function LeadsPage() {
                         >
                           <Phone className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            window.open(`https://wa.me/${lead.customerPhone.replace(/[^0-9]/g, '')}`, '_blank')
-                          }}
-                        >
-                          <MessageCircle className="h-4 w-4" />
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
+                            >
+                              <MessageCircle className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => openWhatsAppConversation(lead)}>
+                              <MessageCircle className="h-4 w-4 mr-2" />
+                              WhatsApp Aç
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            {whatsappTemplates.map((template) => (
+                              <DropdownMenuItem
+                                key={`${lead.id}_${template.key}`}
+                                onClick={() => handleWhatsappTemplate(lead, template.key)}
+                              >
+                                <MessageCircle className="h-4 w-4 mr-2" />
+                                {template.label}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                             <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -319,15 +522,19 @@ export default function LeadsPage() {
                               <FileText className="h-4 w-4 mr-2" />
                               Detayları Gör
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Calendar className="h-4 w-4 mr-2" />
-                              Takip Tarihi Ekle
-                            </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-green-600">
+                            <DropdownMenuItem
+                              className="text-green-600"
+                              disabled={isUpdatingLeadId === lead.id}
+                              onClick={() => void handleLeadStatusChange(lead, 'satisa-dondu')}
+                            >
                               Satışa Döndü
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-600">
+                            <DropdownMenuItem
+                              className="text-red-600"
+                              disabled={isUpdatingLeadId === lead.id}
+                              onClick={() => void handleLeadStatusChange(lead, 'kayip')}
+                            >
                               Kayıp Olarak İşaretle
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -346,16 +553,14 @@ export default function LeadsPage() {
         </Card>
       )}
 
-      {/* Lead Detail Dialog */}
       <Dialog open={!!selectedLead} onOpenChange={(open) => !open && setSelectedLead(null)}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Lead Detayı</DialogTitle>
+            <DialogTitle>Müşteri Talebi Detayı</DialogTitle>
           </DialogHeader>
-          
+
           {selectedLead && (
             <div className="space-y-6">
-              {/* Customer Info */}
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center">
                   <User className="h-6 w-6 text-accent" />
@@ -378,20 +583,36 @@ export default function LeadsPage() {
                   <Button
                     size="sm"
                     className="bg-green-600 hover:bg-green-700"
-                    onClick={() => window.open(`https://wa.me/${selectedLead.customerPhone.replace(/[^0-9]/g, '')}`, '_blank')}
+                    onClick={() => openWhatsAppConversation(selectedLead)}
                   >
                     <MessageCircle className="h-4 w-4" />
                   </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button size="sm" variant="outline">
+                        Şablon
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {whatsappTemplates.map((template) => (
+                        <DropdownMenuItem
+                          key={`modal_${selectedLead.id}_${template.key}`}
+                          onClick={() => handleWhatsappTemplate(selectedLead, template.key)}
+                        >
+                          <MessageCircle className="h-4 w-4 mr-2" />
+                          {template.label}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
 
-              {/* Status & Source */}
               <div className="flex items-center gap-3">
                 <LeadStatusBadge status={selectedLead.status} />
                 <LeadSourceBadge source={selectedLead.source} />
               </div>
 
-              {/* Vehicle */}
               {selectedLead.vehicleTitle && (
                 <div className="p-3 bg-muted/50 rounded-lg border border-border">
                   <p className="text-xs text-muted-foreground mb-1">İlgilendiği Araç</p>
@@ -411,7 +632,6 @@ export default function LeadsPage() {
                 </div>
               )}
 
-              {/* Dates */}
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <p className="text-muted-foreground">Oluşturulma</p>
@@ -427,13 +647,12 @@ export default function LeadsPage() {
                 )}
               </div>
 
-              {/* Notes */}
               <div>
                 <p className="text-sm font-medium text-foreground mb-2">Notlar</p>
                 {selectedLead.notes.length > 0 ? (
                   <div className="space-y-2">
                     {selectedLead.notes.map((note, index) => (
-                      <div key={index} className="p-3 bg-muted/50 rounded-lg border border-border text-sm">
+                      <div key={`${selectedLead.id}_note_${index}`} className="p-3 bg-muted/50 rounded-lg border border-border text-sm">
                         {note}
                       </div>
                     ))}
@@ -443,7 +662,6 @@ export default function LeadsPage() {
                 )}
               </div>
 
-              {/* Add Note */}
               <div className="space-y-2">
                 <Textarea
                   placeholder="Not ekle..."
@@ -451,20 +669,22 @@ export default function LeadsPage() {
                   onChange={(e) => setNewNote(e.target.value)}
                   className="min-h-[80px]"
                 />
-                <Button 
-                  size="sm" 
-                  onClick={handleAddNote}
-                  disabled={!newNote.trim()}
+                <Button
+                  size="sm"
+                  onClick={() => void handleAddNote()}
+                  disabled={!newNote.trim() || isUpdatingLeadId === selectedLead.id}
                 >
                   <Plus className="h-4 w-4 mr-1" />
                   Not Ekle
                 </Button>
               </div>
 
-              {/* Update Status */}
               <div>
                 <p className="text-sm font-medium text-foreground mb-2">Durumu Güncelle</p>
-                <Select defaultValue={selectedLead.status}>
+                <Select
+                  value={selectedLead.status}
+                  onValueChange={(value) => void handleLeadStatusChange(selectedLead, value as PanelLead['status'])}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>

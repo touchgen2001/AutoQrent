@@ -13,10 +13,12 @@ import {
   Settings,
   LogOut,
   ChevronLeft,
-  Menu
+  Menu,
+  ExternalLink
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { BrandLogo, BrandMark } from "@/components/brand/brand-logo"
 import { clearPanelAuthSession } from "@/lib/client/panel-auth"
 
 interface SidebarProps {
@@ -31,6 +33,7 @@ type PanelSettingsSummaryResponse = {
   message?: string
   settings?: {
     name: string
+    slug: string
     vehicleCount: number
     activeVehicleCount: number
   }
@@ -38,7 +41,7 @@ type PanelSettingsSummaryResponse = {
 
 const navItems = [
   {
-    title: "Dashboard",
+    title: "Genel Bakış",
     href: "/panel",
     icon: LayoutDashboard
   },
@@ -53,7 +56,7 @@ const navItems = [
     icon: QrCode
   },
   {
-    title: "Leadler",
+    title: "Müşteri Talepleri",
     href: "/panel/leadler",
     icon: Users
   },
@@ -63,7 +66,7 @@ const navItems = [
     icon: BarChart3
   },
   {
-    title: "Audit Logları",
+    title: "Denetim Kayıtları",
     href: "/panel/audit-logs",
     icon: ShieldCheck
   },
@@ -80,6 +83,7 @@ export function DashboardSidebar({ isCollapsed, onToggle, isMobileOpen, onMobile
   const [galleryName, setGalleryName] = useState<string | null>(null)
   const [vehicleCount, setVehicleCount] = useState<number | null>(null)
   const [activeVehicleCount, setActiveVehicleCount] = useState<number | null>(null)
+  const [showroomPath, setShowroomPath] = useState<string | null>(null)
   const [isSummaryLoading, setIsSummaryLoading] = useState(true)
 
   useEffect(() => {
@@ -98,17 +102,20 @@ export function DashboardSidebar({ isCollapsed, onToggle, isMobileOpen, onMobile
           setGalleryName(null)
           setVehicleCount(null)
           setActiveVehicleCount(null)
+          setShowroomPath(null)
           return
         }
 
         setGalleryName(data.settings.name || null)
         setVehicleCount(data.settings.vehicleCount)
         setActiveVehicleCount(data.settings.activeVehicleCount)
+        setShowroomPath(data.settings.slug ? `/showroom/${data.settings.slug}` : null)
       } catch {
         if (abortController.signal.aborted) return
         setGalleryName(null)
         setVehicleCount(null)
         setActiveVehicleCount(null)
+        setShowroomPath(null)
       } finally {
         if (!abortController.signal.aborted) {
           setIsSummaryLoading(false)
@@ -159,19 +166,10 @@ export function DashboardSidebar({ isCollapsed, onToggle, isMobileOpen, onMobile
             isCollapsed ? "justify-center" : "justify-between"
           )}>
             {!isCollapsed && (
-              <Link href="/panel" className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-sidebar-primary rounded-lg flex items-center justify-center">
-                  <QrCode className="w-4 h-4 text-sidebar-primary-foreground" />
-                </div>
-                <span className="font-bold text-sidebar-foreground">
-                  Cebindegaleri
-                </span>
-              </Link>
+              <BrandLogo href="/panel" tone="sidebar" className="[&_span:first-child]:size-9" />
             )}
             {isCollapsed && (
-              <div className="w-8 h-8 bg-sidebar-primary rounded-lg flex items-center justify-center">
-                <QrCode className="w-4 h-4 text-sidebar-primary-foreground" />
-              </div>
+              <BrandMark tone="sidebar" className="[&_span]:size-9" />
             )}
             <button 
               onClick={onToggle}
@@ -233,6 +231,16 @@ export function DashboardSidebar({ isCollapsed, onToggle, isMobileOpen, onMobile
                 <div className="mt-2 h-1.5 bg-sidebar-border rounded-full overflow-hidden">
                   <div className="h-full bg-sidebar-primary rounded-full" style={{ width: `${usagePercent}%` }} />
                 </div>
+                {showroomPath && (
+                  <Link
+                    href={showroomPath}
+                    target="_blank"
+                    className="mt-3 flex items-center justify-center gap-2 rounded-md border border-sidebar-border px-2 py-2 text-xs font-medium text-sidebar-foreground hover:bg-sidebar-primary hover:text-sidebar-primary-foreground transition-colors"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    Galeri Sayfam
+                  </Link>
+                )}
               </div>
             )}
             <Button

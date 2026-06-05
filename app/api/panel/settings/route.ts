@@ -1,11 +1,19 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
+import { absoluteUrl } from '@/lib/seo'
+import { ensureSecurePublicSlug, hasSecurePublicRouteToken } from '@/lib/security/public-route-token'
 import {
   containsPlaceholderText,
   hasPlaceholderEmailDomain,
   hasPlaceholderHostname,
 } from '@/lib/server/panel-input-guard'
+import {
+  DEFAULT_PUBLIC_SHOWROOM_THEME,
+  PUBLIC_SHOWROOM_BACKGROUND_VALUES,
+  PUBLIC_SHOWROOM_THEME_VALUES,
+  normalizePublicShowroomTheme,
+} from '@/lib/public-showroom-theme'
 import { requireSupabaseAdminConfig, supabaseAdminFetch } from '@/lib/server/supabase-admin'
 import { panelAuthErrorResponse, requirePanelSessionOrThrow } from '@/lib/server/panel-auth-guard'
 
@@ -32,6 +40,10 @@ type GalleryRow = {
   facebook_page: string | null
   youtube_channel: string | null
   twitter_handle: string | null
+  public_theme?: string | null
+  public_accent_color?: string | null
+  public_background_style?: string | null
+  public_showroom_note?: string | null
 }
 
 type VehicleCountRow = {
@@ -64,7 +76,44 @@ const updateSchema = z.object({
     youtube: z.string().trim().max(120).optional(),
     twitter: z.string().trim().max(120).optional(),
   }).optional(),
+  publicTheme: z.object({
+    theme: z.enum(PUBLIC_SHOWROOM_THEME_VALUES),
+    accentColor: z.string().trim().regex(/^#[0-9a-fA-F]{6}$/, 'Tema rengi geçerli hex formatında olmalıdır.'),
+    backgroundStyle: z.enum(PUBLIC_SHOWROOM_BACKGROUND_VALUES),
+    heroNote: z.string().trim().max(220, 'Public açıklama en fazla 220 karakter olabilir.').or(z.literal('')),
+  }).optional(),
 }).strict()
+
+const BASE_GALLERY_SELECT = [
+  'id',
+  'name',
+  'slug',
+  'phone',
+  'email',
+  'logo_url',
+  'address',
+  'city',
+  'district',
+  'latitude',
+  'longitude',
+  'google_maps_url',
+  'weekday_hours',
+  'saturday_hours',
+  'sunday_hours',
+  'website_url',
+  'instagram_handle',
+  'facebook_page',
+  'youtube_channel',
+  'twitter_handle',
+].join(',')
+
+const THEME_GALLERY_SELECT = [
+  BASE_GALLERY_SELECT,
+  'public_theme',
+  'public_accent_color',
+  'public_background_style',
+  'public_showroom_note',
+].join(',')
 
 type CoordinateInput = number | string | null
 
@@ -176,18 +225,69 @@ function sanitizeEmailField(value: string | null | undefined) {
   return trimmed
 }
 
+async function fetchGallerySettingsRows(ownerEmail: string) {
+  try {
+    const galleries = await supabaseAdminFetch<GalleryRow[]>({
+      path: '/rest/v1/galleries',
+      query: {
+        select: THEME_GALLERY_SELECT,
+        owner_email: `eq.${ownerEmail}`,
+        limit: 1,
+      },
+    })
+
+    return {
+      galleries,
+      themeStorageReady: true,
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : ''
+    if (
+      !message.includes('public_theme')
+      && !message.includes('public_accent_color')
+      && !message.includes('public_background_style')
+      && !message.includes('public_showroom_note')
+    ) {
+      throw error
+    }
+
+    const galleries = await supabaseAdminFetch<GalleryRow[]>({
+      path: '/rest/v1/galleries',
+      query: {
+        select: BASE_GALLERY_SELECT,
+        owner_email: `eq.${ownerEmail}`,
+        limit: 1,
+      },
+    })
+
+    return {
+      galleries,
+      themeStorageReady: false,
+    }
+  }
+}
+
 async function fetchSettingsPayload(ownerEmail: string) {
-  const galleries = await supabaseAdminFetch<GalleryRow[]>({
-    path: '/rest/v1/galleries',
-    query: {
-      select: 'id,name,slug,phone,email,logo_url,address,city,district,latitude,longitude,google_maps_url,weekday_hours,saturday_hours,sunday_hours,website_url,instagram_handle,facebook_page,youtube_channel,twitter_handle',
-      owner_email: `eq.${ownerEmail}`,
-      limit: 1,
-    },
-  })
+  const { galleries, themeStorageReady } = await fetchGallerySettingsRows(ownerEmail)
 
   const gallery = galleries[0] || null
   if (!gallery) return null
+
+  let safeSlug = gallery.slug?.trim().toLowerCase() || ''
+  if (!hasSecurePublicRouteToken(safeSlug)) {
+    safeSlug = ensureSecurePublicSlug(gallery.name || safeSlug || 'galeri', 'galeri')
+    await supabaseAdminFetch<unknown>({
+      method: 'PATCH',
+      path: '/rest/v1/galleries',
+      query: {
+        id: `eq.${gallery.id}`,
+      },
+      body: {
+        slug: safeSlug,
+      },
+      prefer: 'return=minimal',
+    })
+  }
 
   const safePhone = sanitizePlainField(gallery.phone)
   const safeEmail = sanitizeEmailField(gallery.email)
@@ -204,6 +304,12 @@ async function fetchSettingsPayload(ownerEmail: string) {
   const safeFacebook = sanitizePlainField(gallery.facebook_page)
   const safeYoutube = sanitizePlainField(gallery.youtube_channel)
   const safeTwitter = sanitizePlainField(gallery.twitter_handle)
+  const publicTheme = normalizePublicShowroomTheme({
+    theme: gallery.public_theme || DEFAULT_PUBLIC_SHOWROOM_THEME.theme,
+    accentColor: gallery.public_accent_color || DEFAULT_PUBLIC_SHOWROOM_THEME.accentColor,
+    backgroundStyle: gallery.public_background_style || DEFAULT_PUBLIC_SHOWROOM_THEME.backgroundStyle,
+    heroNote: sanitizePlainField(gallery.public_showroom_note),
+  })
 
   const vehicles = await supabaseAdminFetch<VehicleCountRow[]>({
     path: '/rest/v1/vehicles',
@@ -217,7 +323,9 @@ async function fetchSettingsPayload(ownerEmail: string) {
   return {
     galleryId: gallery.id,
     name: gallery.name,
-    slug: gallery.slug,
+    slug: safeSlug,
+    showroomPath: `/showroom/${safeSlug}`,
+    publicShowroomUrl: absoluteUrl(`/showroom/${safeSlug}`),
     phone: safePhone,
     whatsapp: normalizePhoneNumber(safePhone),
     email: safeEmail,
@@ -243,6 +351,8 @@ async function fetchSettingsPayload(ownerEmail: string) {
       youtube: safeYoutube,
       twitter: safeTwitter,
     },
+    publicTheme,
+    publicThemeStorageReady: themeStorageReady,
     vehicleCount: vehicles.length,
     activeVehicleCount: vehicles.filter((vehicle) => vehicle.status === 'active').length,
   }
@@ -250,7 +360,7 @@ async function fetchSettingsPayload(ownerEmail: string) {
 
 export async function GET(request: Request) {
   try {
-    const session = requirePanelSessionOrThrow(request)
+    const session = await requirePanelSessionOrThrow(request)
     requireSupabaseAdminConfig()
 
     const payload = await fetchSettingsPayload(session.email)
@@ -285,7 +395,7 @@ export async function GET(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    const session = requirePanelSessionOrThrow(request)
+    const session = await requirePanelSessionOrThrow(request)
     requireSupabaseAdminConfig()
 
     const parsed = updateSchema.safeParse(await request.json())
@@ -293,7 +403,7 @@ export async function PATCH(request: Request) {
       return NextResponse.json(
         {
           ok: false,
-          message: parsed.error.issues[0]?.message ?? 'Gecersiz ayar verisi.',
+          message: parsed.error.issues[0]?.message ?? 'Geçersiz ayar verisi.',
         },
         { status: 400 },
       )
@@ -304,7 +414,7 @@ export async function PATCH(request: Request) {
       return NextResponse.json(
         {
           ok: false,
-          message: 'Guncellenecek galeri kaydi bulunamadi.',
+          message: 'Güncellenecek galeri kaydı bulunamadı.',
         },
         { status: 404 },
       )
@@ -373,6 +483,7 @@ export async function PATCH(request: Request) {
       { label: 'Adres', value: parsed.data.address },
       { label: 'İl', value: parsed.data.city },
       { label: 'İlçe', value: parsed.data.district },
+      { label: 'Public açıklama', value: parsed.data.publicTheme?.heroNote },
     ].find((item) => item.value && containsPlaceholderText(item.value))
 
     if (fakeField) {
@@ -386,7 +497,7 @@ export async function PATCH(request: Request) {
     }
 
     if (parsed.data.name !== undefined) galleryPatch.name = parsed.data.name
-    if (parsed.data.slug !== undefined) galleryPatch.slug = parsed.data.slug
+    if (parsed.data.slug !== undefined) galleryPatch.slug = ensureSecurePublicSlug(parsed.data.slug, 'galeri')
     if (parsed.data.email !== undefined) galleryPatch.email = parsed.data.email || null
     if (parsed.data.logoUrl !== undefined) galleryPatch.logo_url = parsed.data.logoUrl || null
     if (parsed.data.address !== undefined) galleryPatch.address = parsed.data.address || null
@@ -429,6 +540,24 @@ export async function PATCH(request: Request) {
       galleryPatch.facebook_page = facebookPage
       galleryPatch.youtube_channel = youtubeChannel
       galleryPatch.twitter_handle = twitterHandle
+    }
+
+    if (parsed.data.publicTheme !== undefined) {
+      if (!payload.publicThemeStorageReady) {
+        return NextResponse.json(
+          {
+            ok: false,
+            message: 'Public tema kaydı için Supabase migration henüz uygulanmamış.',
+          },
+          { status: 409 },
+        )
+      }
+
+      const publicTheme = normalizePublicShowroomTheme(parsed.data.publicTheme)
+      galleryPatch.public_theme = publicTheme.theme
+      galleryPatch.public_accent_color = publicTheme.accentColor
+      galleryPatch.public_background_style = publicTheme.backgroundStyle
+      galleryPatch.public_showroom_note = publicTheme.heroNote || null
     }
 
     if (parsed.data.phone !== undefined || parsed.data.whatsapp !== undefined) {

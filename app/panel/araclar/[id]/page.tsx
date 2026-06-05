@@ -1,13 +1,13 @@
 'use client'
 
 import Link from 'next/link'
-import Image from 'next/image'
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
-import { ArrowLeft, Car, Edit, Eye, MessageSquare } from 'lucide-react'
+import { ArrowLeft, Edit, Eye, MessageSquare } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { VehicleImageFrame } from '@/components/shared/vehicle-image-frame'
 import type { PanelVehicle } from '@/lib/panel-types'
 
 type VehicleDetailApiResponse =
@@ -92,6 +92,11 @@ export default function VehicleDetailPage() {
     return `${vehicle.year} ${vehicle.brand} ${vehicle.model}${variantPart}`.trim()
   }, [vehicle])
 
+  const vehiclePhotos = useMemo(() => {
+    if (!vehicle) return []
+    return vehicle.photos.length > 0 ? vehicle.photos : vehicle.image ? [vehicle.image] : []
+  }, [vehicle])
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -137,18 +142,16 @@ export default function VehicleDetailPage() {
           <Card className="overflow-hidden">
             <CardContent className="p-6 md:p-8">
               <div className="flex flex-col lg:flex-row lg:items-start gap-6">
-                <div className="w-full lg:w-72 h-44 rounded-xl bg-muted flex items-center justify-center overflow-hidden">
-                  {vehicle.image ? (
-                    <Image
-                      src={vehicle.image}
-                      alt={vehicleTitle}
-                      width={720}
-                      height={440}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <Car className="w-14 h-14 text-muted-foreground/40" />
-                  )}
+                <div className="w-full lg:w-72 h-44 rounded-xl bg-muted overflow-hidden">
+                  <VehicleImageFrame
+                    src={vehiclePhotos[0]}
+                    alt={vehicleTitle}
+                    width={720}
+                    height={440}
+                    fill={false}
+                    className="h-full w-full"
+                    imageClassName="h-full w-full object-cover"
+                  />
                 </div>
 
                 <div className="flex-1 min-w-0 space-y-4">
@@ -184,7 +187,7 @@ export default function VehicleDetailPage() {
                       </p>
                     </div>
                     <div className="rounded-lg border border-border/70 bg-muted/20 p-3">
-                      <p className="text-muted-foreground">Lead</p>
+                      <p className="text-muted-foreground">Müşteri Talebi</p>
                       <p className="font-medium text-foreground inline-flex items-center gap-1">
                         <MessageSquare className="w-4 h-4" />
                         {vehicle.leads}
@@ -195,6 +198,36 @@ export default function VehicleDetailPage() {
               </div>
             </CardContent>
           </Card>
+
+          {vehiclePhotos.length > 0 && (
+            <Card>
+              <CardContent className="p-6 md:p-8 space-y-4">
+                <div>
+                  <h2 className="text-lg font-semibold text-foreground">Kalıcı Araç Fotoğrafları</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Bu fotoğraflar Supabase Storage üzerinde saklanır ve kullanıcı aracı veya fotoğrafı silene kadar kalır.
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {vehiclePhotos.map((photo, index) => (
+                    <div key={photo} className="relative aspect-video overflow-hidden rounded-lg border border-border bg-muted">
+                      <VehicleImageFrame
+                        src={photo}
+                        alt={`${vehicleTitle} fotoğraf ${index + 1}`}
+                        sizes="(max-width: 768px) 50vw, 25vw"
+                        imageClassName="object-cover"
+                      />
+                      {index === 0 && (
+                        <span className="absolute left-2 top-2 rounded bg-accent px-2 py-0.5 text-xs text-accent-foreground">
+                          Kapak
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </>
       )}
     </div>
