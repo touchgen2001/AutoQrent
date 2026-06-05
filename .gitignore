@@ -6,6 +6,9 @@ __v0_jsx-dev-runtime.ts
 .v0-trash/
 .vercel/
 
+# Codex tool artifacts (screenshots, scratch output)
+.codex-artifacts/
+
 # Environment variables
 .env
 .env.*
@@ -26,10 +29,12 @@ supabase/functions/.env
 # Security vault
 security/vault/decrypted/
 security/vault/*.tmp
+security/backups/
 
 # Common ignores
 node_modules
 .next/
+public/super-admin/
 .DS_Store
 .vercel
 tsconfig.tsbuildinfo
@@ -37,3 +42,9 @@ tsconfig.tsbuildinfo
 # Local temp/runtime folders
 .tmp.*
 supabase/.temp/
+supabase/.branches/
+
+# Playwright artifacts
+playwright-report/
+test-results/
+.env*

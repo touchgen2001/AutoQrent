@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "pnpm security:predeploy && pnpm super-admin:contract && pnpm super-admin:prepare-public && pnpm super-admin:bundle-budget && pnpm typecheck && pnpm build",
+  "crons": [
+    {
+      "path": "/api/cron/cleanup-uploaded-assets",
+      "schedule": "17 2 * * *"
+    }
+  ]
+}

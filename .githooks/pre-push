@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+cd "$ROOT_DIR"
+
+if command -v pnpm >/dev/null 2>&1; then
+  RUNNER="pnpm"
+else
+  RUNNER="npm run"
+fi
+
+echo "[pre-push] lint + build + security scan"
+$RUNNER lint
+$RUNNER build
+$RUNNER security:scan
