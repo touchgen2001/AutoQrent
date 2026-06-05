@@ -1,0 +1,4 @@
+ALTER TABLE galleries
+ADD COLUMN IF NOT EXISTS weekday_hours TEXT,
+ADD COLUMN IF NOT EXISTS saturday_hours TEXT,
+ADD COLUMN IF NOT EXISTS sunday_hours TEXT;

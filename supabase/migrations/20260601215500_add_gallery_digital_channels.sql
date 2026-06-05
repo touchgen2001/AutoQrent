@@ -1,0 +1,6 @@
+ALTER TABLE galleries
+ADD COLUMN IF NOT EXISTS website_url TEXT,
+ADD COLUMN IF NOT EXISTS instagram_handle TEXT,
+ADD COLUMN IF NOT EXISTS facebook_page TEXT,
+ADD COLUMN IF NOT EXISTS youtube_channel TEXT,
+ADD COLUMN IF NOT EXISTS twitter_handle TEXT;
