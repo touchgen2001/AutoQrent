@@ -11,13 +11,13 @@ export const faqItems: FaqItem[] = [
     category: "Kurulum",
     question: "Kurulum süreci nasıl ilerliyor?",
     answer:
-      "Galeri hesabı, profil ayarları ve ilk araç kartlarının yayına alınması birlikte planlanır. Demo sonrası kurulum akışı operasyonunuza göre net takvime bağlanır.",
+      "Kayıt sonrası galeri hesabı ve 14 günlük deneme otomatik açılır. İlk adımda galeri bilgilerinizi, logo/tema ayarlarınızı ve iletişim kanallarınızı tamamlarsınız; ardından araç ekleyip QR kodlarınızı panelden üretirsiniz.",
   },
   {
     category: "Kurulum",
     question: "Mevcut araç verilerimizi taşıyabilir miyiz?",
     answer:
-      "Evet. Araç bilgileri ve medya içerikleri mevcut yapınıza göre aktarım planıyla taşınabilir; geçiş adımı destek ekibiyle birlikte yürütülür.",
+      "Evet. Araç listesi, görseller ve temel ilan bilgileri mevcut yapınıza göre aktarım planıyla taşınabilir. Büyük veri taşıma veya özel format ihtiyacı varsa Pro/Premium ya da Kurumsal görüşmede kapsam netleştirilir.",
   },
   {
     category: "QR Kod",
@@ -35,13 +35,13 @@ export const faqItems: FaqItem[] = [
     category: "Panel",
     question: "Panelden hangi alanları yönetiyoruz?",
     answer:
-      "Araç vitrini, galeri iletişim bilgileri, çalışma saatleri, lead süreçleri ve QR çıktıları panelden merkezi olarak yönetilir.",
+      "Araç vitrini, galeri iletişim bilgileri, çalışma saatleri, public galeri sayfası teması, lead süreçleri, QR çıktıları ve abonelik bilgileri panelden merkezi olarak yönetilir.",
   },
   {
     category: "Panel",
-    question: "Ekip içinde birlikte kullanım mümkün mü?",
+    question: "Paketler tek kullanıcı hesabı ile mi çalışıyor?",
     answer:
-      "Evet. Plan kapsamına göre ekip üyeleriyle birlikte yönetim yapılabilir; operasyon adımları ortak süreç üzerinden ilerler.",
+      "Evet. Paketler tek galeri hesabı ve tek kullanıcı hesabı modeliyle çalışır. Pro ve üst planlar ek kullanıcı değil, daha geniş araç limiti, analitik ve destek kapsamı sağlar.",
   },
   {
     category: "Lead Takibi",
@@ -53,19 +53,19 @@ export const faqItems: FaqItem[] = [
     category: "Lead Takibi",
     question: "Lead durumları satış sürecinde nasıl kullanılıyor?",
     answer:
-      "Yeni, görüşülüyor ve satışa döndü gibi durum adımlarıyla ekip aynı müşteri sürecini takip eder; aksiyonlar kayda bağlı kalır.",
+      "Yeni, görüşülüyor ve satışa döndü gibi durum adımlarıyla her müşteri süreci tek panel kaydında takip edilir; aksiyonlar kayda bağlı kalır.",
   },
   {
     category: "Fiyatlandırma",
-    question: "Sabit fiyat listesi yerine nasıl teklif alıyoruz?",
+    question: "Paket fiyatları nedir?",
     answer:
-      "Paket kapsamı galeri ölçeği, ekip sayısı ve operasyon ihtiyaçlarına göre şekillenir. Demo görüşmesi sonrası kapsam ve teklif netleştirilir.",
+      "Başlangıç aylık 999 TL, Pro aylık 2.500 TL, Premium aylık 4.990 TL olarak listelenir. Kurumsal paket özel araç limiti, API ve geçiş danışmanlığı gerektirdiği için teklif ile netleşir.",
   },
   {
     category: "Fiyatlandırma",
-    question: "Hangi plan bize uygun olduğunu nasıl belirleriz?",
+    question: "14 günlük ücretsiz deneme nasıl çalışır?",
     answer:
-      "Araç hacmi, lead yoğunluğu ve ekip akışı birlikte değerlendirilir. Bu analizle en uygun plan seviyesi birlikte seçilir.",
+      "Kayıt olduğunuzda seçtiğiniz planla 14 günlük deneme başlar ve kredi kartı istenmez. Deneme süresince galeri, araç, QR ve panel akışını test edebilirsiniz; abonelik ekranında planınızı görebilir veya değiştirebilirsiniz.",
   },
   {
     category: "Destek",

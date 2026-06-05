@@ -26,18 +26,25 @@ type PageMetadataInput = {
   title: string
   description: string
   path: string
+  canonicalPath?: string
   keywords?: string[]
   noIndex?: boolean
+  openGraphType?: 'website' | 'article'
+  image?: string | null
 }
 
 export function createPageMetadata({
   title,
   description,
   path,
+  canonicalPath,
   keywords = [],
   noIndex = false,
+  openGraphType = 'website',
+  image,
 }: PageMetadataInput): Metadata {
-  const canonical = absoluteUrl(path)
+  const canonical = absoluteUrl(canonicalPath || path)
+  const imageUrl = image ? (image.startsWith('http') ? image : absoluteUrl(image)) : undefined
 
   return {
     title,
@@ -47,17 +54,19 @@ export function createPageMetadata({
       canonical,
     },
     openGraph: {
-      type: 'website',
+      type: openGraphType,
       url: canonical,
       title,
       description,
       siteName: siteConfig.name,
       locale: 'tr_TR',
+      images: imageUrl ? [{ url: imageUrl, alt: title }] : undefined,
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
+      images: imageUrl ? [imageUrl] : undefined,
     },
     robots: noIndex
       ? {
