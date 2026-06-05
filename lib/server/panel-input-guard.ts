@@ -1,4 +1,4 @@
-const PLACEHOLDER_TOKEN_REGEX = /\b(ornek|örnek|example|test|dummy|deneme|xxx+)\b/i
+const PLACEHOLDER_TOKEN_REGEX = /^(ornek|örnek|example|test|dummy|deneme|xxx+)$/i
 const PLACEHOLDER_DOMAIN_REGEX = /(^|\.)(ornek|örnek|example|test|dummy|demo)(\.|$)/i
 
 type GuardField = {

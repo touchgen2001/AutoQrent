@@ -6,7 +6,14 @@ import type {
   PanelVehicleStatus,
   VehicleCreateInput,
 } from '@/lib/panel-types'
+import { absoluteUrl } from '@/lib/seo'
+import { buildSecurePublicSlug, hasSecurePublicRouteToken } from '@/lib/security/public-route-token'
 import { requireSupabaseAdminConfig, supabaseAdminFetch } from '@/lib/server/supabase-admin'
+import { deleteVehicleImageObjectsForGallery } from '@/lib/server/storage-images'
+import {
+  markUploadedAssetsAttached,
+  markUploadedAssetsDeleted,
+} from '@/lib/server/uploaded-assets'
 
 type VehicleRow = {
   id: string
@@ -49,6 +56,7 @@ type QrScanRow = {
 export type PanelQrVehicleSummary = {
   vehicleId: string
   routeId: string
+  publicUrl: string
   vehicleTitle: string
   price: number
   qrCode: string
@@ -63,18 +71,19 @@ export type PanelQrScanEvent = {
   source: string
 }
 
+export type PanelGalleryShowroomSummary = {
+  galleryId: string
+  name: string
+  slug: string
+  showroomPath: string
+  publicShowroomUrl: string
+  vehicleCount: number
+  activeVehicleCount: number
+}
+
 const SUPPORTED_SOURCES: PanelLeadSource[] = ['qr', 'showroom', 'whatsapp', 'telefon', 'form', 'test-surusu']
 const SUPPORTED_STATUSES: PanelLeadStatus[] = ['yeni', 'arandi', 'gorusuluyor', 'test-surusu', 'satisa-dondu', 'kayip']
 const VEHICLE_FILTER_CHUNK_SIZE = 120
-
-function slugify(input: string) {
-  return input
-    .toLowerCase()
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-}
 
 function toVehicleStatus(status: string): PanelVehicleStatus {
   if (status === 'reserved') return 'reserved'
@@ -100,9 +109,35 @@ function buildVehicleTitle(row: {
   return `${row.year} ${row.brand} ${row.model}${variantPart}`.trim()
 }
 
-function getQrCodeFromVehicleId(vehicleId: string) {
-  const compact = vehicleId.replace(/-/g, '').toUpperCase()
-  return `QR-${compact.slice(0, 8)}`
+function buildVehicleFeatureRows(vehicleId: string, input: VehicleCreateInput) {
+  const rawFeatures: Array<{ feature_key: string; feature_value?: string | null }> = [
+    { feature_key: 'body_type', feature_value: input.bodyType },
+    { feature_key: 'engine_size', feature_value: input.engineSize },
+    { feature_key: 'horsepower', feature_value: input.horsePower },
+    { feature_key: 'plate_number', feature_value: input.plateNumber },
+    { feature_key: 'has_damage', feature_value: input.hasDamage === 'yes' ? 'true' : input.hasDamage === 'no' ? 'false' : null },
+    { feature_key: 'damage_details', feature_value: input.damageDetails },
+    { feature_key: 'previous_owners', feature_value: input.previousOwners },
+    { feature_key: 'service_history', feature_value: input.serviceHistory },
+    { feature_key: 'warranty', feature_value: input.warrantyStatus === 'yes' ? 'true' : input.warrantyStatus === 'no' ? 'false' : null },
+  ]
+
+  return rawFeatures
+    .map((feature) => ({
+      vehicle_id: vehicleId,
+      feature_key: feature.feature_key,
+      feature_value: feature.feature_value?.trim() || '',
+    }))
+    .filter((feature) => feature.feature_value)
+}
+
+function buildSecureVehicleSlug(input: VehicleCreateInput) {
+  return buildSecurePublicSlug(`${input.brand}-${input.model}-${input.year}`, 'arac')
+}
+
+function getQrCodeFromRouteId(routeId: string) {
+  const compact = routeId.replace(/[^a-z0-9]/gi, '').toUpperCase()
+  return `QR-${compact.slice(-10) || compact.slice(0, 10)}`
 }
 
 function toTimestamp(value: string) {
@@ -129,24 +164,34 @@ async function resolveGalleryId(ownerEmail?: string) {
   return getGalleryIdByOwnerEmail(ownerEmail)
 }
 
+async function ensureGallerySecureSlug(input: {
+  galleryId: string
+  galleryName: string
+  slug: string | null | undefined
+}) {
+  const currentSlug = input.slug?.trim().toLowerCase() || ''
+  if (hasSecurePublicRouteToken(currentSlug)) return currentSlug
+
+  const nextSlug = buildSecurePublicSlug(input.galleryName || 'galeri', 'galeri')
+
+  await supabaseAdminFetch<unknown>({
+    method: 'PATCH',
+    path: '/rest/v1/galleries',
+    query: {
+      id: `eq.${input.galleryId}`,
+    },
+    body: {
+      slug: nextSlug,
+    },
+    prefer: 'return=minimal',
+  })
+
+  return nextSlug
+}
+
 async function resolveLeadTargetFromVehicle(vehicleIdOrSlug: string) {
   const normalized = vehicleIdOrSlug.trim()
-  if (!normalized) return null
-
-  const byId = await supabaseAdminFetch<Array<{ id: string; gallery_id: string }>>({
-    path: '/rest/v1/vehicles',
-    query: {
-      select: 'id,gallery_id',
-      id: `eq.${normalized}`,
-      limit: 1,
-    },
-  })
-  if (byId[0]) {
-    return {
-      vehicleId: byId[0].id,
-      galleryId: byId[0].gallery_id,
-    }
-  }
+  if (!hasSecurePublicRouteToken(normalized)) return null
 
   const bySlug = await supabaseAdminFetch<Array<{ id: string; gallery_id: string }>>({
     path: '/rest/v1/vehicles',
@@ -166,7 +211,7 @@ async function resolveLeadTargetFromVehicle(vehicleIdOrSlug: string) {
 
 async function resolveLeadTargetFromGallerySlug(gallerySlug: string) {
   const normalized = gallerySlug.trim().toLowerCase()
-  if (!normalized) return null
+  if (!hasSecurePublicRouteToken(normalized)) return null
 
   const rows = await supabaseAdminFetch<Array<{ id: string }>>({
     path: '/rest/v1/galleries',
@@ -298,6 +343,7 @@ export async function listPanelVehicles(ownerEmail?: string) {
     scans: scanCounts.get(vehicle.id) || 0,
     leads: leadCounts.get(vehicle.id) || 0,
     image: vehicle.photos?.[0] || null,
+    photos: vehicle.photos?.filter(Boolean) || [],
     description: vehicle.description || '',
   }))
 
@@ -339,20 +385,75 @@ export async function listPanelQrVehicleSummaries(ownerEmail?: string) {
     }
   }
 
-  const items: PanelQrVehicleSummary[] = vehicles.map((vehicle) => ({
-    vehicleId: vehicle.id,
-    routeId: vehicle.slug || vehicle.id,
-    vehicleTitle: buildVehicleTitle(vehicle),
-    price: Number(vehicle.price),
-    qrCode: getQrCodeFromVehicleId(vehicle.id),
-    scans: scanCounts.get(vehicle.id) || 0,
-    lastScanAt: lastScanAtMap.get(vehicle.id) || null,
-  }))
+  const items: PanelQrVehicleSummary[] = vehicles.map((vehicle) => {
+    const routeId = vehicle.slug || vehicle.id
+
+    return {
+      vehicleId: vehicle.id,
+      routeId,
+      publicUrl: absoluteUrl(`/arac/${routeId}?src=qr`),
+      vehicleTitle: buildVehicleTitle(vehicle),
+      price: Number(vehicle.price),
+      qrCode: getQrCodeFromRouteId(routeId),
+      scans: scanCounts.get(vehicle.id) || 0,
+      lastScanAt: lastScanAtMap.get(vehicle.id) || null,
+    }
+  })
 
   return {
     source: 'supabase' as const,
     items,
   }
+}
+
+export async function getPanelGalleryShowroomSummary(ownerEmail?: string) {
+  requireSupabaseAdminConfig()
+
+  if (!ownerEmail) return null
+
+  const galleries = await supabaseAdminFetch<Array<{
+    id: string
+    name: string
+    slug: string | null
+  }>>({
+    path: '/rest/v1/galleries',
+    query: {
+      select: 'id,name,slug',
+      owner_email: `eq.${ownerEmail}`,
+      order: 'created_at.asc',
+      limit: 1,
+    },
+  })
+
+  const gallery = galleries[0]
+  if (!gallery) return null
+
+  const slug = await ensureGallerySecureSlug({
+    galleryId: gallery.id,
+    galleryName: gallery.name,
+    slug: gallery.slug,
+  })
+
+  const vehicles = await supabaseAdminFetch<Array<{ id: string; status: string }>>({
+    path: '/rest/v1/vehicles',
+    query: {
+      select: 'id,status',
+      gallery_id: `eq.${gallery.id}`,
+      limit: 10000,
+    },
+  }).catch(() => [])
+
+  const showroomPath = `/showroom/${slug}`
+
+  return {
+    galleryId: gallery.id,
+    name: gallery.name,
+    slug,
+    showroomPath,
+    publicShowroomUrl: absoluteUrl(showroomPath),
+    vehicleCount: vehicles.length,
+    activeVehicleCount: vehicles.filter((vehicle) => vehicle.status === 'active').length,
+  } satisfies PanelGalleryShowroomSummary
 }
 
 export async function listRecentPanelQrScans(limit = 30, ownerEmail?: string) {
@@ -384,7 +485,7 @@ export async function listRecentPanelQrScans(limit = 30, ownerEmail?: string) {
     .filter((item) => Boolean(item.vehicle_id) && allowedVehicleIds.has(item.vehicle_id as string))
     .map((item) => ({
       vehicleId: item.vehicle_id as string,
-      vehicleTitle: vehicleTitleMap.get(item.vehicle_id as string) || 'Bilinmeyen Arac',
+      vehicleTitle: vehicleTitleMap.get(item.vehicle_id as string) || 'Bilinmeyen Araç',
       scannedAt: item.scanned_at,
       source: item.source || 'unknown',
     }))
@@ -402,11 +503,10 @@ export async function createPanelVehicle(input: VehicleCreateInput, ownerEmail?:
 
   const galleryId = await resolveGalleryId(ownerEmail)
   if (!galleryId) {
-    throw new Error('No gallery found. Please create a gallery record first.')
+    throw new Error('Galeri bulunamadı. Önce galeri kaydı oluşturun.')
   }
 
-  const slugBase = slugify(`${input.brand}-${input.model}-${input.year}`)
-  const slug = `${slugBase}-${Date.now().toString().slice(-6)}`
+  const slug = buildSecureVehicleSlug(input)
 
   const rows = await supabaseAdminFetch<VehicleRow[]>({
     method: 'POST',
@@ -434,7 +534,23 @@ export async function createPanelVehicle(input: VehicleCreateInput, ownerEmail?:
 
   const vehicle = rows[0]
   if (!vehicle) {
-    throw new Error('Vehicle creation failed.')
+    throw new Error('Araç oluşturulamadı.')
+  }
+
+  await markUploadedAssetsAttached({
+    galleryId,
+    vehicleId: vehicle.id,
+    publicUrls: vehicle.photos || [],
+  })
+
+  const vehicleFeatures = buildVehicleFeatureRows(vehicle.id, input)
+  if (vehicleFeatures.length > 0) {
+    await supabaseAdminFetch<unknown>({
+      method: 'POST',
+      path: '/rest/v1/vehicle_features',
+      prefer: 'return=minimal',
+      body: vehicleFeatures,
+    })
   }
 
   return {
@@ -452,6 +568,7 @@ export async function createPanelVehicle(input: VehicleCreateInput, ownerEmail?:
     scans: 0,
     leads: 0,
     image: vehicle.photos?.[0] || null,
+    photos: vehicle.photos?.filter(Boolean) || [],
     description: vehicle.description || '',
   } satisfies PanelVehicle
 }
@@ -460,15 +577,49 @@ export async function deletePanelVehicle(vehicleId: string, ownerEmail?: string)
   requireSupabaseAdminConfig()
 
   const galleryId = await resolveGalleryId(ownerEmail)
+  if (!galleryId) {
+    throw new Error('Galeri bulunamadı.')
+  }
+
+  const rows = await supabaseAdminFetch<VehicleRow[]>({
+    path: '/rest/v1/vehicles',
+    query: {
+      select: 'id,slug,brand,model,variant,year,price,km,description,fuel,transmission,color,status,photos,created_at',
+      id: `eq.${vehicleId}`,
+      gallery_id: `eq.${galleryId}`,
+      limit: 1,
+    },
+  })
+
+  const vehicle = rows[0]
+  if (!vehicle) {
+    throw new Error('Araç bulunamadı.')
+  }
+
+  const imageDeleteResult = await deleteVehicleImageObjectsForGallery({
+    galleryId,
+    publicUrls: vehicle.photos || [],
+    allowOwnedLegacyPanelPaths: true,
+  })
+  const metadataDeleteResult = await markUploadedAssetsDeleted({
+    galleryId,
+    publicUrls: vehicle.photos || [],
+    allowOwnedLegacyPanelPaths: true,
+  })
 
   await supabaseAdminFetch<unknown>({
     method: 'DELETE',
     path: '/rest/v1/vehicles',
     query: {
       id: `eq.${vehicleId}`,
-      ...(galleryId ? { gallery_id: `eq.${galleryId}` } : {}),
+      gallery_id: `eq.${galleryId}`,
     },
   })
+
+  return {
+    deletedImages: imageDeleteResult.deleted,
+    deletedAssetRows: metadataDeleteResult.updated,
+  }
 }
 
 export async function listPanelLeads(ownerEmail?: string) {
@@ -541,7 +692,7 @@ export async function updatePanelLead(
 
   const galleryId = await resolveGalleryId(ownerEmail)
   if (!galleryId) {
-    throw new Error('Lead update scope not found.')
+    throw new Error('Lead güncelleme kapsamı bulunamadı.')
   }
 
   const rows = await supabaseAdminFetch<LeadRow[]>({
@@ -556,7 +707,7 @@ export async function updatePanelLead(
 
   const existing = rows[0]
   if (!existing) {
-    throw new Error('Lead not found.')
+    throw new Error('Lead bulunamadı.')
   }
 
   const nextNotes = changes.addNote ? [...(existing.notes || []), changes.addNote] : existing.notes || []
@@ -586,7 +737,7 @@ export async function updatePanelLead(
 
   const lead = updatedRows[0]
   if (!lead) {
-    throw new Error('Lead update failed.')
+    throw new Error('Lead güncellenemedi.')
   }
 
   let vehicleTitle: string | undefined
