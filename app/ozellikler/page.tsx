@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { CtaSection } from "@/components/landing/cta-section"
 import { FeaturesSection } from "@/components/landing/features-section"
 import { LandingRouteShell } from "@/components/landing/landing-route-shell"
+import { TrustSection } from "@/components/landing/trust-section"
 import { createPageMetadata } from "@/lib/seo"
 
 export const metadata: Metadata = createPageMetadata({
@@ -16,6 +17,7 @@ export default function FeaturesPage() {
   return (
     <LandingRouteShell>
       <FeaturesSection />
+      <TrustSection />
       <CtaSection />
     </LandingRouteShell>
   )
