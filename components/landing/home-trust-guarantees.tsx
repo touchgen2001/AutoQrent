@@ -43,7 +43,22 @@ const guarantees = [
   },
 ]
 
-export function HomeTrustGuarantees() {
+type HomeTrustGuaranteesProps = {
+  // Fiyatlar sayfasında fiyatlar zaten yukarıda listelendiği için
+  // "Net fiyatlandırma" kartının açıklaması döngüsel olmasın diye bu
+  // metin dışarıdan değiştirilebilir. Verilmezse anasayfa metni kullanılır.
+  pricingDescription?: string
+}
+
+export function HomeTrustGuarantees({ pricingDescription }: HomeTrustGuaranteesProps = {}) {
+  const items = pricingDescription
+    ? guarantees.map((item) =>
+        item.title === "Net fiyatlandırma"
+          ? { ...item, description: pricingDescription }
+          : item,
+      )
+    : guarantees
+
   return (
     <section className="border-t border-border/60 bg-muted/20 py-16 md:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -61,7 +76,7 @@ export function HomeTrustGuarantees() {
         </div>
 
         <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {guarantees.map((item) => (
+          {items.map((item) => (
             <div
               key={item.title}
               className="rounded-xl border border-border/70 bg-card p-6 transition-colors hover:border-accent/40"

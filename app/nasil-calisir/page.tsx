@@ -8,9 +8,9 @@ import { createPageMetadata } from "@/lib/seo"
 export const metadata: Metadata = createPageMetadata({
   title: "Nasıl Çalışır",
   description:
-    "Cebindegaleri çalışma akışı: araç ekleme, QR üretimi, müşteri etkileşimi ve lead yönetiminin operasyon adımları.",
+    "Cebindegaleri çalışma akışı: araç ekleme, QR üretimi, müşteri etkileşimi ve talep yönetiminin operasyon adımları; sahte yorum yerine canlı demo görüşmesinde doğrulayın.",
   path: "/nasil-calisir",
-  keywords: ["nasıl çalışır", "qr akışı", "galeri operasyonu", "lead süreci"],
+  keywords: ["nasıl çalışır", "qr akışı", "galeri operasyonu", "lead süreci", "canlı galeri demosu"],
 })
 
 export default function HowItWorksPage() {

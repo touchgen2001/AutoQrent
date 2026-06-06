@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { CtaSection } from "@/components/landing/cta-section"
+import { HomeTrustGuarantees } from "@/components/landing/home-trust-guarantees"
 import { LandingRouteShell } from "@/components/landing/landing-route-shell"
 import { PricingSection } from "@/components/landing/pricing-section"
 import { createPageMetadata } from "@/lib/seo"
@@ -16,6 +17,7 @@ export default function PricingPage() {
   return (
     <LandingRouteShell>
       <PricingSection />
+      <HomeTrustGuarantees pricingDescription="999 TL, 2.500 TL ve 4.990 TL paketlerin kapsamını yukarıda net görürsünüz; gizli ek ücret yoktur." />
       <CtaSection />
     </LandingRouteShell>
   )
