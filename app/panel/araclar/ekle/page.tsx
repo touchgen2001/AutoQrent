@@ -624,6 +624,9 @@ export default function AddVehiclePage() {
             <p className="font-medium text-foreground">Fotoğraf yüklemek için tıklayın</p>
             <p className="text-sm text-muted-foreground mt-1">veya sürükleyip bırakın</p>
             <p className="text-xs text-muted-foreground mt-2">
+              Fotoğraf yüklemek opsiyoneldir; aracı fotoğrafsız da kaydedebilir, sonradan düzenleyip ekleyebilirsiniz.
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
               PNG, JPG veya WEBP (en fazla 10MB). Her fotoğraf yükleme öncesi güvenlik taramasından geçer.
             </p>
             {isUploadingImages && (
