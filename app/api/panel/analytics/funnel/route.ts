@@ -38,7 +38,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         ok: false,
-        message: error instanceof Error ? error.message : 'Lead funnel analitiği alınamadı.',
+        message: 'Talep hunisi analitiği alınamadı.',
       },
       { status: 500 },
     )

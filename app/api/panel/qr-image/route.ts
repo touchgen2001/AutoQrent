@@ -101,7 +101,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         ok: false,
-        message: error instanceof Error ? error.message : 'QR görseli üretilemedi.',
+        message: 'QR görseli üretilemedi.',
       },
       { status: 500 },
     )

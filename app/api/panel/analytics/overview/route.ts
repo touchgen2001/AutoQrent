@@ -263,7 +263,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         ok: false,
-        message: error instanceof Error ? error.message : 'Analitik verisi alinamadi.',
+        message: 'Analitik verisi alınamadı.',
       },
       { status: 500 },
     )

@@ -27,7 +27,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         ok: false,
-        message: error instanceof Error ? error.message : 'QR verileri alinamadi.',
+        message: 'QR verileri alınamadı.',
       },
       { status: 500 },
     )

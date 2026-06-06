@@ -9,6 +9,7 @@ import { HomeDemoExperience } from "@/components/landing/home-demo-experience"
 import { HomePricingPreview } from "@/components/landing/home-pricing-preview"
 import { HomeBlogPreview } from "@/components/landing/home-blog-preview"
 import { HomeFaqPreview, buildHomeFaqJsonLd } from "@/components/landing/home-faq-preview"
+import { HomeTrustGuarantees } from "@/components/landing/home-trust-guarantees"
 import { MobileStickyCta } from "@/components/landing/mobile-sticky-cta"
 import { LandingFooter } from "@/components/landing/footer"
 import { absoluteUrl, createPageMetadata } from "@/lib/seo"
@@ -157,6 +158,7 @@ export default function LandingPage() {
           </div>
         </section>
         <HomeFaqPreview />
+        <HomeTrustGuarantees />
         <CtaSection />
       </main>
       <LandingFooter />

@@ -19,7 +19,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         ok: false,
-        message: error instanceof Error ? error.message : 'Canlı uyarılar alınamadı.',
+        message: 'Canlı uyarılar alınamadı.',
       },
       { status: 500 },
     )

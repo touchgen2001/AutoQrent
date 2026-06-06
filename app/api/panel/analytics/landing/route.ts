@@ -47,7 +47,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         ok: false,
-        message: error instanceof Error ? error.message : 'Landing CTA analitiği alınamadı.',
+        message: 'Açılış sayfası CTA analitiği alınamadı.',
       },
       { status: 500 },
     )

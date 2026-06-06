@@ -42,7 +42,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         ok: false,
-        message: error instanceof Error ? error.message : 'Abonelik bilgisi alınamadı.',
+        message: 'Abonelik bilgisi alınamadı.',
       },
       { status: 500 },
     )
@@ -91,7 +91,7 @@ export async function PATCH(request: Request) {
     return NextResponse.json(
       {
         ok: false,
-        message: error instanceof Error ? error.message : 'Plan seçimi kaydedilemedi.',
+        message: 'Plan seçimi kaydedilemedi.',
       },
       { status: 500 },
     )

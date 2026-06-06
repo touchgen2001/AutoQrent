@@ -47,7 +47,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         ok: false,
-        message: error instanceof Error ? error.message : 'Showroom dönüşüm analitiği alınamadı.',
+        message: 'Showroom dönüşüm analitiği alınamadı.',
       },
       { status: 500 },
     )

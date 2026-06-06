@@ -221,7 +221,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         ok: false,
-        message: error instanceof Error ? error.message : 'Landing rollout uygulanamadi.',
+        message: 'Açılış sayfası yayını uygulanamadı.',
       },
       { status: 500 },
     )

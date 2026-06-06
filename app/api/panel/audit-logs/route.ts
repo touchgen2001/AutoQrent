@@ -86,7 +86,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         ok: false,
-        message: error instanceof Error ? error.message : 'Denetim kaydı listesi alınamadı.',
+        message: 'Denetim kaydı listesi alınamadı.',
       },
       { status: 500 },
     )

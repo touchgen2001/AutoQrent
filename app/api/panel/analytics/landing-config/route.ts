@@ -90,7 +90,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         ok: false,
-        message: error instanceof Error ? error.message : 'Landing CTA ayari alinamadi.',
+        message: 'Açılış sayfası CTA ayarı alınamadı.',
       },
       { status: 500 },
     )
@@ -188,7 +188,7 @@ export async function PATCH(request: Request) {
     return NextResponse.json(
       {
         ok: false,
-        message: error instanceof Error ? error.message : 'Landing CTA ayari kaydedilemedi.',
+        message: 'Açılış sayfası CTA ayarı kaydedilemedi.',
       },
       { status: 500 },
     )

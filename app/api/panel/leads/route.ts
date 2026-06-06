@@ -20,7 +20,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         ok: false,
-        message: error instanceof Error ? error.message : 'Müşteri talebi listesi alınamadı.',
+        message: 'Müşteri talebi listesi alınamadı.',
       },
       { status: 500 },
     )
