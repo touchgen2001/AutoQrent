@@ -5,6 +5,9 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
   Bell,
+  BellRing,
+  BellOff,
+  Check,
   Search,
   ChevronDown,
   Car,
@@ -38,6 +41,9 @@ import {
 import { MobileMenuButton } from "./sidebar"
 import type { PanelAlertCenterResponse, PanelLead, PanelVehicle } from "@/lib/panel-types"
 import { clearPanelAuthSession, getPanelAuthSession } from "@/lib/client/panel-auth"
+import { useAlertDesktopNotifications } from "@/lib/client/use-alert-notifications"
+
+const ALERT_POLL_INTERVAL_MS = 30 * 1000
 
 interface HeaderProps {
   onMobileMenuClick: () => void
@@ -69,6 +75,8 @@ export function DashboardHeader({ onMobileMenuClick }: HeaderProps) {
   const [isAlertsLoading, setIsAlertsLoading] = useState(true)
   const [accountName, setAccountName] = useState("Galeri Sahibi")
   const [accountGallery, setAccountGallery] = useState("Galeri")
+  const { permission: notificationPermission, requestPermission: requestNotificationPermission } =
+    useAlertDesktopNotifications(alerts)
 
   const handleSearchDialogOpenChange = (open: boolean) => {
     setIsSearchOpen(open)
@@ -160,7 +168,7 @@ export function DashboardHeader({ onMobileMenuClick }: HeaderProps) {
 
     const intervalId = window.setInterval(() => {
       void fetchAlerts()
-    }, 60 * 1000)
+    }, ALERT_POLL_INTERVAL_MS)
 
     return () => {
       window.clearTimeout(timeoutId)
@@ -261,6 +269,36 @@ export function DashboardHeader({ onMobileMenuClick }: HeaderProps) {
                   <span className="text-xs text-muted-foreground">{alerts?.summary.open ?? 0} açık</span>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                {notificationPermission === "default" && (
+                  <>
+                    <DropdownMenuItem
+                      className="gap-2"
+                      onSelect={(event) => {
+                        event.preventDefault()
+                        void requestNotificationPermission()
+                      }}
+                    >
+                      <BellRing className="w-4 h-4 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium">Masaüstü bildirimlerini aç</p>
+                        <p className="text-xs text-muted-foreground">Yeni talep gelince anında haber al.</p>
+                      </div>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+                {notificationPermission === "granted" && (
+                  <div className="flex items-center gap-2 px-2 py-1.5 text-xs text-muted-foreground">
+                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                    Masaüstü bildirimleri açık
+                  </div>
+                )}
+                {notificationPermission === "denied" && (
+                  <div className="flex items-start gap-2 px-2 py-1.5 text-xs text-muted-foreground">
+                    <BellOff className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                    <span>Masaüstü bildirimleri engellenmiş. Tarayıcı ayarlarından izin verebilirsiniz.</span>
+                  </div>
+                )}
                 {isAlertsLoading && (
                   <div className="px-2 py-3 text-sm text-muted-foreground flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />

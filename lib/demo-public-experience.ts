@@ -28,8 +28,9 @@ export const DEMO_PUBLIC_DEALER: PublicDealer = {
   socialMedia: {},
   publicTheme: {
     theme: 'premium',
-    accentColor: '#dc2626',
+    accentColor: '#2f2d2c',
     backgroundStyle: 'warm',
+    heroTagline: 'Premium ikinci el deneyimi',
     heroNote:
       'Bu sayfa demo deneyimi icin hazirlanmistir. Galeri sahipleri kendi logosu, iletisim bilgileri, araclari ve QR linkleriyle ayni yapida yayin yapar.',
   },

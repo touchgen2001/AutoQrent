@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { createPageMetadata } from '@/lib/seo'
-import { getPublicVehicleDetail, getVehicleSeoDescription, getVehicleSeoImage, getVehicleSeoTitle } from '@/lib/public-vehicle-seo'
+import { getPublicVehicleDetail } from '@/lib/public-vehicle-seo'
+import { getVehicleSeoDescription, getVehicleSeoImage, getVehicleSeoTitle } from '@/lib/public-vehicle-jsonld'
 
 type VehicleLayoutProps = {
   children: React.ReactNode

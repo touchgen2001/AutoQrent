@@ -463,7 +463,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         ok: false,
-        message: error instanceof Error ? error.message : 'Görseller yüklenemedi.',
+        message: 'Görseller yüklenemedi. Lütfen tekrar deneyin.',
       },
       { status: 500 },
     )
@@ -570,7 +570,7 @@ export async function DELETE(request: Request) {
     return NextResponse.json(
       {
         ok: false,
-        message: error instanceof Error ? error.message : 'Görsel silinemedi.',
+        message: 'Görsel silinemedi. Lütfen tekrar deneyin.',
       },
       { status: 500 },
     )

@@ -117,7 +117,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         ok: false,
-        message: error instanceof Error ? error.message : 'Görsel kotası alınamadı.',
+        message: 'Görsel kotası alınamadı.',
       },
       { status: 500 },
     )

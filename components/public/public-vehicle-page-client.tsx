@@ -31,7 +31,7 @@ import { cn } from "@/lib/utils"
 import { PublicLanguageSwitcher, usePublicLocale } from "@/components/shared/public-language-switcher"
 import { VehicleImageFrame } from "@/components/shared/vehicle-image-frame"
 import type { PublicVehicleDetail } from "@/lib/public-catalog-types"
-import { buildVehicleBreadcrumbJsonLd, buildVehicleFaqItems, buildVehicleFaqJsonLd, buildVehicleJsonLd } from "@/lib/public-vehicle-seo"
+import { buildVehicleBreadcrumbJsonLd, buildVehicleFaqItems, buildVehicleFaqJsonLd, buildVehicleJsonLd } from "@/lib/public-vehicle-jsonld"
 import { IMAGE_PRESETS } from "@/lib/image-presets"
 import { formatPublicNumber, formatPublicPrice, type PublicLocale } from "@/lib/public-i18n"
 

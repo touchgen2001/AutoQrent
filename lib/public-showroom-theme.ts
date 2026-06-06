@@ -8,6 +8,7 @@ export type PublicShowroomThemeSettings = {
   theme: PublicShowroomTheme
   accentColor: string
   backgroundStyle: PublicShowroomBackground
+  heroTagline: string
   heroNote: string
 }
 
@@ -15,13 +16,17 @@ type PublicShowroomThemeInput = {
   theme?: unknown
   accentColor?: unknown
   backgroundStyle?: unknown
+  heroTagline?: unknown
   heroNote?: unknown
 }
 
+export const PUBLIC_SHOWROOM_TAGLINE_MAX = 80
+
 export const DEFAULT_PUBLIC_SHOWROOM_THEME: PublicShowroomThemeSettings = {
   theme: 'premium',
-  accentColor: '#dc2626',
+  accentColor: '#2f2d2c',
   backgroundStyle: 'warm',
+  heroTagline: '',
   heroNote: '',
 }
 
@@ -49,6 +54,9 @@ export function normalizePublicShowroomTheme(input: PublicShowroomThemeInput | n
   const backgroundStyle = isPublicShowroomBackground(input?.backgroundStyle)
     ? input.backgroundStyle
     : DEFAULT_PUBLIC_SHOWROOM_THEME.backgroundStyle
+  const heroTagline = typeof input?.heroTagline === 'string'
+    ? input.heroTagline.trim().slice(0, PUBLIC_SHOWROOM_TAGLINE_MAX)
+    : DEFAULT_PUBLIC_SHOWROOM_THEME.heroTagline
   const heroNote = typeof input?.heroNote === 'string'
     ? input.heroNote.trim().slice(0, 220)
     : DEFAULT_PUBLIC_SHOWROOM_THEME.heroNote
@@ -57,6 +65,7 @@ export function normalizePublicShowroomTheme(input: PublicShowroomThemeInput | n
     theme,
     accentColor,
     backgroundStyle,
+    heroTagline,
     heroNote,
   } satisfies PublicShowroomThemeSettings
 }

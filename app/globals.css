@@ -4,78 +4,116 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Cebindegaleri - Premium Automotive Theme */
-  /* Mat siyah, beyaz ve koyu gri premium otomotiv teması */
-  --background: oklch(0.98 0 0);
-  --foreground: oklch(0.145 0 0);
+  /* Cebindegaleri — Corporate Monochrome Theme
+     A disciplined ink → graphite → off-white scale with (almost) no hue, for a
+     premium, neutral automotive identity. `--primary` is near-black ink and
+     `--accent` is a step-lighter graphite, giving a quiet two-tone hierarchy.
+     Only the semantic status colors (success / warning / info / destructive)
+     stay chromatic so feedback remains legible. */
+  --background: oklch(0.985 0.0015 80);
+  --foreground: oklch(0.16 0.004 60);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.16 0.004 60);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.145 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.96 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.94 0 0);
-  --muted-foreground: oklch(0.45 0 0);
-  --accent: oklch(0.16 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.55 0.22 25);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.90 0 0);
-  --input: oklch(0.92 0 0);
-  --ring: oklch(0.18 0 0);
-  --chart-1: oklch(0.18 0 0);
-  --chart-2: oklch(0.36 0 0);
-  --chart-3: oklch(0.52 0 0);
-  --chart-4: oklch(0.68 0 0);
-  --chart-5: oklch(0.82 0 0);
+  --popover-foreground: oklch(0.16 0.004 60);
+  --primary: oklch(0.18 0.004 60);
+  --primary-foreground: oklch(0.985 0.001 80);
+  --secondary: oklch(0.965 0.003 75);
+  --secondary-foreground: oklch(0.22 0.004 60);
+  --muted: oklch(0.965 0.002 75);
+  --muted-foreground: oklch(0.47 0.006 60);
+  /* Brand signature — graphite. This codebase uses `accent` as the primary
+     CTA / highlight color (bg-accent + text-accent-foreground), so this token
+     drives every CTA, chip, link and active state. Kept a step lighter than
+     --primary for a quiet two-tone (ink + graphite) monochrome hierarchy. */
+  --accent: oklch(0.30 0.004 60);
+  --accent-foreground: oklch(0.985 0.001 80);
+  --destructive: oklch(0.55 0.205 27);
+  --destructive-foreground: oklch(0.99 0 0);
+  --success: oklch(0.60 0.13 150);
+  --success-foreground: oklch(0.99 0 0);
+  --warning: oklch(0.72 0.13 75);
+  --warning-foreground: oklch(0.24 0.03 70);
+  --info: oklch(0.55 0.12 245);
+  --info-foreground: oklch(0.99 0 0);
+  --border: oklch(0.905 0.004 70);
+  --input: oklch(0.905 0.004 70);
+  --ring: oklch(0.45 0.004 60);
+  /* Monochrome chart ramp — ink → light graphite, no hue */
+  --chart-1: oklch(0.24 0.004 60);
+  --chart-2: oklch(0.38 0.004 60);
+  --chart-3: oklch(0.52 0.004 60);
+  --chart-4: oklch(0.66 0.005 65);
+  --chart-5: oklch(0.80 0.004 75);
   --radius: 0.75rem;
-  --sidebar: oklch(0.12 0 0);
-  --sidebar-foreground: oklch(0.92 0 0);
-  --sidebar-primary: oklch(0.94 0 0);
-  --sidebar-primary-foreground: oklch(0.12 0 0);
-  --sidebar-accent: oklch(0.20 0 0);
-  --sidebar-accent-foreground: oklch(0.92 0 0);
-  --sidebar-border: oklch(0.22 0 0);
-  --sidebar-ring: oklch(0.70 0 0);
-  --sidebar-muted: oklch(0.55 0 0);
+  /* Sidebar is always a dark surface in both modes; the active marker is a
+     clean light bar (no hue) to match the monochrome identity. */
+  --sidebar: oklch(0.155 0.006 60);
+  --sidebar-foreground: oklch(0.92 0.004 70);
+  --sidebar-primary: oklch(0.92 0.004 70);
+  --sidebar-primary-foreground: oklch(0.18 0.004 60);
+  --sidebar-accent: oklch(0.225 0.008 60);
+  --sidebar-accent-foreground: oklch(0.92 0.004 70);
+  --sidebar-border: oklch(0.24 0.006 60);
+  --sidebar-ring: oklch(0.55 0.004 60);
+  --sidebar-muted: oklch(0.62 0.006 60);
+  /* Layered, soft elevation — premium depth without harsh edges */
+  --shadow-color: 30 25% 12%;
+  --elevation-xs: 0 1px 2px -1px hsl(var(--shadow-color) / 0.10);
+  --elevation-sm: 0 1px 2px -1px hsl(var(--shadow-color) / 0.10), 0 2px 6px -2px hsl(var(--shadow-color) / 0.08);
+  --elevation-md: 0 2px 4px -2px hsl(var(--shadow-color) / 0.10), 0 6px 16px -4px hsl(var(--shadow-color) / 0.10);
+  --elevation-lg: 0 4px 8px -4px hsl(var(--shadow-color) / 0.10), 0 12px 28px -6px hsl(var(--shadow-color) / 0.12);
+  --elevation-xl: 0 8px 16px -8px hsl(var(--shadow-color) / 0.12), 0 24px 48px -12px hsl(var(--shadow-color) / 0.16);
+  --elevation-2xl: 0 12px 24px -12px hsl(var(--shadow-color) / 0.16), 0 32px 64px -16px hsl(var(--shadow-color) / 0.22);
 }
 
 .dark {
-  --background: oklch(0.10 0 0);
-  --foreground: oklch(0.95 0 0);
-  --card: oklch(0.14 0 0);
-  --card-foreground: oklch(0.95 0 0);
-  --popover: oklch(0.14 0 0);
-  --popover-foreground: oklch(0.95 0 0);
-  --primary: oklch(0.95 0 0);
-  --primary-foreground: oklch(0.12 0 0);
-  --secondary: oklch(0.20 0 0);
-  --secondary-foreground: oklch(0.95 0 0);
-  --muted: oklch(0.22 0 0);
-  --muted-foreground: oklch(0.65 0 0);
-  --accent: oklch(0.88 0 0);
-  --accent-foreground: oklch(0.12 0 0);
-  --destructive: oklch(0.55 0.22 25);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.25 0 0);
-  --input: oklch(0.22 0 0);
-  --ring: oklch(0.78 0 0);
-  --chart-1: oklch(0.9 0 0);
-  --chart-2: oklch(0.72 0 0);
-  --chart-3: oklch(0.56 0 0);
-  --chart-4: oklch(0.42 0 0);
-  --chart-5: oklch(0.3 0 0);
-  --sidebar: oklch(0.08 0 0);
-  --sidebar-foreground: oklch(0.92 0 0);
-  --sidebar-primary: oklch(0.94 0 0);
-  --sidebar-primary-foreground: oklch(0.12 0 0);
-  --sidebar-accent: oklch(0.16 0 0);
-  --sidebar-accent-foreground: oklch(0.92 0 0);
-  --sidebar-border: oklch(0.20 0 0);
-  --sidebar-ring: oklch(0.70 0 0);
-  --sidebar-muted: oklch(0.50 0 0);
+  --background: oklch(0.145 0.004 60);
+  --foreground: oklch(0.955 0.002 80);
+  --card: oklch(0.175 0.005 60);
+  --card-foreground: oklch(0.955 0.002 80);
+  --popover: oklch(0.175 0.005 60);
+  --popover-foreground: oklch(0.955 0.002 80);
+  --primary: oklch(0.955 0.002 80);
+  --primary-foreground: oklch(0.16 0.004 60);
+  --secondary: oklch(0.235 0.006 60);
+  --secondary-foreground: oklch(0.955 0.002 80);
+  --muted: oklch(0.235 0.006 60);
+  --muted-foreground: oklch(0.68 0.006 60);
+  --accent: oklch(0.90 0.003 80);
+  --accent-foreground: oklch(0.16 0.004 60);
+  --destructive: oklch(0.62 0.20 27);
+  --destructive-foreground: oklch(0.99 0 0);
+  --success: oklch(0.68 0.14 150);
+  --success-foreground: oklch(0.145 0.02 150);
+  --warning: oklch(0.78 0.13 80);
+  --warning-foreground: oklch(0.22 0.03 70);
+  --info: oklch(0.65 0.12 245);
+  --info-foreground: oklch(0.145 0.02 245);
+  --border: oklch(0.27 0.006 60);
+  --input: oklch(0.27 0.006 60);
+  --ring: oklch(0.55 0.004 60);
+  --chart-1: oklch(0.92 0.003 80);
+  --chart-2: oklch(0.78 0.004 75);
+  --chart-3: oklch(0.64 0.005 65);
+  --chart-4: oklch(0.50 0.005 60);
+  --chart-5: oklch(0.38 0.005 60);
+  --sidebar: oklch(0.135 0.005 60);
+  --sidebar-foreground: oklch(0.92 0.004 70);
+  --sidebar-primary: oklch(0.92 0.004 70);
+  --sidebar-primary-foreground: oklch(0.18 0.004 60);
+  --sidebar-accent: oklch(0.225 0.008 60);
+  --sidebar-accent-foreground: oklch(0.92 0.004 70);
+  --sidebar-border: oklch(0.235 0.006 60);
+  --sidebar-ring: oklch(0.55 0.004 60);
+  --sidebar-muted: oklch(0.62 0.006 60);
+  --shadow-color: 0 0% 0%;
+  --elevation-xs: 0 1px 2px -1px hsl(var(--shadow-color) / 0.40);
+  --elevation-sm: 0 1px 2px -1px hsl(var(--shadow-color) / 0.40), 0 2px 6px -2px hsl(var(--shadow-color) / 0.36);
+  --elevation-md: 0 2px 4px -2px hsl(var(--shadow-color) / 0.44), 0 6px 16px -4px hsl(var(--shadow-color) / 0.40);
+  --elevation-lg: 0 4px 8px -4px hsl(var(--shadow-color) / 0.46), 0 12px 28px -6px hsl(var(--shadow-color) / 0.48);
+  --elevation-xl: 0 8px 16px -8px hsl(var(--shadow-color) / 0.50), 0 24px 48px -12px hsl(var(--shadow-color) / 0.56);
+  --elevation-2xl: 0 12px 24px -12px hsl(var(--shadow-color) / 0.55), 0 32px 64px -16px hsl(var(--shadow-color) / 0.65);
 }
 
 @theme inline {
@@ -97,6 +135,12 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -118,6 +162,14 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-muted: var(--sidebar-muted);
+  --shadow-2xs: var(--elevation-xs);
+  --shadow-xs: var(--elevation-xs);
+  --shadow-sm: var(--elevation-sm);
+  --shadow: var(--elevation-sm);
+  --shadow-md: var(--elevation-md);
+  --shadow-lg: var(--elevation-lg);
+  --shadow-xl: var(--elevation-xl);
+  --shadow-2xl: var(--elevation-2xl);
 }
 
 @layer base {
@@ -126,25 +178,52 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: 'cv11', 'ss01';
+    text-rendering: optimizeLegibility;
+  }
+  /* Tabular figures for data-dense surfaces (tables, metrics) */
+  th, td, [data-tabular-nums] {
+    font-variant-numeric: tabular-nums;
+  }
+  /* Branded text selection */
+  ::selection {
+    background-color: color-mix(in oklch, var(--accent) 24%, transparent);
+    color: var(--foreground);
   }
 }
 
-/* Custom scrollbar for automotive premium feel */
+/* Custom scrollbar for an automotive premium feel */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--muted);
-  border-radius: 4px;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--muted-foreground);
-  border-radius: 4px;
+  background: color-mix(in oklch, var(--muted-foreground) 35%, transparent);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--foreground);
+  background: color-mix(in oklch, var(--muted-foreground) 60%, transparent);
+  background-clip: padding-box;
+}
+
+* {
+  scrollbar-color: color-mix(in oklch, var(--muted-foreground) 40%, transparent) transparent;
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

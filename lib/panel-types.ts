@@ -299,7 +299,7 @@ export type PanelShowroomCtaAnalyticsResponse = {
 }
 
 export type PanelAlertSeverity = 'critical' | 'high' | 'medium' | 'low'
-export type PanelAlertType = 'lead_drop' | 'unanswered_leads' | 'low_conversion' | 'admin_notification'
+export type PanelAlertType = 'new_lead' | 'lead_drop' | 'unanswered_leads' | 'low_conversion' | 'admin_notification'
 
 export type PanelAlert = {
   id: string

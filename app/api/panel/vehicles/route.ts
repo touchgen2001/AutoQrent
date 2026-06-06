@@ -26,7 +26,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         ok: false,
-        message: error instanceof Error ? error.message : 'Araç listesi alınamadı.',
+        message: 'Araç listesi alınamadı.',
       },
       { status: 500 },
     )
@@ -126,7 +126,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         ok: false,
-        message: error instanceof Error ? error.message : 'Araç oluşturulamadı.',
+        message: 'Araç oluşturulamadı. Lütfen tekrar deneyin.',
       },
       { status: 500 },
     )

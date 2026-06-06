@@ -211,7 +211,7 @@ const PUBLIC_BACKGROUND_LABELS: Record<PublicShowroomBackground, string> = {
   graphite: 'Grafit koyu',
 }
 
-const PUBLIC_ACCENT_PRESETS = ['#dc2626', '#111827', '#0f766e', '#2563eb', '#ca8a04']
+const PUBLIC_ACCENT_PRESETS = ['#2f2d2c', '#0a0a0a', '#3f3f46', '#57534e', '#71717a']
 
 type GalleryLogoUploadResponse = {
   ok?: boolean
@@ -1169,6 +1169,20 @@ function SettingsPageContent() {
                 </div>
 
                 <div className='space-y-2'>
+                  <Label htmlFor='publicHeroTagline'>Sayfa Sloganı</Label>
+                  <Input
+                    id='publicHeroTagline'
+                    value={dealer.publicTheme.heroTagline}
+                    onChange={(event) => updatePublicTheme({ heroTagline: event.target.value.slice(0, 80) })}
+                    maxLength={80}
+                    placeholder='Örn. İstanbul’un güvenilir araç adresi'
+                  />
+                  <p className='text-xs text-muted-foreground'>
+                    {dealer.publicTheme.heroTagline.length}/80 karakter. Sayfanın en üstünde galeri adının hemen üzerinde görünür.
+                  </p>
+                </div>
+
+                <div className='space-y-2'>
                   <Label htmlFor='publicHeroNote'>Herkese Açık Sayfa Üst Açıklaması</Label>
                   <Textarea
                     id='publicHeroNote'
@@ -1207,7 +1221,7 @@ function SettingsPageContent() {
                       </div>
                       <div>
                         <p className='text-xs font-semibold uppercase tracking-[0.16em]' style={{ color: 'var(--preview-accent)' }}>
-                          Herkese açık galeri sayfası
+                          {dealer.publicTheme.heroTagline || 'Herkese açık galeri sayfası'}
                         </p>
                         <p className='text-lg font-black'>{dealer.name || 'Galeri adı'}</p>
                       </div>

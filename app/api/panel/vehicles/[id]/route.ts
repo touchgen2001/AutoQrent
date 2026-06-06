@@ -69,7 +69,7 @@ export async function GET(_request: Request, context: { params: Promise<unknown>
     return NextResponse.json(
       {
         ok: false,
-        message: error instanceof Error ? error.message : 'Araç detayı alınamadı.',
+        message: 'Araç detayı alınamadı.',
       },
       { status: 500 },
     )
@@ -239,7 +239,7 @@ export async function PATCH(request: Request, context: { params: Promise<unknown
     return NextResponse.json(
       {
         ok: false,
-        message: error instanceof Error ? error.message : 'Araç güncellenemedi.',
+        message: 'Araç güncellenemedi. Lütfen tekrar deneyin.',
       },
       { status: 500 },
     )
@@ -292,7 +292,7 @@ export async function DELETE(request: Request, context: { params: Promise<unknow
     return NextResponse.json(
       {
         ok: false,
-        message: error instanceof Error ? error.message : 'Araç silinemedi.',
+        message: 'Araç silinemedi. Lütfen tekrar deneyin.',
       },
       { status: 500 },
     )

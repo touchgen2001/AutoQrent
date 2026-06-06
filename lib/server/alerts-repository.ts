@@ -6,6 +6,7 @@ import { supabaseAdminFetch } from '@/lib/server/supabase-admin'
 const DAY_MS = 24 * 60 * 60 * 1000
 const HOUR_MS = 60 * 60 * 1000
 const UNANSWERED_WINDOW_HOURS = 2
+const NEW_LEAD_WINDOW_HOURS = 24
 
 type AdminNotificationRow = {
   id: number
@@ -28,6 +29,40 @@ function toTimestamp(value: string) {
 
 function roundToOne(value: number) {
   return Number(value.toFixed(1))
+}
+
+function buildNewLeadAlert(leads: PanelLead[], now: number): PanelAlert | null {
+  const windowStart = now - NEW_LEAD_WINDOW_HOURS * HOUR_MS
+
+  const freshLeads = leads.filter((lead) => {
+    if (lead.status !== 'yeni') return false
+    const createdAt = toTimestamp(lead.createdAt)
+    return createdAt !== null && createdAt >= windowStart
+  })
+
+  if (freshLeads.length === 0) {
+    return null
+  }
+
+  const latest = freshLeads.reduce((latestLead, lead) =>
+    (toTimestamp(lead.createdAt) ?? 0) > (toTimestamp(latestLead.createdAt) ?? 0) ? lead : latestLead,
+  )
+
+  const vehiclePart = latest.vehicleTitle ? ` · ${latest.vehicleTitle}` : ''
+  const countLabel = freshLeads.length === 1 ? 'Yeni Müşteri Talebi' : `${freshLeads.length} Yeni Müşteri Talebi`
+
+  return {
+    id: 'new-lead-alert',
+    type: 'new_lead',
+    severity: 'high',
+    title: countLabel,
+    description: `Son ${NEW_LEAD_WINDOW_HOURS} saatte gelen ve henüz dönüş yapılmamış talepler var. İlk teması hızlı kurmak satışa dönüşümü artırır.`,
+    metricValue: `${freshLeads.length} yeni talep · Son: ${latest.customerName}${vehiclePart}`,
+    threshold: 'Durum: Yeni (yanıt bekliyor)',
+    actionLabel: 'Talepleri Görüntüle',
+    actionHref: '/panel/leadler',
+    createdAt: latest.createdAt,
+  }
 }
 
 function buildLeadDropAlert(currentLeads: number, previousLeads: number, nowIso: string): PanelAlert | null {
@@ -231,6 +266,7 @@ export async function getPanelAlerts(ownerEmail?: string, userId?: string): Prom
   const unansweredLeadCount = countUnansweredLeads(leadsResult.items, now)
 
   const alerts = [
+    buildNewLeadAlert(leadsResult.items, now),
     buildLeadDropAlert(periodCounts.current, periodCounts.previous, nowIso),
     buildUnansweredLeadAlert(unansweredLeadCount, nowIso),
     buildConversionAlert(funnelResult.current.conversionRate, funnelResult.current.totalLeads, nowIso),

@@ -8,6 +8,7 @@ import { HomeRichSections } from "@/components/landing/home-rich-sections"
 import { HomeDemoExperience } from "@/components/landing/home-demo-experience"
 import { HomePricingPreview } from "@/components/landing/home-pricing-preview"
 import { HomeBlogPreview } from "@/components/landing/home-blog-preview"
+import { HomeFaqPreview, buildHomeFaqJsonLd } from "@/components/landing/home-faq-preview"
 import { MobileStickyCta } from "@/components/landing/mobile-sticky-cta"
 import { LandingFooter } from "@/components/landing/footer"
 import { absoluteUrl, createPageMetadata } from "@/lib/seo"
@@ -49,6 +50,8 @@ const websiteJsonLd = {
     "@id": organizationId,
   },
 }
+
+const faqJsonLd = buildHomeFaqJsonLd()
 
 function toJsonLd(data: unknown) {
   return JSON.stringify(data).replace(/</g, "\\u003c")
@@ -114,6 +117,10 @@ export default function LandingPage() {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: toJsonLd(websiteJsonLd) }}
         />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: toJsonLd(faqJsonLd) }}
+        />
         <HeroSection />
         <HomeDemoExperience />
         <HomeRichSections />
@@ -149,6 +156,7 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
+        <HomeFaqPreview />
         <CtaSection />
       </main>
       <LandingFooter />

@@ -43,6 +43,7 @@ type GalleryRow = {
   public_theme?: string | null
   public_accent_color?: string | null
   public_background_style?: string | null
+  public_hero_tagline?: string | null
   public_showroom_note?: string | null
 }
 
@@ -80,6 +81,7 @@ const updateSchema = z.object({
     theme: z.enum(PUBLIC_SHOWROOM_THEME_VALUES),
     accentColor: z.string().trim().regex(/^#[0-9a-fA-F]{6}$/, 'Tema rengi geçerli hex formatında olmalıdır.'),
     backgroundStyle: z.enum(PUBLIC_SHOWROOM_BACKGROUND_VALUES),
+    heroTagline: z.string().trim().max(80, 'Slogan en fazla 80 karakter olabilir.').or(z.literal('')),
     heroNote: z.string().trim().max(220, 'Public açıklama en fazla 220 karakter olabilir.').or(z.literal('')),
   }).optional(),
 }).strict()
@@ -112,6 +114,7 @@ const THEME_GALLERY_SELECT = [
   'public_theme',
   'public_accent_color',
   'public_background_style',
+  'public_hero_tagline',
   'public_showroom_note',
 ].join(',')
 
@@ -246,6 +249,7 @@ async function fetchGallerySettingsRows(ownerEmail: string) {
       !message.includes('public_theme')
       && !message.includes('public_accent_color')
       && !message.includes('public_background_style')
+      && !message.includes('public_hero_tagline')
       && !message.includes('public_showroom_note')
     ) {
       throw error
@@ -308,6 +312,7 @@ async function fetchSettingsPayload(ownerEmail: string) {
     theme: gallery.public_theme || DEFAULT_PUBLIC_SHOWROOM_THEME.theme,
     accentColor: gallery.public_accent_color || DEFAULT_PUBLIC_SHOWROOM_THEME.accentColor,
     backgroundStyle: gallery.public_background_style || DEFAULT_PUBLIC_SHOWROOM_THEME.backgroundStyle,
+    heroTagline: sanitizePlainField(gallery.public_hero_tagline),
     heroNote: sanitizePlainField(gallery.public_showroom_note),
   })
 
@@ -386,7 +391,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         ok: false,
-        message: error instanceof Error ? error.message : 'Ayarlar alınamadı.',
+        message: 'Ayarlar alınamadı.',
       },
       { status: 500 },
     )
@@ -483,6 +488,7 @@ export async function PATCH(request: Request) {
       { label: 'Adres', value: parsed.data.address },
       { label: 'İl', value: parsed.data.city },
       { label: 'İlçe', value: parsed.data.district },
+      { label: 'Slogan', value: parsed.data.publicTheme?.heroTagline },
       { label: 'Public açıklama', value: parsed.data.publicTheme?.heroNote },
     ].find((item) => item.value && containsPlaceholderText(item.value))
 
@@ -557,6 +563,7 @@ export async function PATCH(request: Request) {
       galleryPatch.public_theme = publicTheme.theme
       galleryPatch.public_accent_color = publicTheme.accentColor
       galleryPatch.public_background_style = publicTheme.backgroundStyle
+      galleryPatch.public_hero_tagline = publicTheme.heroTagline || null
       galleryPatch.public_showroom_note = publicTheme.heroNote || null
     }
 
@@ -621,7 +628,7 @@ export async function PATCH(request: Request) {
     return NextResponse.json(
       {
         ok: false,
-        message: error instanceof Error ? error.message : 'Ayarlar kaydedilemedi.',
+        message: 'Ayarlar kaydedilemedi. Lütfen tekrar deneyin.',
       },
       { status: 500 },
     )

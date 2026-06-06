@@ -16,10 +16,10 @@ import {
 } from '@/components/ui/select'
 import {
   ArrowRight,
+  ArrowUpRight,
   Building2,
   Calendar,
   Car,
-  CheckCircle2,
   Clock,
   ExternalLink,
   Facebook,
@@ -36,6 +36,7 @@ import {
   Settings2,
   ShieldCheck,
   SlidersHorizontal,
+  Sparkles,
   Star,
   Twitter,
   X,
@@ -60,6 +61,7 @@ import {
 } from '@/lib/public-i18n'
 import { cn } from '@/lib/utils'
 import type { PublicDealer, PublicVehicle } from '@/lib/public-catalog-types'
+import type { PublicShowroomTheme } from '@/lib/public-showroom-theme'
 
 type ShowroomPageClientProps = {
   dealer: PublicDealer
@@ -103,6 +105,158 @@ const localizedTransmissionLabels: Record<PublicLocale, Record<VehicleTransmissi
   de: { manuel: 'Manuell', otomatik: 'Automatik', 'yari-otomatik': 'Halbautomatik', bilinmiyor: 'Unbekannt' },
   ru: { manuel: 'Механика', otomatik: 'Автомат', 'yari-otomatik': 'Полуавтомат', bilinmiyor: 'Неизвестно' },
   ar: { manuel: 'يدوي', otomatik: 'أوتوماتيك', 'yari-otomatik': 'نصف أوتوماتيك', bilinmiyor: 'غير معروف' },
+}
+
+// ---------------------------------------------------------------------------
+// Theme system — a cohesive token palette so each preset (premium / classic /
+// sport) reads as a bespoke dealership website, and every surface + text color
+// adapts (no invisible headings on dark backgrounds, no flat one-size styling).
+// ---------------------------------------------------------------------------
+
+type ShowroomPalette = {
+  isDark: boolean
+  root: string
+  header: string
+  navIdle: string
+  // hero
+  hero: string
+  heroGlow: string
+  heroText: string
+  heroEyebrow: string
+  heroMuted: string
+  heroChip: string
+  heroPrimaryBtn: string
+  heroGhostBtn: string
+  statCard: string
+  statLabel: string
+  statValue: string
+  // body
+  sectionEyebrow: string
+  sectionTitle: string
+  sectionBody: string
+  surface: string
+  surfaceHover: string
+  surfaceMuted: string
+  surfaceMutedText: string
+  surfaceStrongText: string
+  iconBadge: string
+  divider: string
+  pill: string
+  footer: string
+  footerMuted: string
+}
+
+function getShowroomPalette(dealer: PublicDealer): ShowroomPalette {
+  const theme: PublicShowroomTheme = dealer.publicTheme.theme
+  const background = dealer.publicTheme.backgroundStyle
+  const isDark = theme === 'premium'
+
+  if (isDark) {
+    const root =
+      background === 'light'
+        ? 'bg-[#0a0a0b] text-neutral-100'
+        : background === 'graphite'
+          ? 'bg-[#0b0d0f] text-neutral-100'
+          : 'bg-[#0c0a09] text-neutral-100'
+
+    return {
+      isDark: true,
+      root,
+      header: 'border-white/10 bg-black/40 supports-[backdrop-filter]:bg-black/25 backdrop-blur-xl',
+      navIdle: 'text-white/65 hover:bg-white/10 hover:text-white',
+      hero: 'text-white',
+      heroGlow:
+        'bg-[radial-gradient(62%_60%_at_12%_-10%,color-mix(in_oklab,var(--showroom-accent)_42%,transparent),transparent_60%),radial-gradient(50%_50%_at_100%_-10%,rgba(255,255,255,0.08),transparent_55%)]',
+      heroText: 'text-white',
+      heroEyebrow: 'text-white/60',
+      heroMuted: 'text-white/65',
+      heroChip: 'border-white/12 bg-white/[0.05] text-white/85',
+      heroPrimaryBtn: 'bg-white text-neutral-950 hover:bg-white/90',
+      heroGhostBtn: 'border-white/20 bg-white/[0.06] text-white hover:bg-white hover:text-neutral-950',
+      statCard: 'border-white/10 bg-white/[0.04]',
+      statLabel: 'text-white/55',
+      statValue: 'text-white',
+      sectionEyebrow: 'text-[var(--showroom-accent)]',
+      sectionTitle: 'text-white',
+      sectionBody: 'text-white/60',
+      surface: 'border-white/10 bg-white/[0.035]',
+      surfaceHover: 'hover:border-white/25 hover:bg-white/[0.06]',
+      surfaceMuted: 'border-white/10 bg-white/[0.05]',
+      surfaceMutedText: 'text-white/70',
+      surfaceStrongText: 'text-white',
+      iconBadge: 'bg-white/10 text-white',
+      divider: 'border-white/10',
+      pill: 'border-white/12 bg-white/[0.05] text-white/80',
+      footer: 'border-white/10 bg-black/30',
+      footerMuted: 'text-white/55',
+    }
+  }
+
+  // Light presets (classic / sport)
+  const root =
+    background === 'graphite'
+      ? 'bg-[#ecedf0] text-neutral-900'
+      : background === 'light'
+        ? 'bg-white text-neutral-900'
+        : 'bg-[#f6f3ef] text-neutral-900'
+
+  return {
+    isDark: false,
+    root,
+    header: 'border-black/10 bg-white/85 supports-[backdrop-filter]:bg-white/70 backdrop-blur-xl',
+    navIdle: 'text-neutral-600 hover:bg-neutral-900 hover:text-white',
+    hero: theme === 'sport' ? 'text-white' : 'text-neutral-900',
+    heroGlow:
+      theme === 'sport'
+        ? 'bg-[radial-gradient(60%_60%_at_85%_-10%,color-mix(in_oklab,var(--showroom-accent)_45%,transparent),transparent_58%),linear-gradient(120deg,rgba(255,255,255,0.05),transparent_45%)]'
+        : 'bg-[radial-gradient(55%_55%_at_12%_-10%,color-mix(in_oklab,var(--showroom-accent)_14%,transparent),transparent_60%)]',
+    heroText: theme === 'sport' ? 'text-white' : 'text-neutral-900',
+    heroEyebrow: theme === 'sport' ? 'text-white/65' : 'text-neutral-500',
+    heroMuted: theme === 'sport' ? 'text-white/70' : 'text-neutral-600',
+    heroChip:
+      theme === 'sport'
+        ? 'border-white/15 bg-white/[0.06] text-white/85'
+        : 'border-black/10 bg-white text-neutral-700',
+    heroPrimaryBtn:
+      theme === 'sport'
+        ? 'bg-white text-neutral-950 hover:bg-white/90'
+        : 'bg-neutral-950 text-white hover:bg-neutral-800',
+    heroGhostBtn:
+      theme === 'sport'
+        ? 'border-white/25 bg-white/[0.06] text-white hover:bg-white hover:text-neutral-950'
+        : 'border-black/15 bg-white text-neutral-900 hover:bg-neutral-950 hover:text-white',
+    statCard:
+      theme === 'sport'
+        ? 'border-white/12 bg-white/[0.05]'
+        : 'border-black/10 bg-white shadow-sm',
+    statLabel: theme === 'sport' ? 'text-white/55' : 'text-neutral-500',
+    statValue: theme === 'sport' ? 'text-white' : 'text-neutral-950',
+    sectionEyebrow: 'text-[var(--showroom-accent)]',
+    sectionTitle: 'text-neutral-950',
+    sectionBody: 'text-neutral-600',
+    surface: 'border-black/10 bg-white shadow-sm',
+    surfaceHover: 'hover:border-black/20 hover:shadow-md',
+    surfaceMuted: 'border-black/10 bg-neutral-50',
+    surfaceMutedText: 'text-neutral-600',
+    surfaceStrongText: 'text-neutral-950',
+    iconBadge: 'bg-neutral-950 text-white',
+    divider: 'border-black/10',
+    pill: 'border-black/10 bg-white text-neutral-700 shadow-sm',
+    footer: 'border-black/10 bg-white',
+    footerMuted: 'text-neutral-600',
+  }
+}
+
+// The hero is a contained dramatic slab on light presets, and the immersive top
+// of the page on the dark premium preset.
+function getHeroShell(dealer: PublicDealer) {
+  const theme = dealer.publicTheme.theme
+  if (theme === 'premium') return 'relative overflow-hidden'
+  if (theme === 'sport') {
+    return 'relative overflow-hidden bg-neutral-950'
+  }
+  // classic
+  return 'relative overflow-hidden'
 }
 
 function getDealerInitials(name: string) {
@@ -190,35 +344,22 @@ function getPriceRangeLabel(
   return `${formatPublicPrice(minPrice, locale)} - ${formatPublicPrice(maxPrice, locale)}`
 }
 
-function getShowroomRootClass(dealer: PublicDealer) {
-  if (dealer.publicTheme.backgroundStyle === 'graphite') return 'bg-neutral-950 text-neutral-50'
-  if (dealer.publicTheme.backgroundStyle === 'light') return 'bg-white text-neutral-950'
-  return 'bg-[#f6f3ef] text-neutral-950'
-}
-
-function getShowroomHeroClass(dealer: PublicDealer) {
-  if (dealer.publicTheme.theme === 'classic') return 'bg-white text-neutral-950'
-  if (dealer.publicTheme.theme === 'sport') return 'bg-black text-white'
-  return 'bg-neutral-950 text-white'
-}
-
-function getShowroomHeroOverlayClass(dealer: PublicDealer) {
-  if (dealer.publicTheme.theme === 'classic') {
-    return 'bg-[radial-gradient(circle_at_18%_20%,rgba(0,0,0,0.08),transparent_28%),linear-gradient(135deg,rgba(0,0,0,0.04),transparent_42%)]'
-  }
-  return 'bg-[radial-gradient(circle_at_18%_20%,rgba(255,255,255,0.18),transparent_28%),linear-gradient(135deg,rgba(255,255,255,0.08),transparent_42%)]'
-}
-
-function getShowroomPanelClass(dealer: PublicDealer) {
-  if (dealer.publicTheme.theme === 'classic') return 'border-black/10 bg-neutral-50 text-neutral-950'
-  return 'border-white/12 bg-white/[0.06] text-white'
-}
-
-function DealerLogoMark({ dealer, size = 'lg' }: { dealer: PublicDealer; size?: 'sm' | 'lg' }) {
-  const sizeClass = size === 'sm' ? 'size-14 rounded-2xl text-lg' : 'size-24 rounded-[2rem] text-3xl md:size-28'
+function DealerLogoMark({
+  dealer,
+  size = 'lg',
+  palette,
+}: {
+  dealer: PublicDealer
+  size?: 'sm' | 'lg'
+  palette: ShowroomPalette
+}) {
+  const sizeClass = size === 'sm' ? 'size-14 rounded-2xl text-lg' : 'size-20 rounded-[1.75rem] text-2xl md:size-24'
+  const frame = palette.isDark
+    ? 'border-white/15 bg-white'
+    : 'border-black/10 bg-white'
 
   return (
-    <div className={cn('relative shrink-0 overflow-hidden border border-white/15 bg-white text-black shadow-2xl', sizeClass)}>
+    <div className={cn('relative shrink-0 overflow-hidden border text-black shadow-xl', frame, sizeClass)}>
       {dealer.logo ? (
         <Image
           src={dealer.logo}
@@ -245,6 +386,7 @@ function InfoCard({
   href,
   external,
   onClick,
+  palette,
 }: {
   icon: IconComponent
   label: string
@@ -252,15 +394,16 @@ function InfoCard({
   href?: string
   external?: boolean
   onClick?: () => void
+  palette: ShowroomPalette
 }) {
   const content = (
-    <div className="flex min-h-24 items-start gap-3 rounded-2xl border border-black/10 bg-white p-4 shadow-sm transition hover:border-black/20 hover:shadow-md">
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-black text-white">
+    <div className={cn('flex min-h-24 items-start gap-3 rounded-2xl border p-4 transition', palette.surface, href && palette.surfaceHover)}>
+      <span className={cn('flex size-10 shrink-0 items-center justify-center rounded-xl', palette.iconBadge)}>
         <Icon className="size-4" />
       </span>
       <span className="min-w-0">
-        <span className="block text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">{label}</span>
-        <span className="mt-1 block break-words text-sm font-semibold text-neutral-950">{value}</span>
+        <span className={cn('block text-xs font-semibold uppercase tracking-[0.18em]', palette.surfaceMutedText)}>{label}</span>
+        <span className={cn('mt-1 block break-words text-sm font-semibold', palette.surfaceStrongText)}>{value}</span>
       </span>
     </div>
   )
@@ -279,32 +422,27 @@ function InfoCard({
   )
 }
 
-function SectionHeading({ eyebrow, title, description }: { eyebrow: string; title: string; description: string }) {
-  return (
-    <div className="max-w-3xl">
-      <p className="text-xs font-black uppercase tracking-[0.22em] text-[var(--showroom-accent)]">{eyebrow}</p>
-      <h2 className="mt-3 text-2xl font-black tracking-tight text-neutral-950 md:text-4xl">{title}</h2>
-      <p className="mt-3 text-base leading-7 text-neutral-600">{description}</p>
-    </div>
-  )
-}
-
-function FlowCard({
-  icon: Icon,
+function SectionHeading({
+  eyebrow,
   title,
   description,
+  palette,
+  align = 'start',
 }: {
-  icon: IconComponent
+  eyebrow: string
   title: string
   description: string
+  palette: ShowroomPalette
+  align?: 'start' | 'center'
 }) {
   return (
-    <div className="rounded-[1.75rem] border border-black/10 bg-white p-5 shadow-sm">
-      <span className="flex size-11 items-center justify-center rounded-2xl bg-neutral-950 text-white">
-        <Icon className="size-5" />
-      </span>
-      <h3 className="mt-5 text-lg font-black tracking-tight text-neutral-950">{title}</h3>
-      <p className="mt-2 text-sm leading-6 text-neutral-600">{description}</p>
+    <div className={cn('max-w-3xl', align === 'center' && 'mx-auto text-center')}>
+      <p className={cn('flex items-center gap-2 text-xs font-black uppercase tracking-[0.24em]', palette.sectionEyebrow, align === 'center' && 'justify-center')}>
+        <span className="inline-block h-px w-6 bg-[var(--showroom-accent)]" />
+        {eyebrow}
+      </p>
+      <h2 className={cn('mt-4 text-3xl font-black tracking-tight md:text-[2.6rem] md:leading-[1.05]', palette.sectionTitle)}>{title}</h2>
+      <p className={cn('mt-4 text-base leading-7', palette.sectionBody)}>{description}</p>
     </div>
   )
 }
@@ -331,6 +469,7 @@ export function ShowroomPageClient({ dealer, vehicles }: ShowroomPageClientProps
     sortBy: 'newest',
   })
 
+  const palette = useMemo(() => getShowroomPalette(dealer), [dealer])
   const featuredVehicles = useMemo(() => vehicles.filter((vehicle) => vehicle.featured), [vehicles])
   const vehicleStats = useMemo(() => getVehicleStats(vehicles), [vehicles])
   const locationLabel = getLocationLabel(dealer, t)
@@ -351,39 +490,18 @@ export function ShowroomPageClient({ dealer, vehicles }: ShowroomPageClientProps
     '--showroom-accent': dealer.publicTheme.accentColor,
   } as CSSProperties
   const heroCopy = dealer.publicTheme.heroNote || t('showroomHeroCopy')
+  const heroEyebrow = dealer.publicTheme.heroTagline || t('showroomSubtitle')
   const showroomNavItems = [
     { href: '#araclar', label: t('navVehicles') },
-    { href: '#talep', label: t('navRequest') },
     { href: '#galeri-bilgileri', label: t('navGalleryInfo') },
+    { href: '#talep', label: t('navRequest') },
     { href: '#iletisim', label: t('navContact') },
   ]
-  const showroomHighlights = [
-    t('realStockLabel'),
-    t('panelManagedLabel'),
-    t('mobileReadyLabel'),
-    t('languageReadyLabel'),
-  ]
-  const showroomFlowCards = [
-    {
-      icon: Car,
-      title: t('showroomFlowVehicleTitle'),
-      description: t('showroomFlowVehicleCopy'),
-    },
-    {
-      icon: MessageCircle,
-      title: t('showroomFlowContactTitle'),
-      description: t('showroomFlowContactCopy'),
-    },
-    {
-      icon: CheckCircle2,
-      title: t('showroomFlowPanelTitle'),
-      description: t('showroomFlowPanelCopy'),
-    },
-    {
-      icon: Globe2,
-      title: t('showroomFlowLanguageTitle'),
-      description: t('showroomFlowLanguageCopy'),
-    },
+  const heroHighlights = [
+    { icon: ShieldCheck, label: t('realStockLabel') },
+    { icon: Sparkles, label: t('panelManagedLabel') },
+    { icon: Phone, label: t('mobileReadyLabel') },
+    { icon: Globe2, label: t('languageReadyLabel') },
   ]
 
   const recordShowroomEvent = useCallback((eventType: ShowroomCtaEventType, target?: string) => {
@@ -472,6 +590,7 @@ export function ShowroomPageClient({ dealer, vehicles }: ShowroomPageClientProps
     { label: 'YouTube', href: buildSocialHref('youtube', dealer.socialMedia?.youtube), icon: Youtube },
     { label: 'X', href: buildSocialHref('twitter', dealer.socialMedia?.twitter), icon: Twitter },
   ]
+  const activeSocialLinks = socialLinks.filter((social) => social.href)
 
   const filteredVehicles = useMemo(() => {
     const result = vehicles.filter((vehicle) => {
@@ -526,18 +645,33 @@ export function ShowroomPageClient({ dealer, vehicles }: ShowroomPageClientProps
     || filters.transmission !== 'all',
   )
 
+  const heroStats = [
+    { label: t('activeVehicles'), value: formatPublicNumber(vehicleStats.total, locale) },
+    { label: t('brandCount'), value: formatPublicNumber(vehicleStats.brandCount, locale) },
+    { label: t('featuredVehicles'), value: formatPublicNumber(vehicleStats.featuredCount, locale) },
+    { label: t('priceRange'), value: getPriceRangeLabel(vehicleStats.minPrice, vehicleStats.maxPrice, locale, t) },
+  ]
+
   return (
     <div
-      className={cn('min-h-screen pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-0', getShowroomRootClass(dealer))}
+      className={cn('min-h-screen pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-0', palette.root)}
       dir={dir}
       style={showroomStyle}
     >
-      <header className="sticky top-0 z-40 border-b border-black/10 bg-white/90 backdrop-blur-xl">
+      <header className={cn('sticky top-0 z-40 border-b', palette.header)}>
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
-          <BrandLogo subtitle={t('showroomSubtitle')} className="shrink-0" />
-          <nav className="hidden items-center gap-1 rounded-full border border-black/10 bg-neutral-50 p-1 md:flex">
+          <Link href="#top" className="flex min-w-0 items-center gap-3">
+            <DealerLogoMark dealer={dealer} size="sm" palette={palette} />
+            <span className="min-w-0">
+              <span className={cn('block truncate text-base font-black leading-tight tracking-tight', palette.heroText)}>{dealer.name}</span>
+              <span className={cn('mt-0.5 block truncate text-xs font-semibold uppercase tracking-[0.16em]', palette.isDark ? 'text-white/50' : 'text-neutral-500')}>
+                {t('showroomSubtitle')}
+              </span>
+            </span>
+          </Link>
+          <nav className={cn('hidden items-center gap-1 rounded-full border p-1 md:flex', palette.isDark ? 'border-white/10 bg-white/[0.04]' : 'border-black/10 bg-neutral-50')}>
             {showroomNavItems.map((item) => (
-              <Link key={item.href} href={item.href} className="rounded-full px-4 py-2 text-sm font-semibold text-neutral-600 transition hover:bg-black hover:text-white">
+              <Link key={item.href} href={item.href} className={cn('rounded-full px-4 py-2 text-sm font-semibold transition', palette.navIdle)}>
                 {item.label}
               </Link>
             ))}
@@ -549,16 +683,8 @@ export function ShowroomPageClient({ dealer, vehicles }: ShowroomPageClientProps
               label={t('language')}
               className="h-9 px-2 md:h-10 md:px-3"
             />
-            {phoneHref ? (
-              <Button asChild className="hidden bg-black text-white hover:bg-neutral-800 md:inline-flex">
-                <Link href={phoneHref} onClick={() => recordShowroomEvent('call_click', 'header_call')}>
-                  <Phone className="mr-2 size-4" />
-                  {t('call')}
-                </Link>
-              </Button>
-            ) : null}
             {whatsappHref ? (
-              <Button asChild variant="outline" className="hidden border-black/15 bg-white md:inline-flex">
+              <Button asChild className={cn('hidden md:inline-flex', palette.heroPrimaryBtn)}>
                 <Link
                   href={whatsappHref}
                   target="_blank"
@@ -574,32 +700,31 @@ export function ShowroomPageClient({ dealer, vehicles }: ShowroomPageClientProps
         </div>
       </header>
 
-      <section className={cn('relative overflow-hidden', getShowroomHeroClass(dealer))}>
-        <div className={cn('absolute inset-0', getShowroomHeroOverlayClass(dealer))} />
-        <div className="relative mx-auto grid max-w-7xl gap-8 px-4 py-10 md:grid-cols-[1.1fr_0.9fr] md:py-16">
-          <div className="flex flex-col justify-between gap-8">
-            <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
-              <DealerLogoMark dealer={dealer} />
-              <div className="min-w-0">
-                <Badge className="border-white/20 bg-white/10 text-current hover:bg-white/10">
-                  <ShieldCheck className="size-3" />
-                  {t('publicShowroomBadge')}
-                </Badge>
-                <h1 className="mt-4 text-4xl font-black tracking-tight md:text-6xl">{dealer.name}</h1>
-                <p className="mt-3 flex items-center gap-2 text-base text-white/72">
-                  <MapPin className="size-4" />
-                  {locationLabel}
-                </p>
-              </div>
+      <section id="top" className={cn(getHeroShell(dealer), palette.hero)}>
+        <div className={cn('pointer-events-none absolute inset-0', palette.heroGlow)} />
+        <div className="relative mx-auto grid max-w-7xl gap-10 px-4 py-12 md:grid-cols-[1.08fr_0.92fr] md:py-20">
+          <div className="flex flex-col justify-center gap-7">
+            <div>
+              <p className={cn('flex items-center gap-2 text-xs font-black uppercase tracking-[0.28em]', palette.heroEyebrow)}>
+                <span className="inline-block h-px w-7 bg-[var(--showroom-accent)]" />
+                {heroEyebrow}
+              </p>
+              <h1 className={cn('mt-5 text-5xl font-black leading-[0.98] tracking-tight md:text-7xl', palette.heroText)}>
+                {dealer.name}
+              </h1>
+              <p className={cn('mt-4 flex items-center gap-2 text-base font-medium', palette.heroMuted)}>
+                <MapPin className="size-4 text-[var(--showroom-accent)]" />
+                {locationLabel}
+              </p>
             </div>
 
-            <p className="max-w-2xl text-lg leading-8 opacity-75">
+            <p className={cn('max-w-xl text-lg leading-8', palette.heroMuted)}>
               {heroCopy}
             </p>
 
             <div className="flex flex-wrap gap-3">
               {phoneHref ? (
-                <Button asChild size="lg" className="bg-white text-black hover:bg-white/90">
+                <Button asChild size="lg" className={cn('h-12 rounded-2xl px-6', palette.heroPrimaryBtn)}>
                   <Link href={phoneHref} onClick={() => recordShowroomEvent('call_click', 'hero_call')}>
                     <Phone className="mr-2 size-4" />
                     {t('callGallery')}
@@ -607,7 +732,7 @@ export function ShowroomPageClient({ dealer, vehicles }: ShowroomPageClientProps
                 </Button>
               ) : null}
               {whatsappHref ? (
-                <Button asChild size="lg" className="text-white hover:opacity-90" style={{ backgroundColor: 'var(--showroom-accent)' }}>
+                <Button asChild size="lg" variant="outline" className={cn('h-12 rounded-2xl px-6', palette.heroGhostBtn)}>
                   <Link
                     href={whatsappHref}
                     target="_blank"
@@ -620,7 +745,7 @@ export function ShowroomPageClient({ dealer, vehicles }: ShowroomPageClientProps
                 </Button>
               ) : null}
               {dealer.googleMapsUrl ? (
-                <Button asChild size="lg" variant="outline" className="border-white/20 bg-white/5 text-white hover:bg-white hover:text-black">
+                <Button asChild size="lg" variant="outline" className={cn('h-12 rounded-2xl px-6', palette.heroGhostBtn)}>
                   <Link
                     href={dealer.googleMapsUrl}
                     target="_blank"
@@ -632,65 +757,40 @@ export function ShowroomPageClient({ dealer, vehicles }: ShowroomPageClientProps
                   </Link>
                 </Button>
               ) : null}
-              {vehicles.length > 0 ? (
-                <Button asChild size="lg" variant="outline" className="border-white/20 bg-white/5 text-white hover:bg-white hover:text-black">
-                  <Link href="#talep" onClick={markLeadFormOpen}>
-                    <ArrowRight className="mr-2 size-4" />
-                    {t('leaveRequest')}
-                  </Link>
-                </Button>
-              ) : null}
             </div>
 
-            <div className="grid gap-2 sm:grid-cols-2">
-              {showroomHighlights.map((highlight) => (
-                <div key={highlight} className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white/80">
-                  <CheckCircle2 className="size-4 text-[var(--showroom-accent)]" />
-                  {highlight}
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {heroStats.map((stat) => (
+                <div key={stat.label} className={cn('rounded-2xl border p-3.5', palette.statCard)}>
+                  <p className={cn('text-[0.7rem] font-semibold uppercase tracking-[0.12em]', palette.statLabel)}>{stat.label}</p>
+                  <p className={cn('mt-1.5 text-lg font-black leading-tight', palette.statValue)}>{stat.value}</p>
                 </div>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {heroHighlights.map((highlight) => (
+                <span key={highlight.label} className={cn('inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold', palette.heroChip)}>
+                  <highlight.icon className="size-3.5 text-[var(--showroom-accent)]" />
+                  {highlight.label}
+                </span>
               ))}
             </div>
           </div>
 
-          <div className={cn('rounded-[2rem] border p-5 shadow-2xl backdrop-blur', getShowroomPanelClass(dealer))}>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-3xl bg-white p-5 text-black">
-                <p className="text-sm font-semibold text-neutral-500">{t('activeVehicles')}</p>
-                <p className="mt-3 text-4xl font-black">{formatPublicNumber(vehicleStats.total, locale)}</p>
-              </div>
-              <div className="rounded-3xl border border-white/10 bg-black/30 p-5">
-                <p className="text-sm font-semibold text-white/60">{t('brandCount')}</p>
-                <p className="mt-3 text-4xl font-black">{formatPublicNumber(vehicleStats.brandCount, locale)}</p>
-              </div>
-              <div className="rounded-3xl border border-white/10 bg-black/30 p-5">
-                <p className="text-sm font-semibold text-white/60">{t('featuredVehicles')}</p>
-                <p className="mt-3 text-4xl font-black">{formatPublicNumber(vehicleStats.featuredCount, locale)}</p>
-              </div>
-              <div className="rounded-3xl border border-white/10 bg-black/30 p-5">
-                <p className="text-sm font-semibold text-white/60">{t('priceRange')}</p>
-                <p className="mt-3 text-lg font-black leading-tight">{getPriceRangeLabel(vehicleStats.minPrice, vehicleStats.maxPrice, locale, t)}</p>
-              </div>
-            </div>
-            <div className="mt-4 rounded-3xl border border-white/10 bg-black/20 p-5">
-              <div className="flex items-start gap-3">
-                <CheckCircle2 className="mt-0.5 size-5 text-white" />
-                <p className="text-sm leading-6 text-white/72">
-                  {t('activeStockCopy')}
-                </p>
-              </div>
-            </div>
-
+          <div className="flex items-center">
             <form
               id="talep"
-              className="mt-4 rounded-3xl border border-white/10 bg-white p-5 text-neutral-950 shadow-xl"
+              className="w-full rounded-[2rem] border border-black/10 bg-white p-6 text-neutral-950 shadow-2xl"
               onSubmit={handleShowroomLeadSubmit}
               onFocus={markLeadFormOpen}
               noValidate
             >
-              <p className="text-xs font-black uppercase tracking-[0.18em]" style={{ color: 'var(--showroom-accent)' }}>
+              <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em]" style={{ color: 'var(--showroom-accent)' }}>
+                <span className="inline-block h-px w-6 bg-[var(--showroom-accent)]" />
                 {t('showroomLeadEyebrow')}
               </p>
-              <h2 className="mt-2 text-xl font-black">{t('showroomLeadTitle')}</h2>
+              <h2 className="mt-3 text-2xl font-black tracking-tight">{t('showroomLeadTitle')}</h2>
               <p className="mt-2 text-sm leading-6 text-neutral-600">{t('showroomLeadCopy')}</p>
 
               <input
@@ -703,7 +803,7 @@ export function ShowroomPageClient({ dealer, vehicles }: ShowroomPageClientProps
                 autoComplete="off"
               />
 
-              <div className="mt-4 grid gap-3">
+              <div className="mt-5 grid gap-3">
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-neutral-600">{t('showroomLeadVehicle')}</label>
                   <Select
@@ -766,7 +866,7 @@ export function ShowroomPageClient({ dealer, vehicles }: ShowroomPageClientProps
 
               <Button
                 type="submit"
-                className="mt-4 w-full rounded-2xl text-white hover:opacity-90"
+                className="mt-5 h-12 w-full rounded-2xl text-white hover:opacity-90"
                 style={{ backgroundColor: 'var(--showroom-accent)' }}
                 disabled={isLeadSubmitting || !canSubmitLeadForm}
               >
@@ -779,204 +879,21 @@ export function ShowroomPageClient({ dealer, vehicles }: ShowroomPageClientProps
       </section>
 
       <main>
-        <section className="mx-auto max-w-7xl px-4 py-10 md:py-14">
-          <div className="grid gap-8 lg:grid-cols-[0.78fr_1.22fr] lg:items-end">
-            <SectionHeading
-              eyebrow={t('showroomFlowEyebrow')}
-              title={t('showroomFlowTitle')}
-              description={t('showroomFlowDescription')}
-            />
-            <div className="rounded-[2rem] border border-black/10 bg-white p-5 shadow-sm">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm font-black uppercase tracking-[0.18em] text-neutral-500">{t('showroomQuickActions')}</p>
-                  <p className="mt-2 text-xl font-black text-neutral-950">{dealer.name}</p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {phoneHref ? (
-                    <Button asChild className="bg-black text-white hover:bg-neutral-800">
-                      <Link href={phoneHref} onClick={() => recordShowroomEvent('call_click', 'flow_call')}>
-                        <Phone className="mr-2 size-4" />
-                        {t('call')}
-                      </Link>
-                    </Button>
-                  ) : null}
-                  {whatsappHref ? (
-                    <Button asChild variant="outline" className="border-black/15 bg-white">
-                      <Link
-                        href={whatsappHref}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => recordShowroomEvent('whatsapp_click', 'flow_whatsapp')}
-                      >
-                        <MessageCircle className="mr-2 size-4" />
-                        {t('whatsapp')}
-                      </Link>
-                    </Button>
-                  ) : null}
-                  {vehicles.length > 0 ? (
-                    <Button asChild variant="outline" className="border-black/15 bg-white">
-                      <Link href="#talep" onClick={markLeadFormOpen}>
-                        {t('leaveRequest')}
-                      </Link>
-                    </Button>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {showroomFlowCards.map((card) => (
-              <FlowCard
-                key={card.title}
-                icon={card.icon}
-                title={card.title}
-                description={card.description}
-              />
-            ))}
-          </div>
-        </section>
-
-        <section id="galeri-bilgileri" className="mx-auto max-w-7xl px-4 py-10 md:py-14">
-          <SectionHeading
-            eyebrow={t('galleryProfileEyebrow')}
-            title={t('galleryProfileTitle')}
-            description={t('galleryProfileDescription')}
-          />
-
-          <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <InfoCard
-              icon={Phone}
-              label={t('call')}
-              value={dealer.phone || t('phoneMissing')}
-              href={phoneHref || undefined}
-              onClick={() => recordShowroomEvent('call_click', 'profile_phone')}
-            />
-            <InfoCard icon={Clock} label={t('weekday')} value={dealer.workingHours.weekdays} />
-            <InfoCard
-              icon={MapPin}
-              label={t('navContact')}
-              value={locationLabel}
-              href={dealer.googleMapsUrl || undefined}
-              external
-              onClick={() => recordShowroomEvent('location_click', 'profile_location')}
-            />
-            <InfoCard
-              icon={Globe2}
-              label={t('website')}
-              value={websiteHref ? getWebsiteLabel(dealer.websiteUrl) : t('websiteMissing')}
-              href={websiteHref || undefined}
-              external
-              onClick={() => recordShowroomEvent('website_click', 'profile_website')}
-            />
-          </div>
-
-          <div className="mt-6 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-            <Card className="overflow-hidden border-black/10 bg-white p-0 shadow-sm">
-              <div className="border-b border-black/10 bg-neutral-950 p-6 text-white">
-                <div className="flex items-center gap-4">
-                  <DealerLogoMark dealer={dealer} size="sm" />
-                  <div>
-                    <p className="text-sm font-semibold text-white/60">{t('galleryIdentity')}</p>
-                    <h3 className="mt-1 text-2xl font-black">{dealer.name}</h3>
-                  </div>
-                </div>
-              </div>
-              <div className="grid gap-4 p-6 text-sm text-neutral-700">
-                <div className="flex gap-3">
-                  <Building2 className="mt-0.5 size-5 shrink-0 text-neutral-950" />
-                  <div>
-                    <p className="font-bold text-neutral-950">{t('publicGalleryWebsite')}</p>
-                    <p className="mt-1 leading-6">{t('publicGalleryWebsiteCopy')}</p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <Car className="mt-0.5 size-5 shrink-0 text-neutral-950" />
-                  <div>
-                    <p className="font-bold text-neutral-950">{t('vehicleInfo')}</p>
-                    <p className="mt-1 leading-6">{t('vehicleInfoCopy')}</p>
-                  </div>
-                </div>
-              </div>
-            </Card>
-
-            <Card id="iletisim" className="border-black/10 bg-white p-6 shadow-sm">
-              <div className="grid gap-6 md:grid-cols-2">
-                <div>
-                  <h3 className="text-lg font-black text-neutral-950">{t('navContact')}</h3>
-                  <div className="mt-4 space-y-3 text-sm text-neutral-700">
-                    <p className="flex items-center gap-2"><Phone className="size-4 text-neutral-950" />{dealer.phone || t('phoneMissing')}</p>
-                    <p className="flex items-center gap-2"><MessageCircle className="size-4 text-neutral-950" />{dealer.whatsapp ? `+${dealer.whatsapp}` : t('whatsappMissing')}</p>
-                    <p className="flex items-center gap-2"><Mail className="size-4 text-neutral-950" />{dealer.email || t('emailMissing')}</p>
-                  </div>
-                </div>
-                <div>
-                  <h3 className="text-lg font-black text-neutral-950">{t('workingHours')}</h3>
-                  <div className="mt-4 space-y-2 text-sm text-neutral-700">
-                    <p className="flex items-center justify-between gap-4 rounded-xl bg-neutral-50 px-3 py-2"><span>{t('weekday')}</span><strong>{dealer.workingHours.weekdays}</strong></p>
-                    <p className="flex items-center justify-between gap-4 rounded-xl bg-neutral-50 px-3 py-2"><span>{t('saturday')}</span><strong>{dealer.workingHours.saturday}</strong></p>
-                    <p className="flex items-center justify-between gap-4 rounded-xl bg-neutral-50 px-3 py-2"><span>{t('sunday')}</span><strong>{dealer.workingHours.sunday}</strong></p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 rounded-2xl border border-black/10 bg-neutral-50 p-4">
-                <p className="flex items-start gap-2 text-sm leading-6 text-neutral-700">
-                  <MapPin className="mt-0.5 size-4 shrink-0 text-neutral-950" />
-                  {addressLabel}
-                </p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {dealer.googleMapsUrl ? (
-                    <Button asChild variant="outline" className="border-black/15 bg-white">
-                      <Link
-                        href={dealer.googleMapsUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => recordShowroomEvent('location_click', 'contact_map')}
-                      >
-                        {t('openMap')}
-                        <ExternalLink className="ml-2 size-4" />
-                      </Link>
-                    </Button>
-                  ) : null}
-                  {websiteHref ? (
-                    <Button asChild variant="outline" className="border-black/15 bg-white">
-                      <Link
-                        href={websiteHref}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => recordShowroomEvent('website_click', 'contact_website')}
-                      >
-                        {t('website')}
-                        <ExternalLink className="ml-2 size-4" />
-                      </Link>
-                    </Button>
-                  ) : null}
-                  {socialLinks.map((social) => social.href ? (
-                    <Button key={social.label} asChild variant="outline" size="icon" className="border-black/15 bg-white" aria-label={social.label}>
-                      <Link
-                        href={social.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => recordShowroomEvent('social_click', social.label.toLowerCase())}
-                      >
-                        <social.icon className="size-4" />
-                      </Link>
-                    </Button>
-                  ) : null)}
-                </div>
-              </div>
-            </Card>
-          </div>
-        </section>
-
         {featuredVehicles.length > 0 ? (
-          <section className="mx-auto max-w-7xl px-4 py-8">
-            <div className="mb-5 flex items-center gap-2">
-              <Star className="size-5 fill-[var(--showroom-accent)] text-[var(--showroom-accent)]" />
-              <h2 className="text-2xl font-black tracking-tight text-neutral-950">{t('featuredVehicles')}</h2>
+          <section className="mx-auto max-w-7xl px-4 py-12 md:py-16">
+            <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+              <SectionHeading
+                eyebrow={t('showroomLeadEyebrow')}
+                title={t('featuredVehicles')}
+                description={t('showroomVehiclesDescription')}
+                palette={palette}
+              />
+              <Link href="#araclar" className={cn('inline-flex items-center gap-1.5 text-sm font-bold text-[var(--showroom-accent)] hover:underline')}>
+                {t('navVehicles')}
+                <ArrowUpRight className="size-4" />
+              </Link>
             </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
               {featuredVehicles.slice(0, 4).map((vehicle, index) => (
                 <VehicleCard
                   key={vehicle.id}
@@ -986,6 +903,7 @@ export function ShowroomPageClient({ dealer, vehicles }: ShowroomPageClientProps
                   dealerWhatsapp={dealer.whatsapp}
                   locale={locale}
                   t={t}
+                  palette={palette}
                   imageLoading={index === 0 ? 'eager' : 'lazy'}
                   preloadImage={index === 0}
                   onVehicleClick={(clickedVehicle) => recordShowroomEvent('vehicle_detail_click', clickedVehicle.routeId || clickedVehicle.id)}
@@ -996,14 +914,15 @@ export function ShowroomPageClient({ dealer, vehicles }: ShowroomPageClientProps
           </section>
         ) : null}
 
-        <section id="araclar" className="mx-auto max-w-7xl px-4 py-10 md:py-14">
+        <section id="araclar" className="mx-auto max-w-7xl px-4 py-12 md:py-16">
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <SectionHeading
               eyebrow={t('showroomVehiclesEyebrow')}
               title={t('showroomVehiclesTitle')}
               description={t('showroomVehiclesDescription')}
+              palette={palette}
             />
-            <span className="rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-bold text-neutral-700 shadow-sm">
+            <span className={cn('inline-flex w-fit items-center rounded-full border px-4 py-2 text-sm font-bold', palette.pill)}>
               {formatPublicNumber(filteredVehicles.length, locale)} {t('vehiclesShowing')}
             </span>
           </div>
@@ -1011,34 +930,34 @@ export function ShowroomPageClient({ dealer, vehicles }: ShowroomPageClientProps
           <div className="mt-8 space-y-4">
             <div className="flex gap-2">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-500" />
+                <Search className={cn('absolute left-3 top-1/2 size-4 -translate-y-1/2', palette.isDark ? 'text-white/50' : 'text-neutral-500')} />
                 <Input
                   placeholder={t('searchVehicle')}
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
-                  className="h-12 rounded-2xl border-black/10 bg-white pl-10"
+                  className={cn('h-12 rounded-2xl pl-10', palette.isDark ? 'border-white/12 bg-white/[0.05] text-white placeholder:text-white/40' : 'border-black/10 bg-white')}
                 />
               </div>
               <Button
                 variant="outline"
                 size="icon"
                 onClick={() => setShowFilters(!showFilters)}
-                className={cn('size-12 rounded-2xl border-black/10 bg-white', showFilters && 'bg-black text-white hover:bg-black hover:text-white')}
+                className={cn('size-12 rounded-2xl', palette.isDark ? 'border-white/12 bg-white/[0.05] text-white hover:bg-white/10' : 'border-black/10 bg-white', showFilters && (palette.isDark ? 'bg-white text-neutral-950 hover:bg-white' : 'bg-black text-white hover:bg-black hover:text-white'))}
                 aria-label={t('openFilters')}
               >
                 <SlidersHorizontal className="size-4" />
               </Button>
               {hasActiveFilters ? (
-                <Button variant="ghost" size="icon" onClick={clearFilters} className="size-12 rounded-2xl" aria-label={t('clearFilters')}>
+                <Button variant="ghost" size="icon" onClick={clearFilters} className={cn('size-12 rounded-2xl', palette.isDark && 'text-white hover:bg-white/10')} aria-label={t('clearFilters')}>
                   <X className="size-4" />
                 </Button>
               ) : null}
             </div>
 
             {showFilters ? (
-              <div className="grid gap-3 rounded-3xl border border-black/10 bg-white p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-4">
+              <div className={cn('grid gap-3 rounded-3xl border p-4 sm:grid-cols-2 lg:grid-cols-4', palette.surface)}>
                 <Select value={filters.brand} onValueChange={(value) => setFilters((current) => ({ ...current, brand: value }))}>
-                  <SelectTrigger className="rounded-2xl border-black/10 bg-neutral-50">
+                  <SelectTrigger className={cn('rounded-2xl', palette.isDark ? 'border-white/12 bg-white/[0.05] text-white' : 'border-black/10 bg-neutral-50')}>
                     <SelectValue placeholder={t('brand')} />
                   </SelectTrigger>
                   <SelectContent>
@@ -1050,7 +969,7 @@ export function ShowroomPageClient({ dealer, vehicles }: ShowroomPageClientProps
                 </Select>
 
                 <Select value={filters.fuelType} onValueChange={(value) => setFilters((current) => ({ ...current, fuelType: value }))}>
-                  <SelectTrigger className="rounded-2xl border-black/10 bg-neutral-50">
+                  <SelectTrigger className={cn('rounded-2xl', palette.isDark ? 'border-white/12 bg-white/[0.05] text-white' : 'border-black/10 bg-neutral-50')}>
                     <SelectValue placeholder={t('fuel')} />
                   </SelectTrigger>
                   <SelectContent>
@@ -1064,7 +983,7 @@ export function ShowroomPageClient({ dealer, vehicles }: ShowroomPageClientProps
                 </Select>
 
                 <Select value={filters.transmission} onValueChange={(value) => setFilters((current) => ({ ...current, transmission: value }))}>
-                  <SelectTrigger className="rounded-2xl border-black/10 bg-neutral-50">
+                  <SelectTrigger className={cn('rounded-2xl', palette.isDark ? 'border-white/12 bg-white/[0.05] text-white' : 'border-black/10 bg-neutral-50')}>
                     <SelectValue placeholder={t('transmission')} />
                   </SelectTrigger>
                   <SelectContent>
@@ -1076,7 +995,7 @@ export function ShowroomPageClient({ dealer, vehicles }: ShowroomPageClientProps
                 </Select>
 
                 <Select value={filters.sortBy} onValueChange={(value) => setFilters((current) => ({ ...current, sortBy: value }))}>
-                  <SelectTrigger className="rounded-2xl border-black/10 bg-neutral-50">
+                  <SelectTrigger className={cn('rounded-2xl', palette.isDark ? 'border-white/12 bg-white/[0.05] text-white' : 'border-black/10 bg-neutral-50')}>
                     <SelectValue placeholder={t('sort')} />
                   </SelectTrigger>
                   <SelectContent>
@@ -1101,6 +1020,7 @@ export function ShowroomPageClient({ dealer, vehicles }: ShowroomPageClientProps
                   dealerWhatsapp={dealer.whatsapp}
                   locale={locale}
                   t={t}
+                  palette={palette}
                   imageLoading={featuredVehicles.length === 0 && index === 0 ? 'eager' : 'lazy'}
                   preloadImage={featuredVehicles.length === 0 && index === 0}
                   onVehicleClick={(clickedVehicle) => recordShowroomEvent('vehicle_detail_click', clickedVehicle.routeId || clickedVehicle.id)}
@@ -1109,17 +1029,17 @@ export function ShowroomPageClient({ dealer, vehicles }: ShowroomPageClientProps
               ))}
             </div>
           ) : (
-            <div className="mt-8 rounded-3xl border border-black/10 bg-white p-8 shadow-sm">
+            <div className={cn('mt-8 rounded-3xl border p-8', palette.surface)}>
               {vehicles.length === 0 ? (
                 <div className="mx-auto max-w-2xl text-center">
-                  <span className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-neutral-950 text-white">
+                  <span className={cn('mx-auto flex size-14 items-center justify-center rounded-2xl', palette.iconBadge)}>
                     <Car className="size-6" />
                   </span>
-                  <h3 className="mt-5 text-2xl font-black tracking-tight text-neutral-950">{t('showroomNoVehiclesTitle')}</h3>
-                  <p className="mt-3 text-sm leading-6 text-neutral-600">{t('showroomNoVehiclesCopy')}</p>
+                  <h3 className={cn('mt-5 text-2xl font-black tracking-tight', palette.sectionTitle)}>{t('showroomNoVehiclesTitle')}</h3>
+                  <p className={cn('mt-3 text-sm leading-6', palette.sectionBody)}>{t('showroomNoVehiclesCopy')}</p>
                   <div className="mt-5 flex flex-wrap justify-center gap-2">
                     {phoneHref ? (
-                      <Button asChild className="bg-black text-white hover:bg-neutral-800">
+                      <Button asChild className={palette.heroPrimaryBtn}>
                         <Link href={phoneHref} onClick={() => recordShowroomEvent('call_click', 'empty_call')}>
                           <Phone className="mr-2 size-4" />
                           {t('callGallery')}
@@ -1127,7 +1047,7 @@ export function ShowroomPageClient({ dealer, vehicles }: ShowroomPageClientProps
                       </Button>
                     ) : null}
                     {whatsappHref ? (
-                      <Button asChild variant="outline" className="border-black/15 bg-white">
+                      <Button asChild variant="outline" className={palette.heroGhostBtn}>
                         <Link
                           href={whatsappHref}
                           target="_blank"
@@ -1147,20 +1067,166 @@ export function ShowroomPageClient({ dealer, vehicles }: ShowroomPageClientProps
             </div>
           )}
         </section>
+
+        <section id="galeri-bilgileri" className="mx-auto max-w-7xl px-4 py-12 md:py-16">
+          <SectionHeading
+            eyebrow={t('galleryProfileEyebrow')}
+            title={t('galleryProfileTitle')}
+            description={t('galleryProfileDescription')}
+            palette={palette}
+          />
+
+          <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <InfoCard
+              icon={Phone}
+              label={t('call')}
+              value={dealer.phone || t('phoneMissing')}
+              href={phoneHref || undefined}
+              onClick={() => recordShowroomEvent('call_click', 'profile_phone')}
+              palette={palette}
+            />
+            <InfoCard icon={Clock} label={t('weekday')} value={dealer.workingHours.weekdays} palette={palette} />
+            <InfoCard
+              icon={MapPin}
+              label={t('navContact')}
+              value={locationLabel}
+              href={dealer.googleMapsUrl || undefined}
+              external
+              onClick={() => recordShowroomEvent('location_click', 'profile_location')}
+              palette={palette}
+            />
+            <InfoCard
+              icon={Globe2}
+              label={t('website')}
+              value={websiteHref ? getWebsiteLabel(dealer.websiteUrl) : t('websiteMissing')}
+              href={websiteHref || undefined}
+              external
+              onClick={() => recordShowroomEvent('website_click', 'profile_website')}
+              palette={palette}
+            />
+          </div>
+
+          <div className="mt-6 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+            <Card className={cn('overflow-hidden border p-0', palette.surface)}>
+              <div className="relative overflow-hidden border-b border-white/10 bg-neutral-950 p-6 text-white">
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_80%_at_85%_-10%,color-mix(in_oklab,var(--showroom-accent)_45%,transparent),transparent_60%)]" />
+                <div className="relative flex items-center gap-4">
+                  <DealerLogoMark dealer={dealer} size="sm" palette={palette} />
+                  <div>
+                    <p className="text-sm font-semibold text-white/60">{t('galleryIdentity')}</p>
+                    <h3 className="mt-1 text-2xl font-black">{dealer.name}</h3>
+                  </div>
+                </div>
+              </div>
+              <div className={cn('grid gap-4 p-6 text-sm', palette.surfaceMutedText)}>
+                <div className="flex gap-3">
+                  <Building2 className="mt-0.5 size-5 shrink-0 text-[var(--showroom-accent)]" />
+                  <div>
+                    <p className={cn('font-bold', palette.surfaceStrongText)}>{t('publicGalleryWebsite')}</p>
+                    <p className="mt-1 leading-6">{t('publicGalleryWebsiteCopy')}</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <Car className="mt-0.5 size-5 shrink-0 text-[var(--showroom-accent)]" />
+                  <div>
+                    <p className={cn('font-bold', palette.surfaceStrongText)}>{t('vehicleInfo')}</p>
+                    <p className="mt-1 leading-6">{t('vehicleInfoCopy')}</p>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            <Card id="iletisim" className={cn('border p-6', palette.surface)}>
+              <div className="grid gap-6 md:grid-cols-2">
+                <div>
+                  <h3 className={cn('text-lg font-black', palette.surfaceStrongText)}>{t('navContact')}</h3>
+                  <div className={cn('mt-4 space-y-3 text-sm', palette.surfaceMutedText)}>
+                    <p className="flex items-center gap-2"><Phone className="size-4 text-[var(--showroom-accent)]" />{dealer.phone || t('phoneMissing')}</p>
+                    <p className="flex items-center gap-2"><MessageCircle className="size-4 text-[var(--showroom-accent)]" />{dealer.whatsapp ? `+${dealer.whatsapp}` : t('whatsappMissing')}</p>
+                    <p className="flex items-center gap-2"><Mail className="size-4 text-[var(--showroom-accent)]" />{dealer.email || t('emailMissing')}</p>
+                  </div>
+                </div>
+                <div>
+                  <h3 className={cn('text-lg font-black', palette.surfaceStrongText)}>{t('workingHours')}</h3>
+                  <div className={cn('mt-4 space-y-2 text-sm', palette.surfaceMutedText)}>
+                    <p className={cn('flex items-center justify-between gap-4 rounded-xl border px-3 py-2', palette.surfaceMuted)}><span>{t('weekday')}</span><strong className={palette.surfaceStrongText}>{dealer.workingHours.weekdays}</strong></p>
+                    <p className={cn('flex items-center justify-between gap-4 rounded-xl border px-3 py-2', palette.surfaceMuted)}><span>{t('saturday')}</span><strong className={palette.surfaceStrongText}>{dealer.workingHours.saturday}</strong></p>
+                    <p className={cn('flex items-center justify-between gap-4 rounded-xl border px-3 py-2', palette.surfaceMuted)}><span>{t('sunday')}</span><strong className={palette.surfaceStrongText}>{dealer.workingHours.sunday}</strong></p>
+                  </div>
+                </div>
+              </div>
+
+              <div className={cn('mt-6 rounded-2xl border p-4', palette.surfaceMuted)}>
+                <p className={cn('flex items-start gap-2 text-sm leading-6', palette.surfaceMutedText)}>
+                  <MapPin className="mt-0.5 size-4 shrink-0 text-[var(--showroom-accent)]" />
+                  {addressLabel}
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {dealer.googleMapsUrl ? (
+                    <Button asChild variant="outline" className={palette.heroGhostBtn}>
+                      <Link
+                        href={dealer.googleMapsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => recordShowroomEvent('location_click', 'contact_map')}
+                      >
+                        {t('openMap')}
+                        <ExternalLink className="ml-2 size-4" />
+                      </Link>
+                    </Button>
+                  ) : null}
+                  {websiteHref ? (
+                    <Button asChild variant="outline" className={palette.heroGhostBtn}>
+                      <Link
+                        href={websiteHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => recordShowroomEvent('website_click', 'contact_website')}
+                      >
+                        {t('website')}
+                        <ExternalLink className="ml-2 size-4" />
+                      </Link>
+                    </Button>
+                  ) : null}
+                  {activeSocialLinks.map((social) => (
+                    <Button key={social.label} asChild variant="outline" size="icon" className={palette.heroGhostBtn} aria-label={social.label}>
+                      <Link
+                        href={social.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => recordShowroomEvent('social_click', social.label.toLowerCase())}
+                      >
+                        <social.icon className="size-4" />
+                      </Link>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </Card>
+          </div>
+        </section>
       </main>
 
-      <footer className="border-t border-black/10 bg-white">
-        <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 md:flex-row md:items-center md:justify-between">
-          <div>
-            <BrandLogo subtitle={t('poweredBy')} />
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-neutral-600">
-              {dealer.name}{dealer.address ? ` - ${dealer.address}` : ''}
-            </p>
+      <footer className={cn('border-t', palette.footer)}>
+        <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-10 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-4">
+            <DealerLogoMark dealer={dealer} size="sm" palette={palette} />
+            <div>
+              <p className={cn('text-base font-black tracking-tight', palette.surfaceStrongText)}>{dealer.name}</p>
+              <p className={cn('mt-1 max-w-xl text-sm leading-6', palette.footerMuted)}>
+                {dealer.address ? dealer.address : addressLabel}
+              </p>
+            </div>
           </div>
-          <div className="flex flex-col gap-2 text-sm text-neutral-600 md:items-end">
+          <div className={cn('flex flex-col gap-2 text-sm md:items-end', palette.footerMuted)}>
             {dealer.phone ? <span>{dealer.phone}</span> : null}
             {dealer.email ? <span>{dealer.email}</span> : null}
-            {websiteHref ? <Link href={websiteHref} target="_blank" rel="noopener noreferrer" className="font-semibold text-neutral-950 hover:underline">{getWebsiteLabel(dealer.websiteUrl)}</Link> : null}
+            {websiteHref ? <Link href={websiteHref} target="_blank" rel="noopener noreferrer" className={cn('font-semibold hover:underline', palette.surfaceStrongText)}>{getWebsiteLabel(dealer.websiteUrl)}</Link> : null}
+          </div>
+        </div>
+        <div className={cn('border-t', palette.divider)}>
+          <div className="mx-auto flex max-w-7xl items-center justify-center px-4 py-5">
+            <BrandLogo subtitle={t('poweredBy')} tone={palette.isDark ? 'dark' : 'light'} />
           </div>
         </div>
       </footer>
@@ -1190,6 +1256,7 @@ function VehicleCard({
   dealerWhatsapp,
   locale,
   t,
+  palette,
   imageLoading = 'lazy',
   preloadImage = false,
   onVehicleClick,
@@ -1201,6 +1268,7 @@ function VehicleCard({
   dealerWhatsapp: string
   locale: PublicLocale
   t: (key: PublicI18nKey) => string
+  palette: ShowroomPalette
   imageLoading?: 'lazy' | 'eager'
   preloadImage?: boolean
   onVehicleClick?: (vehicle: PublicVehicle) => void
@@ -1213,9 +1281,11 @@ function VehicleCard({
     ? `https://wa.me/${whatsappDigits}?text=${encodeURIComponent(`${t('whatsappVehicleMessage')} ${vehicle.title}. (${dealerName})`)}`
     : ''
 
+  const specChip = palette.isDark ? 'border-white/10 bg-white/[0.05] text-white/75' : 'border-black/5 bg-neutral-50 text-neutral-600'
+
   return (
-    <Card className="group overflow-hidden border-black/10 bg-white p-0 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
-      <div className="relative aspect-[16/10] overflow-hidden bg-neutral-100">
+    <Card className={cn('group flex flex-col overflow-hidden border p-0 transition duration-300 hover:-translate-y-1', palette.surface, palette.surfaceHover)}>
+      <div className="relative aspect-[16/10] overflow-hidden bg-neutral-900/5">
         <VehicleImageFrame
           src={vehicle.images[0]}
           alt={vehicle.title}
@@ -1227,7 +1297,7 @@ function VehicleCard({
         />
         <div className="absolute left-3 top-3 flex flex-wrap gap-2">
           {vehicle.featured ? (
-            <Badge className="bg-[var(--showroom-accent)] text-white shadow-lg hover:bg-[var(--showroom-accent)]">
+            <Badge className="border-0 bg-[var(--showroom-accent)] text-white shadow-lg hover:bg-[var(--showroom-accent)]">
               <Star className="size-3 fill-current" />
               {t('featured')}
             </Badge>
@@ -1238,42 +1308,42 @@ function VehicleCard({
         </div>
       </div>
 
-      <div className="space-y-4 p-4">
+      <div className="flex flex-1 flex-col gap-4 p-4">
         <div>
-          <h3 className="line-clamp-2 min-h-12 text-base font-black leading-6 text-neutral-950 transition group-hover:text-[var(--showroom-accent)]">
+          <h3 className={cn('line-clamp-2 min-h-12 text-base font-black leading-6 transition group-hover:text-[var(--showroom-accent)]', palette.surfaceStrongText)}>
             {vehicle.title}
           </h3>
-          <p className="mt-2 text-2xl font-black text-neutral-950">
+          <p className={cn('mt-2 text-2xl font-black', palette.surfaceStrongText)}>
             {formatPublicPrice(vehicle.price, locale)}
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 text-sm text-neutral-600">
-          <div className="flex items-center gap-1.5 rounded-xl bg-neutral-50 px-2 py-2">
-            <Calendar className="size-4 text-neutral-950" />
+        <div className="grid grid-cols-2 gap-2 text-sm">
+          <div className={cn('flex items-center gap-1.5 rounded-xl border px-2 py-2', specChip)}>
+            <Calendar className="size-4 text-[var(--showroom-accent)]" />
             <span>{vehicle.year}</span>
           </div>
-          <div className="flex items-center gap-1.5 rounded-xl bg-neutral-50 px-2 py-2">
-            <Gauge className="size-4 text-neutral-950" />
+          <div className={cn('flex items-center gap-1.5 rounded-xl border px-2 py-2', specChip)}>
+            <Gauge className="size-4 text-[var(--showroom-accent)]" />
             <span>{formatPublicNumber(vehicle.mileage, locale)} km</span>
           </div>
-          <div className="flex items-center gap-1.5 rounded-xl bg-neutral-50 px-2 py-2">
-            <Fuel className="size-4 text-neutral-950" />
+          <div className={cn('flex items-center gap-1.5 rounded-xl border px-2 py-2', specChip)}>
+            <Fuel className="size-4 text-[var(--showroom-accent)]" />
             <span>{localizedFuelLabels[locale][vehicle.fuelType]}</span>
           </div>
-          <div className="flex items-center gap-1.5 rounded-xl bg-neutral-50 px-2 py-2">
-            <Settings2 className="size-4 text-neutral-950" />
+          <div className={cn('flex items-center gap-1.5 rounded-xl border px-2 py-2', specChip)}>
+            <Settings2 className="size-4 text-[var(--showroom-accent)]" />
             <span>{localizedTransmissionLabels[locale][vehicle.transmission]}</span>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-black/10 bg-neutral-50 p-3 text-sm leading-6 text-neutral-600">
-          <p><strong className="text-neutral-950">{t('color')}:</strong> {colorLabel}</p>
+        <div className={cn('rounded-2xl border p-3 text-sm leading-6', palette.surfaceMuted, palette.surfaceMutedText)}>
+          <p><strong className={palette.surfaceStrongText}>{t('color')}:</strong> {colorLabel}</p>
           {description ? <p className="mt-1 line-clamp-2">{description}</p> : <p className="mt-1">{t('descriptionMissing')}</p>}
         </div>
 
-        <div className={cn('grid gap-2', vehicleWhatsappHref && 'sm:grid-cols-[1fr_auto]')}>
-          <Button asChild className="rounded-2xl bg-black text-white hover:bg-neutral-800">
+        <div className={cn('mt-auto grid gap-2', vehicleWhatsappHref && 'sm:grid-cols-[1fr_auto]')}>
+          <Button asChild className={cn('rounded-2xl', palette.heroPrimaryBtn)}>
             <Link
               href={`/arac/${vehicle.routeId || vehicle.id}?ref=${dealerSlug}&src=showroom`}
               onClick={() => onVehicleClick?.(vehicle)}
@@ -1283,7 +1353,7 @@ function VehicleCard({
             </Link>
           </Button>
           {vehicleWhatsappHref ? (
-            <Button asChild variant="outline" className="rounded-2xl border-black/15 bg-white px-4">
+            <Button asChild variant="outline" className={cn('rounded-2xl px-4', palette.heroGhostBtn)}>
               <Link
                 href={vehicleWhatsappHref}
                 target="_blank"

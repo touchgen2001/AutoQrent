@@ -85,10 +85,10 @@ export function SuperAdminLayout({
                 onFocus={() => onNavigateIntent?.(item.path)}
                 onPointerEnter={() => onNavigateIntent?.(item.path)}
                 className={cn(
-                  'flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition',
+                  'relative flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-all duration-200',
                   active
-                    ? 'bg-white text-sidebar shadow-sm'
-                    : 'text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-foreground',
+                    ? 'bg-sidebar-accent text-sidebar-foreground shadow-sm ring-1 ring-sidebar-border before:absolute before:left-0 before:top-1/2 before:h-6 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-sidebar-primary [&_svg]:text-sidebar-primary'
+                    : 'text-sidebar-muted hover:bg-sidebar-accent/60 hover:text-sidebar-foreground',
                 )}
               >
                 <item.icon />

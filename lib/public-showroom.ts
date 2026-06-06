@@ -44,6 +44,7 @@ type GalleryRow = {
   public_theme?: string | null
   public_accent_color?: string | null
   public_background_style?: string | null
+  public_hero_tagline?: string | null
   public_showroom_note?: string | null
 }
 
@@ -150,6 +151,7 @@ const THEME_GALLERY_SELECT = [
   'public_theme',
   'public_accent_color',
   'public_background_style',
+  'public_hero_tagline',
   'public_showroom_note',
 ].join(',')
 
@@ -164,6 +166,7 @@ function mapGalleryRow(row: GalleryRow): PublicDealer {
     theme: row.public_theme || DEFAULT_PUBLIC_SHOWROOM_THEME.theme,
     accentColor: row.public_accent_color || DEFAULT_PUBLIC_SHOWROOM_THEME.accentColor,
     backgroundStyle: row.public_background_style || DEFAULT_PUBLIC_SHOWROOM_THEME.backgroundStyle,
+    heroTagline: sanitizePlainField(row.public_hero_tagline),
     heroNote: sanitizePlainField(row.public_showroom_note),
   })
 
@@ -215,6 +218,7 @@ async function fetchPublicGalleryRows(slug: string) {
       !message.includes('public_theme')
       && !message.includes('public_accent_color')
       && !message.includes('public_background_style')
+      && !message.includes('public_hero_tagline')
       && !message.includes('public_showroom_note')
     ) {
       throw error
@@ -336,6 +340,7 @@ async function fetchRecentGalleryRows(limit: number) {
       !message.includes('public_theme')
       && !message.includes('public_accent_color')
       && !message.includes('public_background_style')
+      && !message.includes('public_hero_tagline')
       && !message.includes('public_showroom_note')
     ) {
       throw error

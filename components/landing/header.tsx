@@ -22,22 +22,22 @@ export function LandingHeader() {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <BrandLogo href="/" tone="light" />
+        <div className="flex items-center justify-between gap-4 h-16">
+          <BrandLogo href="/" tone="light" className="shrink-0" />
 
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden lg:flex items-center gap-6 xl:gap-8">
             {navLinks.map((link) => (
               <Link
                 key={link.name}
                 href={link.href}
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                className="whitespace-nowrap text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
                 {link.name}
               </Link>
             ))}
           </nav>
 
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden lg:flex items-center gap-3 shrink-0">
             <Button variant="ghost" asChild>
               <Link href="/giris">Giriş Yap</Link>
             </Button>
@@ -53,7 +53,7 @@ export function LandingHeader() {
 
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-lg hover:bg-muted transition-colors"
+            className="lg:hidden p-2 rounded-lg hover:bg-muted transition-colors"
             aria-label={mobileMenuOpen ? "Menüyü kapat" : "Menüyü aç"}
           >
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -62,7 +62,7 @@ export function LandingHeader() {
       </div>
 
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-border bg-background">
+        <div className="lg:hidden border-t border-border bg-background">
           <nav className="px-4 py-4 space-y-2">
             {navLinks.map((link) => (
               <Link

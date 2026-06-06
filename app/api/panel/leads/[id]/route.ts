@@ -117,7 +117,7 @@ export async function PATCH(request: Request, context: { params: Promise<unknown
     return NextResponse.json(
       {
         ok: false,
-        message: error instanceof Error ? error.message : 'Müşteri talebi güncellenemedi.',
+        message: 'Müşteri talebi güncellenemedi. Lütfen tekrar deneyin.',
       },
       { status: 500 },
     )

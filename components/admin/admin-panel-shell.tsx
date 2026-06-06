@@ -146,16 +146,17 @@ export function AdminPanelShell({
                   key={`${item.title}-${item.href}`}
                   href={item.href}
                   onClick={() => setIsMobileOpen(false)}
+                  aria-current={isActive ? 'page' : undefined}
                   className={cn(
-                    'flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors',
+                    'relative flex items-center gap-3 rounded-lg px-3 py-2.5 transition-all duration-200',
                     isActive
-                      ? 'bg-sidebar-primary text-sidebar-primary-foreground'
-                      : 'text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-foreground',
+                      ? 'bg-sidebar-accent text-sidebar-foreground font-semibold ring-1 ring-sidebar-border shadow-sm before:absolute before:left-0 before:top-1/2 before:h-5 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-sidebar-primary [&_svg]:text-sidebar-primary'
+                      : 'text-sidebar-muted hover:bg-sidebar-accent/60 hover:text-sidebar-foreground',
                     isCollapsed && 'justify-center px-0',
                   )}
                 >
-                  <item.icon className="h-5 w-5 shrink-0" />
-                  {!isCollapsed ? <span className="text-sm font-medium">{item.title}</span> : null}
+                  <item.icon className="h-5 w-5 shrink-0 transition-colors" />
+                  {!isCollapsed ? <span className="text-sm">{item.title}</span> : null}
                 </Link>
               )
             })}
