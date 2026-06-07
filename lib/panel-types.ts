@@ -249,6 +249,7 @@ export type PanelShowroomCtaEventType =
   | 'vehicle_detail_click'
   | 'lead_form_open'
   | 'lead_form_submit'
+  | 'share_click'
   | 'vehicle_whatsapp_click'
   | 'vehicle_call_click'
   | 'vehicle_location_click'

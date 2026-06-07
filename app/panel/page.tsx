@@ -22,6 +22,7 @@ import { redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { LiveAlertCenter } from "@/components/dashboard/live-alert-center"
+import { ShareLinkButtons } from "@/components/panel/share-link-buttons"
 import { getLeadFunnelAnalytics } from "@/lib/server/analytics-repository"
 import { readPanelSessionFromCookieHeader } from "@/lib/server/panel-auth"
 import {
@@ -209,11 +210,16 @@ export default async function DashboardPage() {
               </div>
             </div>
 
-            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="mt-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <p className="truncate rounded-lg bg-background/10 px-3 py-2 text-xs text-background/70 ring-1 ring-background/15">
                 {showroomSummary.publicShowroomUrl}
               </p>
-              <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="flex flex-wrap gap-2">
+                <ShareLinkButtons
+                  url={showroomSummary.publicShowroomUrl}
+                  message={`Araç vitrinimize göz atın:\n${showroomSummary.publicShowroomUrl}`}
+                  buttonClassName="border-background/30 bg-transparent text-background hover:bg-background/10 hover:text-background"
+                />
                 <Button asChild variant="secondary" className="bg-background text-foreground hover:bg-background/90">
                   <Link href={showroomSummary.showroomPath} target="_blank">
                     <ExternalLink className="mr-2 h-4 w-4" />

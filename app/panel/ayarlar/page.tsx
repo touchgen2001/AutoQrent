@@ -239,6 +239,47 @@ function isAllowedLogoFile(file: File) {
   return ALLOWED_LOGO_EXTENSIONS.has(getFileExtension(file.name))
 }
 
+// The social share (OG) card can only embed PNG/JPEG logos, so a WEBP logo would
+// silently drop from the share preview. Re-encode such logos to PNG in the
+// browser (preserving transparency, capped to keep the file small) before upload
+// so every gallery logo reliably shows on the share card.
+async function convertImageToPng(file: File, maxDim = 512): Promise<File> {
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = () => reject(new Error('read-failed'))
+    reader.readAsDataURL(file)
+  })
+
+  const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const el = new window.Image()
+    el.onload = () => resolve(el)
+    el.onerror = () => reject(new Error('decode-failed'))
+    el.src = dataUrl
+  })
+
+  const naturalWidth = image.naturalWidth || image.width
+  const naturalHeight = image.naturalHeight || image.height
+  if (!naturalWidth || !naturalHeight) throw new Error('empty-image')
+
+  const scale = Math.min(1, maxDim / Math.max(naturalWidth, naturalHeight))
+  const width = Math.max(1, Math.round(naturalWidth * scale))
+  const height = Math.max(1, Math.round(naturalHeight * scale))
+
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('canvas-unavailable')
+  ctx.drawImage(image, 0, 0, width, height)
+
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'))
+  if (!blob) throw new Error('encode-failed')
+
+  const baseName = file.name.replace(/\.[^.]+$/, '') || 'logo'
+  return new File([blob], `${baseName}.png`, { type: 'image/png' })
+}
+
 function parseCoordinate(value: string) {
   const normalized = value.replace(',', '.').trim()
   if (!normalized) return null
@@ -666,13 +707,26 @@ function SettingsPageContent() {
       return
     }
 
+    // WEBP logos can't be embedded in the social share card, so convert them to
+    // PNG up front (PNG/JPEG pass through untouched). Fail closed: if the logo
+    // can't be processed we abort rather than upload an unsupported format.
+    let uploadFile = file
+    if (file.type !== 'image/png' && file.type !== 'image/jpeg' && file.type !== 'image/jpg') {
+      try {
+        uploadFile = await convertImageToPng(file)
+      } catch {
+        setErrorMessage('Logo PNG formatına dönüştürülemedi. Lütfen PNG veya JPG dosyası deneyin.')
+        return
+      }
+    }
+
     setErrorMessage(null)
     setActionMessage(null)
     setIsLogoUploading(true)
 
     try {
       const payload = new FormData()
-      payload.append('file', file)
+      payload.append('file', uploadFile)
 
       const response = await fetch('/api/panel/uploads/gallery-logo', {
         method: 'POST',

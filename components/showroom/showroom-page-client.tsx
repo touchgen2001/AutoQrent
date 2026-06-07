@@ -82,6 +82,7 @@ type ShowroomCtaEventType =
   | 'vehicle_detail_click'
   | 'lead_form_open'
   | 'lead_form_submit'
+  | 'share_click'
 
 type ShowroomLeadFormState = {
   vehicleRouteId: string
@@ -535,10 +536,11 @@ export function ShowroomPageClient({ dealer, vehicles }: ShowroomPageClientProps
   // gallery can forward its vitrin to a customer instantly.
   const handleWhatsAppShare = useCallback(() => {
     if (typeof window === 'undefined') return
+    recordShowroomEvent('share_click', 'showroom_whatsapp_share')
     const shareUrl = `${window.location.origin}${window.location.pathname}`
     const message = `${t('shareShowroomText')}\n${dealer.name}\n${shareUrl}`
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer')
-  }, [dealer.name, t])
+  }, [dealer.name, t, recordShowroomEvent])
 
   const handleShowroomLeadSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()

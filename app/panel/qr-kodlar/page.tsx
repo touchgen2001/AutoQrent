@@ -13,6 +13,7 @@ import {
   ExternalLink,
   RefreshCcw,
   Clock3,
+  Share2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -235,6 +236,11 @@ export default function QRCodesPage() {
     await navigator.clipboard.writeText(publicUrl)
     setCopiedId(id)
     window.setTimeout(() => setCopiedId(null), 2000)
+  }
+
+  const shareOnWhatsApp = (vehicle: QrVehicle) => {
+    const message = `${vehicle.vehicleTitle} — ${formatPrice(vehicle.price)}\n${vehicle.publicUrl}`
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer")
   }
 
   const downloadSelectedQRCodes = () => {
@@ -460,6 +466,15 @@ export default function QRCodesPage() {
                             Link Kopyala
                           </>
                         )}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 h-8 border-[#25D366]/40 text-xs text-[#128C7E] hover:bg-[#25D366]/10 hover:text-[#128C7E]"
+                        onClick={() => shareOnWhatsApp(vehicle)}
+                      >
+                        <Share2 className="w-3 h-3 mr-1" />
+                        WhatsApp
                       </Button>
                       <Button variant="outline" size="sm" className="h-8 px-2" asChild>
                         <Link

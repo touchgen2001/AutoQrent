@@ -29,6 +29,7 @@ const bodySchema = z.object({
     'vehicle_detail_click',
     'lead_form_open',
     'lead_form_submit',
+    'share_click',
   ]),
   target: z.string().trim().max(160, 'Geçersiz hedef bilgisi.').optional(),
 })
