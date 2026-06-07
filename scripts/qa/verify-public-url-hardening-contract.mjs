@@ -51,7 +51,7 @@ const checks = [
   ['public vehicle detail does not expose internal stock uuid', publicVehicleSeo.includes('stockId: routeId')],
   ['new gallery showroom route uses shared secure slug helper', panelAuth.includes("buildSecurePublicSlug(input.galleryName, 'galeri')")],
   ['panel settings enforces secure showroom slug on update', panelSettingsRoute.includes("ensureSecurePublicSlug(parsed.data.slug, 'galeri')")],
-  ['public showroom resolves by slug only', publicShowroom.includes('slug: `eq.${normalized}`') && !publicShowroom.includes('id: `eq.${normalized}`')],
+  ['public showroom resolves by slug only', publicShowroom.includes('slug: `eq.${slug}`') && !publicShowroom.includes('id: `eq.${slug}`')],
   ['public showroom rejects insecure route params before lookup', publicShowroom.includes("import { hasSecurePublicRouteToken } from '@/lib/security/public-route-token'") && publicShowroom.includes('if (!hasSecurePublicRouteToken(normalized)) return null')],
   ['panel settings displays real showroom route prefix', panelSettingsPage.includes('cebindegaleri.com/showroom/')],
   ['public vehicle events accept route token', vehicleEventsRoute.includes('vehicleRouteId') && !vehicleEventsRoute.includes('z.string().uuid')],

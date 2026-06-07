@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit",
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
-    "verify": "bash scripts/qa/check-node-leaks.sh verify:before && pnpm lint && pnpm typecheck && pnpm test:unit && pnpm build && pnpm security:scan && pnpm security:image-uploads && pnpm quality:vehicle-inputs && pnpm security:supabase-functions && pnpm security:uploaded-assets && pnpm security:image-quota && pnpm security:public-urls && pnpm security:backup:contract && pnpm security:ops-monitoring && bash scripts/qa/check-node-leaks.sh verify:after",
+    "verify": "bash scripts/qa/check-node-leaks.sh verify:before && pnpm lint && pnpm typecheck && pnpm test:unit && pnpm build && pnpm security:scan && pnpm security:image-uploads && pnpm quality:vehicle-inputs && pnpm quality:panel && pnpm security:supabase-functions && pnpm security:uploaded-assets && pnpm security:image-quota && pnpm security:public-urls && pnpm security:backup:contract && pnpm security:ops-monitoring && bash scripts/qa/check-node-leaks.sh verify:after",
     "hooks:install": "bash scripts/install-githooks.sh",
     "security:scan": "bash scripts/security/check-secrets.sh",
     "security:predeploy": "node scripts/security/predeploy-check.mjs",

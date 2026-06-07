@@ -500,6 +500,14 @@ export function ShowroomPageClient({ dealer, vehicles }: ShowroomPageClientProps
     { icon: Phone, label: t('mobileReadyLabel') },
     { icon: Globe2, label: t('languageReadyLabel') },
   ]
+  // QR→vehicle→gallery→panel conversion narrative: reassures the QR visitor the
+  // page is real (no fake data) and guides them toward inspect → contact → request.
+  const showroomFlowCards = [
+    { icon: Car, title: t('showroomFlowVehicleTitle'), description: t('showroomFlowVehicleCopy') },
+    { icon: MessageCircle, title: t('showroomFlowContactTitle'), description: t('showroomFlowContactCopy') },
+    { icon: Building2, title: t('showroomFlowPanelTitle'), description: t('showroomFlowPanelCopy') },
+    { icon: Globe2, title: t('showroomFlowLanguageTitle'), description: t('showroomFlowLanguageCopy') },
+  ]
 
   const recordShowroomEvent = useCallback((eventType: ShowroomCtaEventType, target?: string) => {
     if (!dealer.slug) return
@@ -897,6 +905,66 @@ export function ShowroomPageClient({ dealer, vehicles }: ShowroomPageClientProps
       </section>
 
       <main>
+        <section id="nasil-calisir" className="mx-auto max-w-7xl px-4 py-12 md:py-16">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <SectionHeading
+              eyebrow={t('showroomFlowEyebrow')}
+              title={t('showroomFlowTitle')}
+              description={t('showroomFlowDescription')}
+              palette={palette}
+            />
+            <div className="flex shrink-0 flex-col gap-3">
+              <span className={cn('text-xs font-black uppercase tracking-[0.24em]', palette.surfaceMutedText)}>
+                {t('showroomQuickActions')}
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {phoneHref ? (
+                  <Button asChild className={cn('rounded-2xl', palette.heroPrimaryBtn)}>
+                    <Link href={phoneHref} onClick={() => recordShowroomEvent('call_click', 'flow_call')}>
+                      <Phone className="mr-2 size-4" />
+                      {t('callGallery')}
+                    </Link>
+                  </Button>
+                ) : null}
+                {whatsappHref ? (
+                  <Button asChild variant="outline" className={cn('rounded-2xl', palette.heroGhostBtn)}>
+                    <Link
+                      href={whatsappHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => recordShowroomEvent('whatsapp_click', 'flow_whatsapp')}
+                    >
+                      <MessageCircle className="mr-2 size-4" />
+                      {t('whatsappWrite')}
+                    </Link>
+                  </Button>
+                ) : null}
+                <Button asChild variant="outline" className={cn('rounded-2xl', palette.heroGhostBtn)}>
+                  <Link href="#talep" onClick={markLeadFormOpen}>
+                    {t('navRequest')}
+                    <ArrowRight className="ml-2 size-4" />
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {showroomFlowCards.map((card) => (
+              <div
+                key={card.title}
+                className={cn('flex h-full flex-col gap-3 rounded-3xl border p-5 transition', palette.surface, palette.surfaceHover)}
+              >
+                <span className={cn('flex size-11 items-center justify-center rounded-2xl', palette.iconBadge)}>
+                  <card.icon className="size-5" />
+                </span>
+                <h3 className={cn('text-base font-black leading-6', palette.surfaceStrongText)}>{card.title}</h3>
+                <p className={cn('text-sm leading-6', palette.surfaceMutedText)}>{card.description}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {featuredVehicles.length > 0 ? (
           <section className="mx-auto max-w-7xl px-4 py-12 md:py-16">
             <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
