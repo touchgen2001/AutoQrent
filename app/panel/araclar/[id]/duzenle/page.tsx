@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Save, Upload, X } from 'lucide-react'
+import { ArrowLeft, Info, Save, Upload, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -610,8 +610,13 @@ export default function EditVehiclePage() {
                 </div>
 
                 {formData.photos.length === 0 ? (
-                  <div className="rounded-lg border border-dashed border-border bg-muted/20 p-4 text-sm text-muted-foreground">
-                    Bu araç için kayıtlı fotoğraf yok.
+                  <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-800">
+                    <Info className="mt-0.5 h-4 w-4 shrink-0" />
+                    <p>
+                      Bu araçta kayıtlı fotoğraf yok. Fotoğrafsız ilanlar paylaşımda zayıf görünür; WhatsApp ve
+                      sosyal medyada gerçek araç fotoğrafı en çok dikkat çeken görseldir. En az 1 fotoğraf
+                      eklemenizi öneririz. İlk fotoğraf hem kapak hem de paylaşım görseli olur.
+                    </p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 gap-4 md:grid-cols-4">

@@ -34,6 +34,7 @@ import {
   Phone,
   Search,
   Settings2,
+  Share2,
   ShieldCheck,
   SlidersHorizontal,
   Sparkles,
@@ -529,6 +530,16 @@ export function ShowroomPageClient({ dealer, vehicles }: ShowroomPageClientProps
     recordShowroomEvent('lead_form_open', 'showroom_lead_form')
   }, [leadFormStarted, recordShowroomEvent])
 
+  // One-tap WhatsApp share: opens the recipient picker (no number) with a ready
+  // localized message + the clean showroom URL (tracking params stripped) so the
+  // gallery can forward its vitrin to a customer instantly.
+  const handleWhatsAppShare = useCallback(() => {
+    if (typeof window === 'undefined') return
+    const shareUrl = `${window.location.origin}${window.location.pathname}`
+    const message = `${t('shareShowroomText')}\n${dealer.name}\n${shareUrl}`
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer')
+  }, [dealer.name, t])
+
   const handleShowroomLeadSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     markLeadFormOpen()
@@ -757,6 +768,16 @@ export function ShowroomPageClient({ dealer, vehicles }: ShowroomPageClientProps
                   </Link>
                 </Button>
               ) : null}
+              <Button
+                type="button"
+                size="lg"
+                variant="outline"
+                onClick={handleWhatsAppShare}
+                className={cn('h-12 rounded-2xl px-6', palette.heroGhostBtn)}
+              >
+                <Share2 className="mr-2 size-4" />
+                {t('shareWhatsapp')}
+              </Button>
             </div>
 
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">

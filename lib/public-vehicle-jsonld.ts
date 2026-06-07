@@ -45,6 +45,9 @@ function buildVehicleOgCardImage(vehicle: PublicVehicleDetail) {
     title: carTitle,
     subtitle: `${priceText} · ${vehicle.mileage.toLocaleString('tr-TR')} km`,
   })
+  if (vehicle.gallery.logo) {
+    search.set('logo', vehicleImageUrl(vehicle.gallery.logo))
+  }
   return absoluteUrl(`/og?${search.toString()}`)
 }
 

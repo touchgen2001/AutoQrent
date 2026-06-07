@@ -638,6 +638,17 @@ export default function AddVehiclePage() {
             <p className="text-sm text-destructive">{imageError}</p>
           )}
 
+          {uploadedImages.length === 0 && (
+            <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-800">
+              <Info className="mt-0.5 h-4 w-4 shrink-0" />
+              <p>
+                Fotoğrafsız ilanlar paylaşımda zayıf görünür. WhatsApp ve sosyal medyada gerçek araç fotoğrafı
+                en çok dikkat çeken görseldir; en az 1 fotoğraf eklemenizi öneririz. İlk fotoğraf hem kapak
+                hem de paylaşım görseli olur.
+              </p>
+            </div>
+          )}
+
           <div className="text-xs text-muted-foreground">
             Yüklenen: {uploadedImages.length} / {MAX_TOTAL_IMAGES}
           </div>

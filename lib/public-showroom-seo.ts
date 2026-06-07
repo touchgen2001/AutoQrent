@@ -86,17 +86,20 @@ export function getShowroomSeoDescription(dealer: PublicDealer, vehicles: Public
   return `${locationCopy}${dealer.name} public showroom sayfası: ${vehicleCopy} galeri panelindeki gerçek kayıtlardan gösterilir.`
 }
 
-function buildBrandedOgCard(input: { eyebrow?: string; title: string; subtitle?: string }) {
+function buildBrandedOgCard(input: { eyebrow?: string; title: string; subtitle?: string; logo?: string }) {
   const search = new URLSearchParams()
   if (input.eyebrow) search.set('eyebrow', input.eyebrow)
   search.set('title', input.title)
   if (input.subtitle) search.set('subtitle', input.subtitle)
+  if (input.logo) search.set('logo', input.logo)
   return absoluteUrl(`/og?${search.toString()}`)
 }
 
 export function getShowroomSeoImage(dealer: PublicDealer, vehicles: PublicVehicle[]) {
   // A square dealer logo letterboxes badly as a 1200x630 share card, so emit a
   // branded card carrying the gallery name + slogan (or a vehicle-count line).
+  // When the gallery uploaded a logo we pass it through so the /og route can
+  // render it in the corner alongside the Cebindegaleri brand.
   const tagline = optionalText(dealer.publicTheme?.heroTagline)
   const subtitle =
     tagline
@@ -108,6 +111,7 @@ export function getShowroomSeoImage(dealer: PublicDealer, vehicles: PublicVehicl
     eyebrow: dealerLocationText(dealer) || 'Dijital Galeri Vitrini',
     title: dealer.name,
     subtitle,
+    logo: absoluteMaybeUrl(dealer.logo),
   })
 }
 

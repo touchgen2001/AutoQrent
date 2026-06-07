@@ -175,6 +175,9 @@ export const publicTranslations = {
     showroomNoVehiclesTitle: 'Bu galeride şu anda yayında araç yok',
     showroomNoVehiclesCopy: 'Panelde aktif araca alınmayan stoklar public vitrinde gösterilmez. Galeriyle iletişime geçerek güncel stok bilgisini sorabilirsiniz.',
     quickWhatsapp: 'WhatsApp',
+    shareWhatsapp: "WhatsApp'ta Paylaş",
+    shareShowroomText: 'Bu galeri vitrinine göz atın:',
+    shareVehicleText: 'Bu araca göz atın:',
   },
   en: {
     language: 'Language',
@@ -328,6 +331,9 @@ export const publicTranslations = {
     showroomNoVehiclesTitle: 'This gallery has no published vehicles right now',
     showroomNoVehiclesCopy: 'Stock that is not marked active in the panel is not shown publicly. Contact the gallery to ask for current availability.',
     quickWhatsapp: 'WhatsApp',
+    shareWhatsapp: 'Share on WhatsApp',
+    shareShowroomText: 'Check out this gallery showroom:',
+    shareVehicleText: 'Take a look at this vehicle:',
   },
   de: {
     language: 'Sprache',
@@ -481,6 +487,9 @@ export const publicTranslations = {
     showroomNoVehiclesTitle: 'Diese Galerie hat derzeit keine veröffentlichten Fahrzeuge',
     showroomNoVehiclesCopy: 'Bestände ohne active-Status werden öffentlich nicht angezeigt. Kontaktieren Sie die Galerie für aktuelle Verfügbarkeit.',
     quickWhatsapp: 'WhatsApp',
+    shareWhatsapp: 'Auf WhatsApp teilen',
+    shareShowroomText: 'Sehen Sie sich dieses Galerie-Schaufenster an:',
+    shareVehicleText: 'Sehen Sie sich dieses Fahrzeug an:',
   },
   ru: {
     language: 'Язык',
@@ -634,6 +643,9 @@ export const publicTranslations = {
     showroomNoVehiclesTitle: 'У этой галереи сейчас нет опубликованных автомобилей',
     showroomNoVehiclesCopy: 'Автомобили без статуса active в панели не показываются публично. Свяжитесь с салоном, чтобы уточнить актуальный склад.',
     quickWhatsapp: 'WhatsApp',
+    shareWhatsapp: 'Поделиться в WhatsApp',
+    shareShowroomText: 'Посмотрите эту витрину салона:',
+    shareVehicleText: 'Посмотрите этот автомобиль:',
   },
   ar: {
     language: 'اللغة',
@@ -787,6 +799,9 @@ export const publicTranslations = {
     showroomNoVehiclesTitle: 'لا توجد سيارات منشورة حالياً في هذا المعرض',
     showroomNoVehiclesCopy: 'المخزون غير المحدد كـ active في اللوحة لا يظهر للعامة. تواصل مع المعرض للسؤال عن المخزون الحالي.',
     quickWhatsapp: 'واتساب',
+    shareWhatsapp: 'مشاركة عبر واتساب',
+    shareShowroomText: 'اطّلع على واجهة هذا المعرض:',
+    shareVehicleText: 'اطّلع على هذه السيارة:',
   },
 } as const
 

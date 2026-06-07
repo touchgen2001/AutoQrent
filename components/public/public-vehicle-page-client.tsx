@@ -214,19 +214,34 @@ export function PublicVehiclePageClient({ routeId, vehicle }: PublicVehiclePageC
     window.open(`https://maps.google.com/?q=${encodeURIComponent(vehicle.gallery.address)}`, '_blank')
   }
 
-  const handleShare = async () => {
+  // One-tap WhatsApp share: opens the recipient picker (no number) with a ready
+  // localized message + the clean vehicle URL (tracking params stripped) so the
+  // gallery can forward the listing to a customer instantly. Also serves as the
+  // desktop fallback for handleShare (navigator.share is mobile-only).
+  const handleWhatsAppShare = () => {
     recordVehicleEvent("share_click")
-    if (navigator.share) {
+    const shareUrl = `${window.location.origin}${window.location.pathname}`
+    const message = `${t("shareVehicleText")}\n${vehicleTitle} — ${formatPrice(vehicle.price)}\n${shareUrl}`
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer")
+  }
+
+  const handleShare = async () => {
+    const shareUrl = `${window.location.origin}${window.location.pathname}`
+    if (typeof navigator !== "undefined" && navigator.share) {
+      recordVehicleEvent("share_click")
       try {
         await navigator.share({
-          title: `${vehicle.brand} ${vehicle.model} ${vehicle.variant}`,
-          text: `${vehicle.year}, ${formatPrice(vehicle.price)}`,
-          url: window.location.href
+          title: vehicleTitle,
+          text: `${vehicleTitle} — ${formatPrice(vehicle.price)}`,
+          url: shareUrl,
         })
       } catch {
         // User cancelled or error
       }
+      return
     }
+    // Desktop / browsers without the Web Share API: fall back to WhatsApp share.
+    handleWhatsAppShare()
   }
 
   const nextImage = () => {
@@ -501,6 +516,16 @@ export function PublicVehiclePageClient({ routeId, vehicle }: PublicVehiclePageC
             </div>
           </div>
         </div>
+
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleWhatsAppShare}
+          className="mt-4 w-full border-[#25D366]/40 text-[#128C7E] hover:bg-[#25D366]/10 hover:text-[#128C7E]"
+        >
+          <Share2 className="mr-2 h-4 w-4" />
+          {t("shareWhatsapp")}
+        </Button>
 
         {routeSource === "qr" && (
           <section className="mt-5 overflow-hidden rounded-2xl border border-primary/10 bg-primary text-primary-foreground shadow-sm">
