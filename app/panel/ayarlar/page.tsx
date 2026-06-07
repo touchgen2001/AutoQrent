@@ -1178,7 +1178,7 @@ function SettingsPageContent() {
                     placeholder='Örn. İstanbul’un güvenilir araç adresi'
                   />
                   <p className='text-xs text-muted-foreground'>
-                    {dealer.publicTheme.heroTagline.length}/80 karakter. Sayfanın en üstünde galeri adının hemen üzerinde görünür.
+                    {dealer.publicTheme.heroTagline.length}/80 karakter. Sayfanın en üstünde galeri adının hemen üzerinde görünür. Örnek: “Güvenilir ikinci el, şeffaf fiyat” veya “2008’den beri İstanbul’da aile galerisi”. Sahte başarı oranı veya doğrulanmamış metrik yazmayın.
                   </p>
                 </div>
 

@@ -1,4 +1,6 @@
+import Link from 'next/link'
 import { CheckCircle2, MessageSquareText } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 const feedbackTopics = [
   {
@@ -38,6 +40,15 @@ export function TestimonialsSection() {
               <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{item.description}</p>
             </article>
           ))}
+        </div>
+
+        <div className="mt-10 flex flex-wrap items-center gap-4">
+          <Button asChild className="bg-accent hover:bg-accent/90 text-accent-foreground">
+            <Link href="/demo">Canlı demoyu inceleyin</Link>
+          </Button>
+          <p className="text-sm text-muted-foreground">
+            Demo galeri, araç sayfası ve QR akışını müşteri gözüyle test edin.
+          </p>
         </div>
       </div>
     </section>

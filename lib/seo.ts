@@ -60,13 +60,16 @@ export function createPageMetadata({
       description,
       siteName: siteConfig.name,
       locale: 'tr_TR',
-      images: imageUrl ? [{ url: imageUrl, alt: title }] : undefined,
+      // Only set images when an explicit one is passed; otherwise omit the key
+      // so the root-level opengraph-image.tsx file convention is inherited
+      // instead of being suppressed by an `images: undefined` override.
+      ...(imageUrl ? { images: [{ url: imageUrl, alt: title }] } : {}),
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
-      images: imageUrl ? [imageUrl] : undefined,
+      ...(imageUrl ? { images: [imageUrl] } : {}),
     },
     robots: noIndex
       ? {
