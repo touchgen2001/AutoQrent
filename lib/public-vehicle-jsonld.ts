@@ -37,8 +37,21 @@ export function getVehicleSeoDescription(vehicle: PublicVehicleDetail) {
   return `${vehicle.year} ${vehicle.brand} ${vehicle.model} ${vehicle.variant}; ${vehicle.mileage.toLocaleString('tr-TR')} km, ${vehicle.fuel}, ${vehicle.transmission}.${locationCopy} güncel fiyat, teknik özellik ve iletişim bilgileri.`
 }
 
+function buildVehicleOgCardImage(vehicle: PublicVehicleDetail) {
+  const carTitle = `${vehicle.year} ${vehicle.brand} ${vehicle.model}${vehicle.variant ? ` ${vehicle.variant}` : ''}`.trim()
+  const priceText = vehicle.price > 0 ? `${vehicle.price.toLocaleString('tr-TR')} TL` : 'Fiyat için arayın'
+  const search = new URLSearchParams({
+    eyebrow: vehicle.gallery.name || 'Oto Galeri',
+    title: carTitle,
+    subtitle: `${priceText} · ${vehicle.mileage.toLocaleString('tr-TR')} km`,
+  })
+  return absoluteUrl(`/og?${search.toString()}`)
+}
+
 export function getVehicleSeoImage(vehicle: PublicVehicleDetail) {
-  return vehicle.images[0] ? vehicleImageUrl(vehicle.images[0]) : vehicle.gallery.logo
+  // Prefer the real car photo (best link preview); when a listing has no photo,
+  // emit a branded card carrying the car + price instead of a bare gallery logo.
+  return vehicle.images[0] ? vehicleImageUrl(vehicle.images[0]) : buildVehicleOgCardImage(vehicle)
 }
 
 export function buildVehicleFaqItems(vehicle: PublicVehicleDetail): VehicleFaqItem[] {

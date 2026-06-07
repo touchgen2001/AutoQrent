@@ -1228,6 +1228,36 @@ function SettingsPageContent() {
                     Doğrulanamayan iddialar ve sahte metrikler müşteride güven kaybı yaratır; gerçek uzmanlık alanınızı yazın.
                   </p>
                 </div>
+
+                <div className='space-y-2'>
+                  <p className='text-xs font-medium text-foreground'>Sosyal medyada paylaşım önizlemesi</p>
+                  <div className='overflow-hidden rounded-xl border border-border'>
+                    <div className='flex aspect-[1200/630] flex-col justify-between bg-neutral-950 p-4 sm:p-5'>
+                      <div className='flex items-center gap-2'>
+                        <Image src='/apple-icon.png' alt='' width={24} height={24} className='rounded-md' />
+                        <span className='text-xs font-semibold text-white'>Cebindegaleri</span>
+                      </div>
+                      <div className='flex flex-col'>
+                        <span className='text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-400'>
+                          {[dealer.district, dealer.city].filter(Boolean).join(', ') || 'Dijital Galeri Vitrini'}
+                        </span>
+                        <span className='mt-1 text-base font-semibold leading-tight text-white sm:text-lg'>
+                          {dealer.name.trim() || 'Galeri adınız'}
+                        </span>
+                        <span className='mt-1 line-clamp-2 text-xs text-neutral-300'>
+                          {dealer.publicTheme.heroTagline.trim() || 'QR ile mobil araç vitrini'}
+                        </span>
+                      </div>
+                      <div className='flex items-center justify-between'>
+                        <span className='text-[10px] font-semibold text-white'>cebindegaleri.com</span>
+                        <span className='text-[10px] text-neutral-500'>Showroom · Stok · Lead</span>
+                      </div>
+                    </div>
+                  </div>
+                  <p className='text-[11px] leading-relaxed text-muted-foreground'>
+                    WhatsApp veya sosyal medyada galeri linkinizi paylaştığınızda bu kart görünür; slogan değiştikçe önizleme güncellenir.
+                  </p>
+                </div>
               </div>
 
               <div className='rounded-2xl border border-border bg-muted/20 p-4'>

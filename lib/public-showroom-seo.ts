@@ -86,8 +86,29 @@ export function getShowroomSeoDescription(dealer: PublicDealer, vehicles: Public
   return `${locationCopy}${dealer.name} public showroom sayfası: ${vehicleCopy} galeri panelindeki gerçek kayıtlardan gösterilir.`
 }
 
+function buildBrandedOgCard(input: { eyebrow?: string; title: string; subtitle?: string }) {
+  const search = new URLSearchParams()
+  if (input.eyebrow) search.set('eyebrow', input.eyebrow)
+  search.set('title', input.title)
+  if (input.subtitle) search.set('subtitle', input.subtitle)
+  return absoluteUrl(`/og?${search.toString()}`)
+}
+
 export function getShowroomSeoImage(dealer: PublicDealer, vehicles: PublicVehicle[]) {
-  return absoluteMaybeUrl(dealer.logo) || vehicles.map(vehicleImageUrl).find(Boolean)
+  // A square dealer logo letterboxes badly as a 1200x630 share card, so emit a
+  // branded card carrying the gallery name + slogan (or a vehicle-count line).
+  const tagline = optionalText(dealer.publicTheme?.heroTagline)
+  const subtitle =
+    tagline
+    || (vehicles.length > 0
+      ? `${vehicles.length} araç vitrinde · QR ile mobil galeri`
+      : 'QR ile mobil araç vitrini')
+
+  return buildBrandedOgCard({
+    eyebrow: dealerLocationText(dealer) || 'Dijital Galeri Vitrini',
+    title: dealer.name,
+    subtitle,
+  })
 }
 
 export function getShowroomSeoKeywords(dealer: PublicDealer, vehicles: PublicVehicle[]) {
