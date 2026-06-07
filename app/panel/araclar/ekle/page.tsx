@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/select"
 import type { PanelVehicleImageQuotaResponse, PanelVehicleImageQuotaSnapshot } from "@/lib/panel-types"
 import { parseVehicleIntegerFields, VEHICLE_INTEGER_LIMITS } from "@/lib/vehicle-limits"
+import { ensureShareSafePhoto } from "@/lib/client/image-convert"
 
 const brandSuggestions = [
   "Audi",
@@ -260,8 +261,12 @@ export default function AddVehiclePage() {
     setImageError(null)
 
     try {
+      // WebP photos can't be embedded in the social share card, so re-encode them
+      // to JPEG before upload (PNG/JPEG pass through untouched, errors fall back to
+      // the original file so the upload still succeeds).
+      const preparedFiles = await Promise.all(files.map((file) => ensureShareSafePhoto(file)))
       const payload = new FormData()
-      for (const file of files) {
+      for (const file of preparedFiles) {
         payload.append("files", file)
       }
 

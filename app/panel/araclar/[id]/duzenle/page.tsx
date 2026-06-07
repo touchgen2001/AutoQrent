@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Info, Save, Upload, X } from 'lucide-react'
+import { ArrowLeft, ImageIcon, Info, Save, Upload, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -24,6 +24,12 @@ import type {
   PanelVehicleImageQuotaSnapshot,
 } from '@/lib/panel-types'
 import { parseVehicleIntegerFields, VEHICLE_INTEGER_LIMITS } from '@/lib/vehicle-limits'
+import { ensureShareSafePhoto } from '@/lib/client/image-convert'
+import {
+  VehicleSocialImageDialog,
+  toSocialImageVehicle,
+  type SocialImageGallery,
+} from '@/components/panel/vehicle-social-image-dialog'
 
 type VehicleDetailApiResponse =
   | {
@@ -140,6 +146,9 @@ export default function EditVehiclePage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(
     hasVehicleId ? null : 'Araç kimliği bulunamadı.',
   )
+  const [gallery, setGallery] = useState<SocialImageGallery>(null)
+  const [isSocialOpen, setIsSocialOpen] = useState(false)
+  const [shareInfo, setShareInfo] = useState<{ routeId: string; publicUrl: string } | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
@@ -164,6 +173,7 @@ export default function EditVehiclePage() {
         }
 
         setFormData(toFormState(data.item))
+        setShareInfo({ routeId: data.item.routeId, publicUrl: data.item.publicUrl })
       } catch (error) {
         if ((error as Error).name === 'AbortError') return
         setErrorMessage('Ağ hatası nedeniyle araç detayı alınamadı.')
@@ -203,6 +213,26 @@ export default function EditVehiclePage() {
       window.clearTimeout(timer)
     }
   }, [fetchImageQuota])
+
+  // Lightweight gallery identity for the social-image dialog (logo/monogram +
+  // showroom link). Failures are silent — the dialog still renders without it.
+  useEffect(() => {
+    let active = true
+    void (async () => {
+      try {
+        const response = await fetch('/api/panel/gallery-identity', { cache: 'no-store' })
+        const data = (await response.json()) as { ok?: boolean; gallery?: SocialImageGallery }
+        if (active && response.ok && data.ok) {
+          setGallery(data.gallery ?? null)
+        }
+      } catch {
+        // ignore — dialog falls back to a logo-less card
+      }
+    })()
+    return () => {
+      active = false
+    }
+  }, [])
 
   const pageTitle = useMemo(() => {
     if (!formData.brand && !formData.model) return 'Araç Düzenle'
@@ -305,8 +335,12 @@ export default function EditVehiclePage() {
     setImageError(null)
 
     try {
+      // WebP photos can't be embedded in the social share card, so re-encode them
+      // to JPEG before upload (PNG/JPEG pass through untouched, errors fall back to
+      // the original file so the upload still succeeds).
+      const preparedFiles = await Promise.all(files.map((file) => ensureShareSafePhoto(file)))
       const payload = new FormData()
-      for (const file of files) {
+      for (const file of preparedFiles) {
         payload.append('files', file)
       }
 
@@ -413,14 +447,25 @@ export default function EditVehiclePage() {
           </Link>
           <h1 className="text-2xl font-bold text-foreground">{pageTitle}</h1>
         </div>
-        <Button
-          onClick={() => void handleSave()}
-          className="bg-accent hover:bg-accent/90 text-accent-foreground"
-          disabled={isLoading || isSaving}
-        >
-          <Save className="w-4 h-4 mr-2" />
-          {isSaving ? 'Kaydediliyor...' : 'Kaydet'}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setIsSocialOpen(true)}
+            disabled={isLoading}
+          >
+            <ImageIcon className="w-4 h-4 mr-2" />
+            Sosyal Görsel
+          </Button>
+          <Button
+            onClick={() => void handleSave()}
+            className="bg-accent hover:bg-accent/90 text-accent-foreground"
+            disabled={isLoading || isSaving}
+          >
+            <Save className="w-4 h-4 mr-2" />
+            {isSaving ? 'Kaydediliyor...' : 'Kaydet'}
+          </Button>
+        </div>
       </div>
 
       {errorMessage && (
@@ -651,6 +696,25 @@ export default function EditVehiclePage() {
           )}
         </CardContent>
       </Card>
+
+      <VehicleSocialImageDialog
+        vehicle={toSocialImageVehicle({
+          brand: formData.brand,
+          model: formData.model,
+          variant: formData.variant,
+          year: Number(formData.year) || 0,
+          mileage: Number(formData.mileage) || 0,
+          fuel: formData.fuel,
+          transmission: formData.transmission,
+          price: Number(formData.price) || 0,
+          image: formData.photos[0] ?? null,
+          publicUrl: shareInfo?.publicUrl ?? '',
+        })}
+        gallery={gallery}
+        open={isSocialOpen}
+        onOpenChange={setIsSocialOpen}
+        hideTrigger
+      />
     </div>
   )
 }

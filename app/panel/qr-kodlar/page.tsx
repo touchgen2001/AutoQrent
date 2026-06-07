@@ -25,6 +25,7 @@ import {
   VehicleSocialImageDialog,
   type SocialImageGallery,
 } from "@/components/panel/vehicle-social-image-dialog"
+import { ShowroomPromoDialog } from "@/components/panel/showroom-promo-dialog"
 import { cn } from "@/lib/utils"
 import { formatPrice } from "@/lib/vehicle-display"
 
@@ -313,6 +314,17 @@ export default function QRCodesPage() {
               <RefreshCcw className="w-4 h-4 mr-2" />
               Yenile
             </Button>
+            {vehicles.length > 0 && (
+              <ShowroomPromoDialog
+                gallery={gallery}
+                vehicleCount={vehicles.length}
+                vehicles={vehicles.map((vehicle) => ({
+                  vehicleTitle: vehicle.vehicleTitle,
+                  price: vehicle.price,
+                  image: vehicle.image,
+                }))}
+              />
+            )}
             <Button
               variant="outline"
               disabled={validSelectedVehicleIds.length === 0}

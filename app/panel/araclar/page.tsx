@@ -14,6 +14,7 @@ import {
   Car,
   Grid3X3,
   List,
+  ImageIcon,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -40,6 +41,11 @@ import {
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { VehicleImageFrame } from "@/components/shared/vehicle-image-frame"
+import {
+  VehicleSocialImageDialog,
+  toSocialImageVehicle,
+  type SocialImageGallery,
+} from "@/components/panel/vehicle-social-image-dialog"
 import { cn } from "@/lib/utils"
 import type { PanelVehicle } from "@/lib/panel-types"
 
@@ -82,6 +88,8 @@ export default function VehiclesPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null)
+  const [gallery, setGallery] = useState<SocialImageGallery>(null)
+  const [socialVehicle, setSocialVehicle] = useState<PanelVehicle | null>(null)
 
   const brandOptions = useMemo(
     () => Array.from(new Set(vehicles.map((vehicle) => vehicle.brand).filter(Boolean))).sort((a, b) => a.localeCompare(b, "tr")),
@@ -134,6 +142,26 @@ export default function VehiclesPage() {
 
     return () => {
       window.clearTimeout(timer)
+    }
+  }, [])
+
+  // Lightweight gallery identity for the social-image dialog (logo/monogram +
+  // showroom link). Failures are silent — the dialog still renders without it.
+  useEffect(() => {
+    let active = true
+    void (async () => {
+      try {
+        const response = await fetch("/api/panel/gallery-identity", { cache: "no-store" })
+        const data = (await response.json()) as { ok?: boolean; gallery?: SocialImageGallery }
+        if (active && response.ok && data.ok) {
+          setGallery(data.gallery ?? null)
+        }
+      } catch {
+        // ignore — dialog falls back to a logo-less card
+      }
+    })()
+    return () => {
+      active = false
     }
   }, [])
 
@@ -392,6 +420,12 @@ export default function VehiclesPage() {
                         QR Kodu Yazdır
                       </Link>
                     </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() => window.setTimeout(() => setSocialVehicle(vehicle), 0)}
+                    >
+                      <ImageIcon className="w-4 h-4 mr-2" />
+                      Sosyal Görsel
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       className="text-destructive"
@@ -506,6 +540,12 @@ export default function VehiclesPage() {
                               QR Kodu Yazdır
                             </Link>
                           </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onSelect={() => window.setTimeout(() => setSocialVehicle(vehicle), 0)}
+                          >
+                            <ImageIcon className="w-4 h-4 mr-2" />
+                            Sosyal Görsel
+                          </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             className="text-destructive"
@@ -527,6 +567,18 @@ export default function VehiclesPage() {
             </table>
           </div>
         </Card>
+      )}
+
+      {socialVehicle && (
+        <VehicleSocialImageDialog
+          vehicle={toSocialImageVehicle(socialVehicle)}
+          gallery={gallery}
+          open={Boolean(socialVehicle)}
+          onOpenChange={(next) => {
+            if (!next) setSocialVehicle(null)
+          }}
+          hideTrigger
+        />
       )}
     </div>
   )

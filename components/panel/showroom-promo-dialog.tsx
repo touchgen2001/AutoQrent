@@ -14,34 +14,14 @@ import {
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
-import {
-  formatMileage,
-  formatPrice,
-  getFuelTypeLabel,
-  getTransmissionLabel,
-  normalizeFuelType,
-  normalizeTransmission,
-} from "@/lib/vehicle-display"
+import { formatPrice } from "@/lib/vehicle-display"
+import type { SocialImageGallery } from "@/components/panel/vehicle-social-image-dialog"
 
-export type SocialImageVehicle = {
+export type ShowroomPromoVehicle = {
   vehicleTitle: string
-  brand: string
-  model: string
-  year: number
-  mileage: number
-  fuel: string
-  transmission: string
   price: number
   image: string | null
-  publicUrl: string
 }
-
-export type SocialImageGallery = {
-  name: string
-  logo: string | null
-  monogram: string
-  showroomUrl: string
-} | null
 
 type SocialFormat = {
   key: "square" | "story"
@@ -68,22 +48,13 @@ const FORMATS: SocialFormat[] = [
   },
 ]
 
-// Optional corner badge. Empty value = no badge. Keys match /og/vehicle?badge=.
-const BADGE_OPTIONS: Array<{ value: string; label: string }> = [
-  { value: "", label: "Rozet yok" },
-  { value: "firsat", label: "Fırsat" },
-  { value: "yeni", label: "Yeni" },
-  { value: "satildi", label: "Satıldı" },
-  { value: "rezerve", label: "Rezerve" },
-]
-
 function buildFileSlug(value: string) {
   return (
     value
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "")
-      .slice(0, 60) || "arac"
+      .slice(0, 60) || "vitrin"
   )
 }
 
@@ -92,59 +63,36 @@ function toHashtag(value: string) {
   return cleaned ? `#${cleaned}` : ""
 }
 
-/**
- * Build a `SocialImageVehicle` from a panel vehicle shape (which carries
- * brand/model/year rather than a pre-built title). Used by the vehicle list and
- * edit pages where the dialog is opened from a row/header rather than the QR page.
- */
-export function toSocialImageVehicle(vehicle: {
-  brand: string
-  model: string
-  variant?: string | null
-  year: number
-  mileage: number
-  fuel: string
-  transmission: string
-  price: number
-  image?: string | null
-  photos?: string[]
-  publicUrl?: string | null
-}): SocialImageVehicle {
-  const variantPart = vehicle.variant ? ` ${vehicle.variant}` : ""
-  return {
-    vehicleTitle: `${vehicle.year} ${vehicle.brand} ${vehicle.model}${variantPart}`.trim(),
-    brand: vehicle.brand,
-    model: vehicle.model,
-    year: vehicle.year,
-    mileage: vehicle.mileage,
-    fuel: vehicle.fuel,
-    transmission: vehicle.transmission,
-    price: vehicle.price,
-    image: vehicle.image ?? vehicle.photos?.[0] ?? null,
-    publicUrl: vehicle.publicUrl ?? "",
-  }
+function priceText(price: number) {
+  return price > 0 ? formatPrice(price) : "Fiyat için arayın"
 }
 
-export function VehicleSocialImageDialog({
-  vehicle,
+/**
+ * Showroom-wide promo image. One card for the whole gallery: an
+ * "N araç vitrinde" headline, up to three highlighted vehicles (photos preferred)
+ * and the showroom link — ready to share on Instagram, stories or WhatsApp.
+ */
+export function ShowroomPromoDialog({
   gallery,
+  vehicles,
+  vehicleCount,
   open: openProp,
   onOpenChange,
   hideTrigger = false,
 }: {
-  vehicle: SocialImageVehicle
   gallery: SocialImageGallery
-  /** Controlled open state (for opening from a dropdown/menu). Omit for self-managed. */
+  vehicles: ShowroomPromoVehicle[]
+  vehicleCount: number
+  /** Controlled open state (for opening from a menu). Omit for self-managed. */
   open?: boolean
   onOpenChange?: (open: boolean) => void
-  /** Hide the built-in icon trigger when the dialog is opened externally. */
+  /** Hide the built-in trigger when the dialog is opened externally. */
   hideTrigger?: boolean
 }) {
   const [internalOpen, setInternalOpen] = useState(false)
   const [loaded, setLoaded] = useState<Record<string, boolean>>({})
   const [downloading, setDownloading] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [badge, setBadge] = useState("")
   const [captionCopied, setCaptionCopied] = useState(false)
 
   const isControlled = openProp !== undefined
@@ -159,28 +107,21 @@ export function VehicleSocialImageDialog({
     }
   }
 
-  const priceText = vehicle.price > 0 ? formatPrice(vehicle.price) : "Fiyat için arayın"
-
-  const meta = useMemo(() => {
-    const parts: string[] = []
-    if (vehicle.mileage > 0) parts.push(formatMileage(vehicle.mileage))
-    const fuelLabel = getFuelTypeLabel(normalizeFuelType(vehicle.fuel))
-    if (fuelLabel !== "Bilinmiyor") parts.push(fuelLabel)
-    const transmissionLabel = getTransmissionLabel(normalizeTransmission(vehicle.transmission))
-    if (transmissionLabel !== "Bilinmiyor") parts.push(transmissionLabel)
-    return parts.join(" · ")
-  }, [vehicle.mileage, vehicle.fuel, vehicle.transmission])
+  // Up to three highlights, preferring vehicles that have a usable photo so the
+  // card looks full; the rest fill any remaining slots.
+  const highlights = useMemo(() => {
+    const withImage = vehicles.filter((vehicle) => vehicle.image)
+    const withoutImage = vehicles.filter((vehicle) => !vehicle.image)
+    return [...withImage, ...withoutImage].slice(0, 3)
+  }, [vehicles])
 
   const urls = useMemo(() => {
     const map: Record<string, string> = {}
     for (const format of FORMATS) {
-      const params = new URLSearchParams({
-        format: format.key,
-        title: vehicle.vehicleTitle,
-        price: priceText,
-      })
-      if (meta) params.set("meta", meta)
+      const params = new URLSearchParams()
+      params.set("format", format.key)
       if (gallery?.name) params.set("gallery", gallery.name)
+      if (vehicleCount > 0) params.set("count", String(vehicleCount))
       if (gallery?.showroomUrl) {
         try {
           params.set("tag", new URL(gallery.showroomUrl).host)
@@ -193,35 +134,40 @@ export function VehicleSocialImageDialog({
       } else if (gallery?.monogram) {
         params.set("monogram", gallery.monogram)
       }
-      if (vehicle.image) params.set("photo", vehicle.image)
-      if (badge) params.set("badge", badge)
-      map[format.key] = `/og/vehicle?${params.toString()}`
+      // itemTitle/itemPrice/itemPhoto are aligned by index in the OG route, so an
+      // empty photo string is appended for highlights without a usable image.
+      for (const item of highlights) {
+        params.append("itemTitle", item.vehicleTitle)
+        params.append("itemPrice", priceText(item.price))
+        params.append("itemPhoto", item.image ?? "")
+      }
+      map[format.key] = `/og/showroom?${params.toString()}`
     }
     return map
-  }, [vehicle.vehicleTitle, vehicle.image, priceText, meta, gallery, badge])
+  }, [gallery, vehicleCount, highlights])
 
   const caption = useMemo(() => {
-    const lines: string[] = [vehicle.vehicleTitle, priceText]
-    if (meta) lines.push(meta)
-    lines.push("")
-    const galleryLabel = gallery?.name ? `${gallery.name} vitrininde.` : "Vitrinimizde."
-    lines.push(`${galleryLabel} Detaylı fotoğraflar ve test sürüşü için WhatsApp'tan yazabilirsiniz.`)
-    if (vehicle.publicUrl) {
-      lines.push("")
-      lines.push(vehicle.publicUrl)
+    const name = gallery?.name ?? "Galerimiz"
+    const lines: string[] = []
+    if (vehicleCount > 0) {
+      lines.push(`${name} vitrininde ${vehicleCount} araç sizi bekliyor.`)
+    } else {
+      lines.push(`${name} vitrinindeki araçlar sizi bekliyor.`)
     }
-    const tags = ["#ikinciel", "#otomobil", toHashtag(vehicle.brand), toHashtag(vehicle.model)].filter(Boolean)
+    lines.push("Tüm araçları görüntülemek, fotoğraflara bakmak ve test sürüşü için bize WhatsApp'tan yazabilirsiniz.")
+    if (gallery?.showroomUrl) {
+      lines.push("")
+      lines.push(gallery.showroomUrl)
+    }
+    const tags = ["#galeri", "#ikinciel", "#otomobil", toHashtag(gallery?.name ?? "")].filter(Boolean)
     if (tags.length > 0) {
       lines.push("")
       lines.push(tags.join(" "))
     }
     return lines.join("\n")
-  }, [vehicle.vehicleTitle, vehicle.brand, vehicle.model, vehicle.publicUrl, priceText, meta, gallery])
+  }, [gallery, vehicleCount])
 
-  const fileSlug = useMemo(
-    () => buildFileSlug(`${vehicle.brand}-${vehicle.model}-${vehicle.year}`),
-    [vehicle.brand, vehicle.model, vehicle.year],
-  )
+  const fileSlug = useMemo(() => buildFileSlug(gallery?.name ?? "vitrin"), [gallery])
 
   const downloadImage = async (format: SocialFormat) => {
     setDownloading(format.key)
@@ -233,7 +179,7 @@ export function VehicleSocialImageDialog({
       const objectUrl = URL.createObjectURL(blob)
       const link = document.createElement("a")
       link.href = objectUrl
-      link.download = `cebindegaleri-${fileSlug}-${format.fileSuffix}.png`
+      link.download = `cebindegaleri-vitrin-${fileSlug}-${format.fileSuffix}.png`
       document.body.appendChild(link)
       link.click()
       link.remove()
@@ -259,22 +205,18 @@ export function VehicleSocialImageDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       {!hideTrigger && (
         <DialogTrigger asChild>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 px-2"
-            aria-label={`${vehicle.vehicleTitle} için sosyal medya görseli`}
-          >
-            <ImageIcon className="w-3 h-3" />
+          <Button variant="outline">
+            <ImageIcon className="w-4 h-4 mr-2" />
+            Vitrin tanıtım görseli
           </Button>
         </DialogTrigger>
       )}
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Sosyal medya görseli</DialogTitle>
+          <DialogTitle>Vitrin tanıtım görseli</DialogTitle>
           <DialogDescription>
-            {vehicle.vehicleTitle} için hazır paylaşımlık görseller. İndirip Instagram gönderisi, hikâye veya WhatsApp
-            durumunda paylaşabilirsiniz.
+            Tüm vitrininiz için tek görsel: araç sayınız, öne çıkan modeller ve vitrin bağlantınız. İndirip Instagram
+            gönderisi, hikâye veya WhatsApp durumunda paylaşabilirsiniz.
           </DialogDescription>
         </DialogHeader>
 
@@ -283,25 +225,6 @@ export function VehicleSocialImageDialog({
             {errorMessage}
           </div>
         )}
-
-        {/* Optional badge */}
-        <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-foreground">Köşe rozeti (isteğe bağlı)</span>
-          <div className="flex flex-wrap gap-2">
-            {BADGE_OPTIONS.map((option) => (
-              <Button
-                key={option.value || "none"}
-                type="button"
-                variant={badge === option.value ? "default" : "outline"}
-                size="sm"
-                className="h-8"
-                onClick={() => setBadge(option.value)}
-              >
-                {option.label}
-              </Button>
-            ))}
-          </div>
-        </div>
 
         <div className="grid gap-6 sm:grid-cols-2">
           {FORMATS.map((format) => (
@@ -323,7 +246,7 @@ export function VehicleSocialImageDialog({
                 <img
                   key={urls[format.key]}
                   src={urls[format.key]}
-                  alt={`${vehicle.vehicleTitle} ${format.label} önizleme`}
+                  alt={`Vitrin tanıtım görseli ${format.label} önizleme`}
                   className="h-full w-full object-contain"
                   onLoad={() => setLoaded((current) => ({ ...current, [urls[format.key]]: true }))}
                 />
@@ -378,7 +301,7 @@ export function VehicleSocialImageDialog({
           <Textarea
             readOnly
             value={caption}
-            rows={7}
+            rows={6}
             className="resize-none text-sm"
             onFocus={(event) => event.currentTarget.select()}
           />

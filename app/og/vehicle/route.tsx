@@ -66,6 +66,24 @@ function sanitizeMonogram(value: string | null) {
   return (value || '').replace(/[^\p{L}\p{N}]/gu, '').slice(0, 2)
 }
 
+// Optional corner badge. Known keys map to fixed Turkish labels (correct
+// diacritics baked in, so no edge-runtime locale casing needed); any other short
+// text is accepted as-is and capped.
+const BADGE_LABELS: Record<string, string> = {
+  firsat: 'FIRSAT',
+  satildi: 'SATILDI',
+  yeni: 'YENİ',
+  rezerve: 'REZERVE',
+}
+
+function resolveBadge(value: string | null) {
+  const raw = (value || '').trim()
+  if (!raw) return ''
+  const mapped = BADGE_LABELS[raw.toLowerCase()]
+  if (mapped) return mapped
+  return raw.slice(0, 12).toUpperCase()
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
 
@@ -79,6 +97,7 @@ export async function GET(request: Request) {
   const eyebrow = clamp(searchParams.get('eyebrow'), 'Vitrindeki araç', 34)
   const tag = clamp(searchParams.get('tag'), 'cebindegaleri.com', 36)
   const monogram = sanitizeMonogram(searchParams.get('monogram'))
+  const badge = resolveBadge(searchParams.get('badge'))
 
   const [poppins, brandLogo, photoSrc, galleryLogoSrc] = await Promise.all([
     fetch(new URL('../Poppins-SemiBold.ttf', import.meta.url)).then((res) => res.arrayBuffer()),
@@ -213,35 +232,55 @@ export async function GET(request: Request) {
             fontFamily: 'Poppins',
           }}
         >
-          {/* Gallery identity */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            {galleryMark}
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <div
-                style={{
-                  display: 'flex',
-                  fontSize: `${cfg.eyebrowSize}px`,
-                  color: 'rgba(255,255,255,0.72)',
-                  fontWeight: 600,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.16em',
-                }}
-              >
-                {eyebrow}
-              </div>
-              <div
-                style={{
-                  display: 'flex',
-                  marginTop: '6px',
-                  fontSize: `${cfg.galleryNameSize}px`,
-                  color: '#ffffff',
-                  fontWeight: 600,
-                  letterSpacing: '-0.02em',
-                }}
-              >
-                {galleryName}
+          {/* Gallery identity + optional corner badge */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+              {galleryMark}
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    fontSize: `${cfg.eyebrowSize}px`,
+                    color: 'rgba(255,255,255,0.72)',
+                    fontWeight: 600,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.16em',
+                  }}
+                >
+                  {eyebrow}
+                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    marginTop: '6px',
+                    fontSize: `${cfg.galleryNameSize}px`,
+                    color: '#ffffff',
+                    fontWeight: 600,
+                    letterSpacing: '-0.02em',
+                  }}
+                >
+                  {galleryName}
+                </div>
               </div>
             </div>
+
+            {badge ? (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: `${Math.round(cfg.eyebrowSize * 0.55)}px ${Math.round(cfg.eyebrowSize * 1.1)}px`,
+                  borderRadius: '999px',
+                  backgroundColor: '#ffffff',
+                  color: '#0a0a0a',
+                  fontSize: `${Math.round(cfg.eyebrowSize * 1.25)}px`,
+                  fontWeight: 600,
+                  letterSpacing: '0.18em',
+                }}
+              >
+                {badge}
+              </div>
+            ) : null}
           </div>
 
           {/* Vehicle headline + price */}

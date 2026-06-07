@@ -2,6 +2,8 @@ export type PanelVehicleStatus = 'active' | 'reserved' | 'sold'
 
 export type PanelVehicle = {
   id: string
+  routeId: string
+  publicUrl: string
   brand: string
   model: string
   variant: string

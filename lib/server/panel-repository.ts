@@ -337,24 +337,30 @@ export async function listPanelVehicles(ownerEmail?: string) {
     leadCounts.set(item.vehicle_id, (leadCounts.get(item.vehicle_id) || 0) + 1)
   }
 
-  const mapped: PanelVehicle[] = vehicles.map((vehicle) => ({
-    id: vehicle.id,
-    brand: vehicle.brand,
-    model: vehicle.model,
-    variant: vehicle.variant || '',
-    year: Number(vehicle.year),
-    price: Number(vehicle.price),
-    mileage: Number(vehicle.km),
-    fuel: vehicle.fuel,
-    transmission: vehicle.transmission,
-    color: vehicle.color || '',
-    status: toVehicleStatus(vehicle.status),
-    scans: scanCounts.get(vehicle.id) || 0,
-    leads: leadCounts.get(vehicle.id) || 0,
-    image: vehicle.photos?.[0] || null,
-    photos: vehicle.photos?.filter(Boolean) || [],
-    description: vehicle.description || '',
-  }))
+  const mapped: PanelVehicle[] = vehicles.map((vehicle) => {
+    const routeId = vehicle.slug || vehicle.id
+
+    return {
+      id: vehicle.id,
+      routeId,
+      publicUrl: absoluteUrl(`/arac/${routeId}?src=qr`),
+      brand: vehicle.brand,
+      model: vehicle.model,
+      variant: vehicle.variant || '',
+      year: Number(vehicle.year),
+      price: Number(vehicle.price),
+      mileage: Number(vehicle.km),
+      fuel: vehicle.fuel,
+      transmission: vehicle.transmission,
+      color: vehicle.color || '',
+      status: toVehicleStatus(vehicle.status),
+      scans: scanCounts.get(vehicle.id) || 0,
+      leads: leadCounts.get(vehicle.id) || 0,
+      image: vehicle.photos?.[0] || null,
+      photos: vehicle.photos?.filter(Boolean) || [],
+      description: vehicle.description || '',
+    }
+  })
 
   return {
     source: 'supabase' as const,
@@ -572,8 +578,12 @@ export async function createPanelVehicle(input: VehicleCreateInput, ownerEmail?:
     })
   }
 
+  const routeId = vehicle.slug || vehicle.id
+
   return {
     id: vehicle.id,
+    routeId,
+    publicUrl: absoluteUrl(`/arac/${routeId}?src=qr`),
     brand: vehicle.brand,
     model: vehicle.model,
     variant: vehicle.variant || '',

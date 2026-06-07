@@ -33,6 +33,7 @@ import {
   ArrowUpRight,
 } from 'lucide-react'
 import { getPanelAuthSession } from '@/lib/client/panel-auth'
+import { convertImageFile } from '@/lib/client/image-convert'
 import {
   DEFAULT_PUBLIC_SHOWROOM_THEME,
   PUBLIC_SHOWROOM_BACKGROUND_VALUES,
@@ -243,41 +244,8 @@ function isAllowedLogoFile(file: File) {
 // silently drop from the share preview. Re-encode such logos to PNG in the
 // browser (preserving transparency, capped to keep the file small) before upload
 // so every gallery logo reliably shows on the share card.
-async function convertImageToPng(file: File, maxDim = 512): Promise<File> {
-  const dataUrl = await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result as string)
-    reader.onerror = () => reject(new Error('read-failed'))
-    reader.readAsDataURL(file)
-  })
-
-  const image = await new Promise<HTMLImageElement>((resolve, reject) => {
-    const el = new window.Image()
-    el.onload = () => resolve(el)
-    el.onerror = () => reject(new Error('decode-failed'))
-    el.src = dataUrl
-  })
-
-  const naturalWidth = image.naturalWidth || image.width
-  const naturalHeight = image.naturalHeight || image.height
-  if (!naturalWidth || !naturalHeight) throw new Error('empty-image')
-
-  const scale = Math.min(1, maxDim / Math.max(naturalWidth, naturalHeight))
-  const width = Math.max(1, Math.round(naturalWidth * scale))
-  const height = Math.max(1, Math.round(naturalHeight * scale))
-
-  const canvas = document.createElement('canvas')
-  canvas.width = width
-  canvas.height = height
-  const ctx = canvas.getContext('2d')
-  if (!ctx) throw new Error('canvas-unavailable')
-  ctx.drawImage(image, 0, 0, width, height)
-
-  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'))
-  if (!blob) throw new Error('encode-failed')
-
-  const baseName = file.name.replace(/\.[^.]+$/, '') || 'logo'
-  return new File([blob], `${baseName}.png`, { type: 'image/png' })
+function convertImageToPng(file: File): Promise<File> {
+  return convertImageFile(file, { mimeType: 'image/png', maxDimension: 512, fallbackName: 'logo' })
 }
 
 function parseCoordinate(value: string) {
