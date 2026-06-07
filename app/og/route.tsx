@@ -1,15 +1,16 @@
 import { ImageResponse } from 'next/og'
 
-// Root-level Open Graph image. Next.js inherits this for every page segment
-// that does not define its own image, so all marketing pages (anasayfa,
-// ozellikler, nasil-calisir, fiyatlar, blog, …) get a branded share card.
-// Text is kept ASCII-only on purpose so the default ImageResponse font never
+// Branded share card served at a stable URL (/og) and referenced as the
+// default Open Graph / Twitter image from lib/seo.ts (createPageMetadata) and
+// the root layout. It is a normal route handler rather than the
+// opengraph-image.tsx file convention because that convention only applied to
+// the root segment and was NOT inherited by nested marketing pages.
+//
+// Text is intentionally ASCII-only so the default ImageResponse font never
 // renders missing-glyph boxes for Turkish diacritics.
-export const alt = 'Cebindegaleri - QR Kodlu Dijital Galeri Vitrini'
-export const size = { width: 1200, height: 630 }
-export const contentType = 'image/png'
+export const dynamic = 'force-static'
 
-export default function OpengraphImage() {
+export function GET() {
   return new ImageResponse(
     (
       <div
@@ -89,6 +90,12 @@ export default function OpengraphImage() {
         </div>
       </div>
     ),
-    { ...size },
+    {
+      width: 1200,
+      height: 630,
+      headers: {
+        'Cache-Control': 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400',
+      },
+    },
   )
 }

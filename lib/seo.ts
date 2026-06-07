@@ -44,7 +44,10 @@ export function createPageMetadata({
   image,
 }: PageMetadataInput): Metadata {
   const canonical = absoluteUrl(canonicalPath || path)
-  const imageUrl = image ? (image.startsWith('http') ? image : absoluteUrl(image)) : undefined
+  // Fall back to the branded /og share card so every page emits a real Open
+  // Graph / Twitter image (the opengraph-image.tsx file convention only covered
+  // the root segment, not nested marketing pages).
+  const imageUrl = image ? (image.startsWith('http') ? image : absoluteUrl(image)) : absoluteUrl('/og')
 
   return {
     title,
@@ -60,16 +63,13 @@ export function createPageMetadata({
       description,
       siteName: siteConfig.name,
       locale: 'tr_TR',
-      // Only set images when an explicit one is passed; otherwise omit the key
-      // so the root-level opengraph-image.tsx file convention is inherited
-      // instead of being suppressed by an `images: undefined` override.
-      ...(imageUrl ? { images: [{ url: imageUrl, alt: title }] } : {}),
+      images: [{ url: imageUrl, alt: title }],
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
-      ...(imageUrl ? { images: [imageUrl] } : {}),
+      images: [imageUrl],
     },
     robots: noIndex
       ? {
