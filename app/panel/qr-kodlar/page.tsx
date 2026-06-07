@@ -21,6 +21,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { LiveDataStatus } from "@/components/shared/live-data-status"
 import { QrCodeImage } from "@/components/shared/qr-code-image"
+import {
+  VehicleSocialImageDialog,
+  type SocialImageGallery,
+} from "@/components/panel/vehicle-social-image-dialog"
 import { cn } from "@/lib/utils"
 import { formatPrice } from "@/lib/vehicle-display"
 
@@ -29,10 +33,18 @@ type QrVehicle = {
   routeId: string
   publicUrl: string
   vehicleTitle: string
+  brand: string
+  model: string
+  variant: string
+  year: number
+  mileage: number
+  fuel: string
+  transmission: string
   price: number
   qrCode: string
   scans: number
   lastScanAt: string | null
+  image: string | null
 }
 
 type QrScanEvent = {
@@ -47,6 +59,7 @@ type QrApiResponse =
       ok: true
       vehicles: QrVehicle[]
       recentScans: QrScanEvent[]
+      gallery: SocialImageGallery
     }
   | {
       ok: false
@@ -87,6 +100,7 @@ export default function QRCodesPage() {
   const [downloadMessage, setDownloadMessage] = useState<string | null>(null)
   const [vehicles, setVehicles] = useState<QrVehicle[]>([])
   const [recentScans, setRecentScans] = useState<QrScanEvent[]>([])
+  const [gallery, setGallery] = useState<SocialImageGallery>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null)
@@ -123,6 +137,7 @@ export default function QRCodesPage() {
 
       setVehicles(data.vehicles)
       setRecentScans(data.recentScans)
+      setGallery(data.gallery)
       const validIds = new Set(data.vehicles.map((vehicle) => vehicle.vehicleId))
       setSelectedVehicles((current) => current.filter((id) => validIds.has(id)))
       setLastUpdatedAt(new Date().toISOString())
@@ -476,6 +491,7 @@ export default function QRCodesPage() {
                         <Share2 className="w-3 h-3 mr-1" />
                         WhatsApp
                       </Button>
+                      <VehicleSocialImageDialog vehicle={vehicle} gallery={gallery} />
                       <Button variant="outline" size="sm" className="h-8 px-2" asChild>
                         <Link
                           href={vehicle.publicUrl}

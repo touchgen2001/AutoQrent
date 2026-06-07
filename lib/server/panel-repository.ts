@@ -58,10 +58,18 @@ export type PanelQrVehicleSummary = {
   routeId: string
   publicUrl: string
   vehicleTitle: string
+  brand: string
+  model: string
+  variant: string
+  year: number
+  mileage: number
+  fuel: string
+  transmission: string
   price: number
   qrCode: string
   scans: number
   lastScanAt: string | null
+  image: string | null
 }
 
 export type PanelQrScanEvent = {
@@ -75,6 +83,7 @@ export type PanelGalleryShowroomSummary = {
   galleryId: string
   name: string
   slug: string
+  logo: string | null
   showroomPath: string
   publicShowroomUrl: string
   vehicleCount: number
@@ -393,10 +402,18 @@ export async function listPanelQrVehicleSummaries(ownerEmail?: string) {
       routeId,
       publicUrl: absoluteUrl(`/arac/${routeId}?src=qr`),
       vehicleTitle: buildVehicleTitle(vehicle),
+      brand: vehicle.brand,
+      model: vehicle.model,
+      variant: vehicle.variant || '',
+      year: Number(vehicle.year),
+      mileage: Number(vehicle.km),
+      fuel: vehicle.fuel,
+      transmission: vehicle.transmission,
       price: Number(vehicle.price),
       qrCode: getQrCodeFromRouteId(routeId),
       scans: scanCounts.get(vehicle.id) || 0,
       lastScanAt: lastScanAtMap.get(vehicle.id) || null,
+      image: vehicle.photos?.[0] || null,
     }
   })
 
@@ -415,10 +432,11 @@ export async function getPanelGalleryShowroomSummary(ownerEmail?: string) {
     id: string
     name: string
     slug: string | null
+    logo_url: string | null
   }>>({
     path: '/rest/v1/galleries',
     query: {
-      select: 'id,name,slug',
+      select: 'id,name,slug,logo_url',
       owner_email: `eq.${ownerEmail}`,
       order: 'created_at.asc',
       limit: 1,
@@ -449,6 +467,7 @@ export async function getPanelGalleryShowroomSummary(ownerEmail?: string) {
     galleryId: gallery.id,
     name: gallery.name,
     slug,
+    logo: gallery.logo_url || null,
     showroomPath,
     publicShowroomUrl: absoluteUrl(showroomPath),
     vehicleCount: vehicles.length,

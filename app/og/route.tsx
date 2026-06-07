@@ -1,5 +1,7 @@
 import { ImageResponse } from 'next/og'
 
+import { loadRemoteImageDataUri, toBase64 } from '@/lib/og-remote-image'
+
 // Branded share card served at a stable URL (/og), referenced as the default
 // Open Graph / Twitter image from lib/seo.ts (createPageMetadata) and the root
 // layout. It accepts optional ?eyebrow=&title=&subtitle= query params so each
@@ -17,78 +19,6 @@ export const runtime = 'edge'
 const WIDTH = 1200
 const HEIGHT = 630
 
-// Optional ?logo= gallery mark embedded top-right. We only accept raster PNG/JPEG
-// (formats the panel upload allows and that Satori renders reliably) and validate
-// magic bytes so a malformed file can never crash the card render into a 500.
-const ALLOWED_LOGO_CONTENT_TYPES = new Set(['image/png', 'image/jpeg'])
-const MAX_LOGO_BYTES = 2_500_000
-
-// Edge runtime has no Node Buffer; convert in 32KB chunks so large logos don't
-// overflow the call stack via String.fromCharCode(...spread).
-function toBase64(buffer: ArrayBuffer) {
-  const bytes = new Uint8Array(buffer)
-  let binary = ''
-  const chunkSize = 0x8000
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize))
-  }
-  return btoa(binary)
-}
-
-function hasSupportedImageMagic(contentType: string, bytes: Uint8Array) {
-  if (contentType === 'image/png') {
-    return bytes.length > 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47
-  }
-  if (contentType === 'image/jpeg') {
-    return bytes.length > 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff
-  }
-  return false
-}
-
-// Fetch an external gallery logo with hard SSRF + failure guards: it must be an
-// http(s) URL whose host is the app's own host or the Supabase storage host
-// (where panel uploads live). Any failure returns null so the card still renders.
-async function loadGalleryLogo(rawLogo: string | null, requestUrl: string): Promise<string | null> {
-  if (!rawLogo) return null
-
-  let logoUrl: URL
-  try {
-    logoUrl = new URL(rawLogo)
-  } catch {
-    return null
-  }
-  if (logoUrl.protocol !== 'https:' && logoUrl.protocol !== 'http:') return null
-
-  const allowedHosts = new Set<string>()
-  try {
-    allowedHosts.add(new URL(requestUrl).host)
-  } catch {
-    // ignore unparsable request URL
-  }
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
-  if (supabaseUrl) {
-    try {
-      allowedHosts.add(new URL(supabaseUrl).host)
-    } catch {
-      // ignore unparsable env URL
-    }
-  }
-  if (!allowedHosts.has(logoUrl.host)) return null
-
-  try {
-    const res = await fetch(logoUrl.toString(), { headers: { accept: 'image/png,image/jpeg' } })
-    if (!res.ok) return null
-    const contentType = (res.headers.get('content-type') || '').split(';')[0].trim().toLowerCase()
-    if (!ALLOWED_LOGO_CONTENT_TYPES.has(contentType)) return null
-    const buffer = await res.arrayBuffer()
-    if (buffer.byteLength === 0 || buffer.byteLength > MAX_LOGO_BYTES) return null
-    if (!hasSupportedImageMagic(contentType, new Uint8Array(buffer))) return null
-    return `data:${contentType};base64,${toBase64(buffer)}`
-  } catch {
-    return null
-  }
-}
-
 const DEFAULT_EYEBROW = 'Oto Galeri CRM'
 const DEFAULT_TITLE = 'QR Kodlu Dijital Galeri Vitrini'
 const DEFAULT_SUBTITLE = 'QR ile dijital vitrin, tek panelde stok ve lead yonetimi'
@@ -104,11 +34,15 @@ export async function GET(request: Request) {
   const eyebrow = clamp(searchParams.get('eyebrow'), DEFAULT_EYEBROW, 42)
   const title = clamp(searchParams.get('title'), DEFAULT_TITLE, 84)
   const subtitle = clamp(searchParams.get('subtitle'), DEFAULT_SUBTITLE, 104)
+  // Branded initials shown top-right when a gallery has no embeddable logo. The
+  // value is already Turkish-cased by the caller (lib/gallery-monogram.ts); here
+  // we only strip symbols and cap the length so the tile can't be abused.
+  const monogram = (searchParams.get('monogram') || '').replace(/[^\p{L}\p{N}]/gu, '').slice(0, 2)
 
   const [poppins, logo, galleryLogoSrc] = await Promise.all([
     fetch(new URL('./Poppins-SemiBold.ttf', import.meta.url)).then((res) => res.arrayBuffer()),
     fetch(new URL('./logo.png', import.meta.url)).then((res) => res.arrayBuffer()),
-    loadGalleryLogo(searchParams.get('logo'), request.url),
+    loadRemoteImageDataUri(searchParams.get('logo'), request.url),
   ])
 
   const logoSrc = `data:image/png;base64,${toBase64(logo)}`
@@ -162,6 +96,26 @@ export async function GET(request: Request) {
             >
               {/* eslint-disable-next-line @next/next/no-img-element -- ImageResponse/Satori only supports <img>, not next/image */}
               <img src={galleryLogoSrc} alt="" width={150} height={52} style={{ objectFit: 'contain' }} />
+            </div>
+          ) : monogram ? (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '84px',
+                width: '84px',
+                borderRadius: '20px',
+                color: '#ffffff',
+                fontSize: '40px',
+                fontWeight: 600,
+                letterSpacing: '0.01em',
+                border: '1px solid rgba(255,255,255,0.18)',
+                backgroundImage:
+                  'linear-gradient(152deg, #2c2c2f 0%, #161618 52%, #0a0a0a 100%)',
+              }}
+            >
+              {monogram}
             </div>
           ) : null}
         </div>

@@ -1,3 +1,4 @@
+import { galleryInitials } from '@/lib/gallery-monogram'
 import { absoluteUrl, siteConfig } from '@/lib/seo'
 import type { PublicDealer, PublicVehicle } from '@/lib/public-catalog-types'
 
@@ -86,12 +87,20 @@ export function getShowroomSeoDescription(dealer: PublicDealer, vehicles: Public
   return `${locationCopy}${dealer.name} public showroom sayfası: ${vehicleCopy} galeri panelindeki gerçek kayıtlardan gösterilir.`
 }
 
-function buildBrandedOgCard(input: { eyebrow?: string; title: string; subtitle?: string; logo?: string }) {
+function buildBrandedOgCard(input: {
+  eyebrow?: string
+  title: string
+  subtitle?: string
+  logo?: string
+  monogram?: string
+}) {
   const search = new URLSearchParams()
   if (input.eyebrow) search.set('eyebrow', input.eyebrow)
   search.set('title', input.title)
   if (input.subtitle) search.set('subtitle', input.subtitle)
   if (input.logo) search.set('logo', input.logo)
+  // When there's no embeddable logo, the /og card paints the gallery initials.
+  if (!input.logo && input.monogram) search.set('monogram', input.monogram)
   return absoluteUrl(`/og?${search.toString()}`)
 }
 
@@ -112,6 +121,7 @@ export function getShowroomSeoImage(dealer: PublicDealer, vehicles: PublicVehicl
     title: dealer.name,
     subtitle,
     logo: absoluteMaybeUrl(dealer.logo),
+    monogram: galleryInitials(dealer.name),
   })
 }
 

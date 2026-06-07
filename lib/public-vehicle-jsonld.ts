@@ -1,3 +1,4 @@
+import { galleryInitials } from '@/lib/gallery-monogram'
 import { absoluteUrl } from '@/lib/seo'
 import type { PublicVehicleDetail } from '@/lib/public-catalog-types'
 
@@ -47,6 +48,9 @@ function buildVehicleOgCardImage(vehicle: PublicVehicleDetail) {
   })
   if (vehicle.gallery.logo) {
     search.set('logo', vehicleImageUrl(vehicle.gallery.logo))
+  } else {
+    const monogram = galleryInitials(vehicle.gallery.name)
+    if (monogram) search.set('monogram', monogram)
   }
   return absoluteUrl(`/og?${search.toString()}`)
 }

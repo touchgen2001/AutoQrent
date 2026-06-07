@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server'
 
-import { listPanelQrVehicleSummaries, listRecentPanelQrScans } from '@/lib/server/panel-repository'
+import { galleryInitials } from '@/lib/gallery-monogram'
+import {
+  getPanelGalleryShowroomSummary,
+  listPanelQrVehicleSummaries,
+  listRecentPanelQrScans,
+} from '@/lib/server/panel-repository'
 import { panelAuthErrorResponse, requirePanelSessionOrThrow } from '@/lib/server/panel-auth-guard'
 
 export const runtime = 'nodejs'
@@ -9,9 +14,10 @@ export async function GET(request: Request) {
   try {
     const session = await requirePanelSessionOrThrow(request)
 
-    const [vehicles, recentScans] = await Promise.all([
+    const [vehicles, recentScans, gallery] = await Promise.all([
       listPanelQrVehicleSummaries(session.email),
       listRecentPanelQrScans(40, session.email),
+      getPanelGalleryShowroomSummary(session.email),
     ])
 
     return NextResponse.json({
@@ -19,6 +25,14 @@ export async function GET(request: Request) {
       source: 'supabase',
       vehicles: vehicles.items,
       recentScans: recentScans.items,
+      gallery: gallery
+        ? {
+            name: gallery.name,
+            logo: gallery.logo,
+            monogram: galleryInitials(gallery.name),
+            showroomUrl: gallery.publicShowroomUrl,
+          }
+        : null,
     })
   } catch (error) {
     const authErrorResponse = panelAuthErrorResponse(error)

@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react'
 import Link from 'next/link'
 
+import { BRAND_GLYPH_PATH, BRAND_GLYPH_STROKE_WIDTH } from '@/lib/brand-glyph'
 import { cn } from '@/lib/utils'
 
 type BrandLogoTone = 'light' | 'dark' | 'sidebar'
@@ -64,19 +65,14 @@ const toneClasses: Record<BrandLogoTone, { text: string; muted: string; word: st
   },
 }
 
-// Bespoke monogram mark — a bold monoline "G". The open ring nods to the "C" of
-// Cebinde; the inward bar makes the "G" of Galeri. Single continuous stroke so
-// it stays crisp from a 32px favicon up to a hero lockup. Kept in sync with
-// scripts/brand/generate-logo.mjs (which renders the raster + favicon assets).
-const BRAND_GLYPH_PATH = 'M76.21 31.65 A32 32 0 1 0 80.43 59.89 L56 59.89'
-
+// Bespoke monogram mark — the shared monoline "G" (see lib/brand-glyph.ts).
 function BrandGlyph({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 100 100" fill="none" aria-hidden className={className}>
       <path
         d={BRAND_GLYPH_PATH}
         stroke="currentColor"
-        strokeWidth={13}
+        strokeWidth={BRAND_GLYPH_STROKE_WIDTH}
         strokeLinecap="round"
         strokeLinejoin="round"
       />

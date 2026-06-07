@@ -41,12 +41,16 @@ const checks = [
       "type: 'svg'",
       'width: parsed.data.size',
       'margin: 2',
-      "errorCorrectionLevel: 'M'",
+      "errorCorrectionLevel: 'H'",
       "dark: '#000000'",
       "light: '#ffffff'",
       'image/svg+xml; charset=utf-8',
       'x-content-type-options',
     ]),
+  ],
+  [
+    'qr image route overlays the brand badge in the code centre',
+    hasAll(qrImageRoute, ["import { injectBrandBadge } from '@/lib/qr-logo'", 'injectBrandBadge(baseSvg)']),
   ],
   [
     'qr image route is protected and only accepts trusted secure vehicle urls',

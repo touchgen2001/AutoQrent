@@ -2,6 +2,7 @@ import QRCode from 'qrcode'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
+import { injectBrandBadge } from '@/lib/qr-logo'
 import { getTrustedMutationOrigins } from '@/lib/security/request-guards'
 import { hasSecurePublicRouteToken, MAX_PUBLIC_ROUTE_SLUG_LENGTH } from '@/lib/security/public-route-token'
 import { panelAuthErrorResponse, requirePanelSessionOrThrow } from '@/lib/server/panel-auth-guard'
@@ -73,16 +74,19 @@ export async function GET(request: Request) {
       feature: 'qr.generate',
     })
 
-    const svg = await QRCode.toString(parsed.data.url, {
+    // High error correction (30% recovery) so the centred brand badge never
+    // breaks scannability.
+    const baseSvg = await QRCode.toString(parsed.data.url, {
       type: 'svg',
       width: parsed.data.size,
       margin: 2,
-      errorCorrectionLevel: 'M',
+      errorCorrectionLevel: 'H',
       color: {
         dark: '#000000',
         light: '#ffffff',
       },
     })
+    const svg = injectBrandBadge(baseSvg)
 
     return new Response(svg, {
       status: 200,

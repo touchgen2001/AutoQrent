@@ -44,6 +44,7 @@ import {
   Youtube,
 } from 'lucide-react'
 import { BrandLogo } from '@/components/brand/brand-logo'
+import { galleryInitialsWithFallback } from '@/lib/gallery-monogram'
 import {
   carBrands,
   type VehicleFuelType,
@@ -262,15 +263,9 @@ function getHeroShell(dealer: PublicDealer) {
 }
 
 function getDealerInitials(name: string) {
-  const initials = name
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((part) => part[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase()
-
-  return initials || 'CG'
+  // Shared with the social/OG share card so the header mark and the share-card
+  // monogram always match (lib/gallery-monogram.ts).
+  return galleryInitialsWithFallback(name)
 }
 
 function getLocationLabel(dealer: PublicDealer, t: (key: PublicI18nKey) => string) {

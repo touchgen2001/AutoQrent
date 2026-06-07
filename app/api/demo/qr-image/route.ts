@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
 import { DEMO_SHOWROOM_SLUG, isDemoVehicleRouteId } from '@/lib/demo-public-experience'
+import { injectBrandBadge } from '@/lib/qr-logo'
 
 export const runtime = 'nodejs'
 
@@ -56,16 +57,17 @@ export async function GET(request: Request) {
     )
   }
 
-  const svg = await QRCode.toString(parsed.data.url, {
+  const baseSvg = await QRCode.toString(parsed.data.url, {
     type: 'svg',
     width: parsed.data.size,
     margin: 2,
-    errorCorrectionLevel: 'M',
+    errorCorrectionLevel: 'H',
     color: {
       dark: '#000000',
       light: '#ffffff',
     },
   })
+  const svg = injectBrandBadge(baseSvg)
 
   return new Response(svg, {
     status: 200,
