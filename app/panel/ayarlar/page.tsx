@@ -28,6 +28,7 @@ import {
   CreditCard,
   Palette,
   CheckCircle2,
+  XCircle,
   Lock,
   ArrowUpRight,
 } from 'lucide-react'
@@ -1194,6 +1195,37 @@ function SettingsPageContent() {
                   />
                   <p className='text-xs text-muted-foreground'>
                     {dealer.publicTheme.heroNote.length}/220 karakter. Sahte başarı oranı veya doğrulanmamış metrik yazmayın.
+                  </p>
+                </div>
+
+                <div className='rounded-xl border border-border bg-muted/30 p-4'>
+                  <p className='text-xs font-semibold text-foreground'>Slogan ve açıklama için kısa rehber</p>
+                  <div className='mt-3 grid gap-3 sm:grid-cols-2'>
+                    <div>
+                      <p className='flex items-center gap-1.5 text-xs font-medium text-emerald-600'>
+                        <CheckCircle2 className='h-3.5 w-3.5' />
+                        Şöyle yazın
+                      </p>
+                      <ul className='mt-2 space-y-1 text-xs text-muted-foreground'>
+                        <li>“Şeffaf ekspertiz, net fiyat”</li>
+                        <li>“2008’den beri İstanbul’da aile galerisi”</li>
+                        <li>“Takas ve kredi desteğiyle ikinci el”</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <p className='flex items-center gap-1.5 text-xs font-medium text-red-600'>
+                        <XCircle className='h-3.5 w-3.5' />
+                        Şunu yazmayın
+                      </p>
+                      <ul className='mt-2 space-y-1 text-xs text-muted-foreground'>
+                        <li>“Türkiye’nin 1 numaralı galerisi”</li>
+                        <li>“%100 müşteri memnuniyeti”</li>
+                        <li>“Binlerce mutlu müşteri”</li>
+                      </ul>
+                    </div>
+                  </div>
+                  <p className='mt-3 text-[11px] leading-relaxed text-muted-foreground'>
+                    Doğrulanamayan iddialar ve sahte metrikler müşteride güven kaybı yaratır; gerçek uzmanlık alanınızı yazın.
                   </p>
                 </div>
               </div>

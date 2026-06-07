@@ -37,6 +37,11 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
     path: `/blog/${post.slug}`,
     keywords: ['blog', post.category.toLowerCase(), ...post.keywords],
     openGraphType: 'article',
+    image: `/og?${new URLSearchParams({
+      eyebrow: post.category,
+      title: post.title,
+      subtitle: `Cebindegaleri Blog · ${post.readingTime} okuma`,
+    }).toString()}`,
   })
 }
 

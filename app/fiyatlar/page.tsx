@@ -11,6 +11,11 @@ export const metadata: Metadata = createPageMetadata({
     "Cebindegaleri fiyatları: Başlangıç 999 TL, Pro 2.500 TL, Premium 4.990 TL ve kurumsal teklif seçeneklerini karşılaştırın.",
   path: "/fiyatlar",
   keywords: ["galeri fiyatlandırma", "999 TL galeri paketi", "pro galeri paketi", "qr galeri planı"],
+  image: `/og?${new URLSearchParams({
+    eyebrow: "Fiyatlar",
+    title: "999 TL'den başlayan galeri paketleri",
+    subtitle: "Başlangıç, Pro ve Premium planları gizli ücret olmadan karşılaştırın",
+  }).toString()}`,
 })
 
 export default function PricingPage() {
