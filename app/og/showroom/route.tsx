@@ -1,7 +1,9 @@
 import { ImageResponse } from 'next/og'
 
 import { BRAND_GLYPH_PATH, BRAND_GLYPH_STROKE_WIDTH } from '@/lib/brand-glyph'
+import { buildQrPath } from '@/lib/og-qr'
 import { loadRemoteImageDataUri, toBase64 } from '@/lib/og-remote-image'
+import { WHATSAPP_GLYPH_PATH } from '@/lib/social-glyphs'
 
 // Ready-to-post promo image for a dealer's whole showroom, generated on demand
 // for the panel ("Vitrin tanıtım görseli"). Formats: `square` (1080×1080, feed)
@@ -94,6 +96,11 @@ export async function GET(request: Request) {
   const galleryName = clamp(searchParams.get('gallery'), 'Cebindegaleri', 36)
   const tag = clamp(searchParams.get('tag'), 'cebindegaleri.com', 36)
   const monogram = sanitizeMonogram(searchParams.get('monogram'))
+  const phone = (searchParams.get('phone') || '').trim().slice(0, 24)
+
+  const qrSizeModules = Number(searchParams.get('qrN'))
+  const qrPath = buildQrPath(searchParams.get('qr'), Number.isFinite(qrSizeModules) ? qrSizeModules : 0)
+  const qrCardSize = format === 'story' ? 168 : 132
 
   const countRaw = Number(searchParams.get('count'))
   const count = Number.isFinite(countRaw) && countRaw > 0 ? Math.floor(countRaw) : 0
@@ -215,34 +222,65 @@ export async function GET(request: Request) {
             fontFamily: 'Poppins',
           }}
         >
-          {/* Gallery identity */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            {galleryMark}
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <div
-                style={{
-                  display: 'flex',
-                  fontSize: `${cfg.eyebrowSize}px`,
-                  color: 'rgba(255,255,255,0.72)',
-                  fontWeight: 600,
-                  letterSpacing: '0.16em',
-                }}
-              >
-                VİTRİN
-              </div>
-              <div
-                style={{
-                  display: 'flex',
-                  marginTop: '6px',
-                  fontSize: `${cfg.galleryNameSize}px`,
-                  color: '#ffffff',
-                  fontWeight: 600,
-                  letterSpacing: '-0.02em',
-                }}
-              >
-                {galleryName}
+          {/* Gallery identity + optional showroom QR */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+              {galleryMark}
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    fontSize: `${cfg.eyebrowSize}px`,
+                    color: 'rgba(255,255,255,0.72)',
+                    fontWeight: 600,
+                    letterSpacing: '0.16em',
+                  }}
+                >
+                  VİTRİN
+                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    marginTop: '6px',
+                    fontSize: `${cfg.galleryNameSize}px`,
+                    color: '#ffffff',
+                    fontWeight: 600,
+                    letterSpacing: '-0.02em',
+                  }}
+                >
+                  {galleryName}
+                </div>
               </div>
             </div>
+
+            {qrPath ? (
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '14px',
+                  borderRadius: '22px',
+                  backgroundColor: '#ffffff',
+                }}
+              >
+                <svg width={qrCardSize} height={qrCardSize} viewBox={`0 0 ${qrSizeModules} ${qrSizeModules}`}>
+                  <path d={qrPath} fill="#0a0a0a" />
+                </svg>
+                <div
+                  style={{
+                    display: 'flex',
+                    fontSize: `${Math.round(cfg.footerSize * 0.74)}px`,
+                    color: '#0a0a0a',
+                    fontWeight: 600,
+                    letterSpacing: '0.04em',
+                  }}
+                >
+                  Vitrini aç
+                </div>
+              </div>
+            ) : null}
           </div>
 
           {/* Count headline + highlighted vehicles */}
@@ -423,8 +461,33 @@ export async function GET(request: Request) {
                 Cebindegaleri
               </div>
             </div>
-            <div style={{ display: 'flex', fontSize: `${cfg.footerSize}px`, color: 'rgba(255,255,255,0.66)', fontWeight: 600 }}>
-              {tag}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '12px' }}>
+              {phone ? (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: `${Math.round(cfg.footerSize * 0.36)}px ${Math.round(cfg.footerSize * 0.66)}px`,
+                    borderRadius: '999px',
+                    backgroundColor: '#25d366',
+                  }}
+                >
+                  <svg
+                    width={Math.round(cfg.footerSize * 1.1)}
+                    height={Math.round(cfg.footerSize * 1.1)}
+                    viewBox="0 0 24 24"
+                  >
+                    <path d={WHATSAPP_GLYPH_PATH} fill="#ffffff" />
+                  </svg>
+                  <div style={{ display: 'flex', fontSize: `${cfg.footerSize}px`, color: '#ffffff', fontWeight: 600 }}>
+                    {phone}
+                  </div>
+                </div>
+              ) : null}
+              <div style={{ display: 'flex', fontSize: `${cfg.footerSize}px`, color: 'rgba(255,255,255,0.66)', fontWeight: 600 }}>
+                {tag}
+              </div>
             </div>
           </div>
         </div>

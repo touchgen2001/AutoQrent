@@ -1,7 +1,9 @@
 import { ImageResponse } from 'next/og'
 
 import { BRAND_GLYPH_PATH, BRAND_GLYPH_STROKE_WIDTH } from '@/lib/brand-glyph'
+import { buildQrPath } from '@/lib/og-qr'
 import { loadRemoteImageDataUri, toBase64 } from '@/lib/og-remote-image'
+import { WHATSAPP_GLYPH_PATH } from '@/lib/social-glyphs'
 
 // Ready-to-post social share image for a single vehicle, generated on demand for
 // the dealer panel ("Sosyal medya görseli"). Formats: `square` (1080×1080, feed)
@@ -74,6 +76,7 @@ const BADGE_LABELS: Record<string, string> = {
   satildi: 'SATILDI',
   yeni: 'YENİ',
   rezerve: 'REZERVE',
+  'fiyat-dustu': 'FİYAT DÜŞTÜ',
 }
 
 function resolveBadge(value: string | null) {
@@ -81,7 +84,81 @@ function resolveBadge(value: string | null) {
   if (!raw) return ''
   const mapped = BADGE_LABELS[raw.toLowerCase()]
   if (mapped) return mapped
-  return raw.slice(0, 12).toUpperCase()
+  return raw.slice(0, 14).toUpperCase()
+}
+
+// Three background/treatment themes so a dealer's posts don't all look identical.
+// The car photo stays full-bleed in every theme; only the overlay gradient, text
+// ink, and framing change. `koyu` is the original dark treatment (default).
+type ThemeKey = 'koyu' | 'acik' | 'cerceve'
+
+type ThemeConfig = {
+  overlay: string
+  ink: string
+  inkSoft: string
+  inkFaint: string
+  eyebrow: string
+  hairline: string
+  chipBackground: string
+  chipBorder: string
+  chipInk: string
+  badgeBackground: string
+  badgeInk: string
+  frame: boolean
+}
+
+const THEMES: Record<ThemeKey, ThemeConfig> = {
+  koyu: {
+    overlay:
+      'linear-gradient(180deg, rgba(10,10,10,0.62) 0%, rgba(10,10,10,0.05) 22%, rgba(10,10,10,0) 40%, rgba(10,10,10,0.72) 68%, rgba(10,10,10,0.96) 100%)',
+    ink: '#ffffff',
+    inkSoft: 'rgba(255,255,255,0.82)',
+    inkFaint: 'rgba(255,255,255,0.66)',
+    eyebrow: 'rgba(255,255,255,0.72)',
+    hairline: 'rgba(255,255,255,0.16)',
+    chipBackground: 'linear-gradient(152deg, #2c2c2f 0%, #161618 52%, #0a0a0a 100%)',
+    chipBorder: 'rgba(255,255,255,0.2)',
+    chipInk: '#ffffff',
+    badgeBackground: '#ffffff',
+    badgeInk: '#0a0a0a',
+    frame: false,
+  },
+  acik: {
+    overlay:
+      'linear-gradient(180deg, rgba(248,248,250,0.72) 0%, rgba(248,248,250,0.12) 24%, rgba(248,248,250,0) 42%, rgba(248,248,250,0.82) 66%, rgba(248,248,250,0.98) 100%)',
+    ink: '#0a0a0a',
+    inkSoft: 'rgba(10,10,10,0.74)',
+    inkFaint: 'rgba(10,10,10,0.55)',
+    eyebrow: 'rgba(10,10,10,0.6)',
+    hairline: 'rgba(10,10,10,0.14)',
+    chipBackground: 'linear-gradient(152deg, #f4f4f5 0%, #e4e4e7 100%)',
+    chipBorder: 'rgba(10,10,10,0.1)',
+    chipInk: '#0a0a0a',
+    badgeBackground: '#0a0a0a',
+    badgeInk: '#ffffff',
+    frame: false,
+  },
+  cerceve: {
+    overlay:
+      'linear-gradient(180deg, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.04) 24%, rgba(10,10,10,0) 44%, rgba(10,10,10,0.66) 70%, rgba(10,10,10,0.92) 100%)',
+    ink: '#ffffff',
+    inkSoft: 'rgba(255,255,255,0.82)',
+    inkFaint: 'rgba(255,255,255,0.66)',
+    eyebrow: 'rgba(255,255,255,0.72)',
+    hairline: 'rgba(255,255,255,0.2)',
+    chipBackground: 'linear-gradient(152deg, #2c2c2f 0%, #161618 52%, #0a0a0a 100%)',
+    chipBorder: 'rgba(255,255,255,0.2)',
+    chipInk: '#ffffff',
+    badgeBackground: '#ffffff',
+    badgeInk: '#0a0a0a',
+    frame: true,
+  },
+}
+
+function resolveTheme(value: string | null): ThemeConfig {
+  const key = (value || '').toLowerCase()
+  if (key === 'acik' || key === 'cerceve') return THEMES[key]
+  return THEMES.koyu
 }
 
 export async function GET(request: Request) {
@@ -98,6 +175,18 @@ export async function GET(request: Request) {
   const tag = clamp(searchParams.get('tag'), 'cebindegaleri.com', 36)
   const monogram = sanitizeMonogram(searchParams.get('monogram'))
   const badge = resolveBadge(searchParams.get('badge'))
+  const theme = resolveTheme(searchParams.get('theme'))
+  const phone = (searchParams.get('phone') || '').trim().slice(0, 24)
+
+  const qrSizeModules = Number(searchParams.get('qrN'))
+  const qrPath = buildQrPath(searchParams.get('qr'), Number.isFinite(qrSizeModules) ? qrSizeModules : 0)
+  const qrCardSize = format === 'story' ? 196 : 150
+
+  // Multi-word / long badges (e.g. "FİYAT DÜŞTÜ") need tighter tracking so the
+  // pill doesn't run off the card.
+  const badgeLong = badge.length > 6 || badge.includes(' ')
+  const badgeFontSize = Math.round(cfg.eyebrowSize * (badgeLong ? 1.0 : 1.25))
+  const badgeTracking = badgeLong ? '0.1em' : '0.18em'
 
   const [poppins, brandLogo, photoSrc, galleryLogoSrc] = await Promise.all([
     fetch(new URL('../Poppins-SemiBold.ttf', import.meta.url)).then((res) => res.arrayBuffer()),
@@ -142,11 +231,11 @@ export async function GET(request: Request) {
         height: `${cfg.markSize}px`,
         width: `${cfg.markSize}px`,
         borderRadius: '22px',
-        color: '#ffffff',
+        color: theme.chipInk,
         fontSize: `${Math.round(cfg.markSize * 0.42)}px`,
         fontWeight: 600,
-        border: '1px solid rgba(255,255,255,0.2)',
-        backgroundImage: 'linear-gradient(152deg, #2c2c2f 0%, #161618 52%, #0a0a0a 100%)',
+        border: `1px solid ${theme.chipBorder}`,
+        backgroundImage: theme.chipBackground,
       }}
     >
       {monogram || 'CG'}
@@ -213,10 +302,23 @@ export async function GET(request: Request) {
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundImage:
-              'linear-gradient(180deg, rgba(10,10,10,0.62) 0%, rgba(10,10,10,0.05) 22%, rgba(10,10,10,0) 40%, rgba(10,10,10,0.72) 68%, rgba(10,10,10,0.96) 100%)',
+            backgroundImage: theme.overlay,
           }}
         />
+
+        {theme.frame ? (
+          <div
+            style={{
+              position: 'absolute',
+              top: `${Math.round(cfg.pad * 0.5)}px`,
+              left: `${Math.round(cfg.pad * 0.5)}px`,
+              right: `${Math.round(cfg.pad * 0.5)}px`,
+              bottom: `${Math.round(cfg.pad * 0.5)}px`,
+              border: '2px solid rgba(255,255,255,0.55)',
+              borderRadius: '30px',
+            }}
+          />
+        ) : null}
 
         <div
           style={{
@@ -241,7 +343,7 @@ export async function GET(request: Request) {
                   style={{
                     display: 'flex',
                     fontSize: `${cfg.eyebrowSize}px`,
-                    color: 'rgba(255,255,255,0.72)',
+                    color: theme.eyebrow,
                     fontWeight: 600,
                     textTransform: 'uppercase',
                     letterSpacing: '0.16em',
@@ -254,7 +356,7 @@ export async function GET(request: Request) {
                     display: 'flex',
                     marginTop: '6px',
                     fontSize: `${cfg.galleryNameSize}px`,
-                    color: '#ffffff',
+                    color: theme.ink,
                     fontWeight: 600,
                     letterSpacing: '-0.02em',
                   }}
@@ -271,11 +373,12 @@ export async function GET(request: Request) {
                   alignItems: 'center',
                   padding: `${Math.round(cfg.eyebrowSize * 0.55)}px ${Math.round(cfg.eyebrowSize * 1.1)}px`,
                   borderRadius: '999px',
-                  backgroundColor: '#ffffff',
-                  color: '#0a0a0a',
-                  fontSize: `${Math.round(cfg.eyebrowSize * 1.25)}px`,
+                  backgroundColor: theme.badgeBackground,
+                  color: theme.badgeInk,
+                  fontSize: `${badgeFontSize}px`,
                   fontWeight: 600,
-                  letterSpacing: '0.18em',
+                  letterSpacing: badgeTracking,
+                  whiteSpace: 'nowrap',
                 }}
               >
                 {badge}
@@ -289,7 +392,7 @@ export async function GET(request: Request) {
               style={{
                 display: 'flex',
                 fontSize: `${titleFontSize}px`,
-                color: '#ffffff',
+                color: theme.ink,
                 fontWeight: 600,
                 lineHeight: 1.1,
                 letterSpacing: '-0.02em',
@@ -305,7 +408,7 @@ export async function GET(request: Request) {
                   display: 'flex',
                   marginTop: `${Math.round(cfg.pad * 0.32)}px`,
                   fontSize: `${cfg.metaSize}px`,
-                  color: 'rgba(255,255,255,0.82)',
+                  color: theme.inkSoft,
                   fontWeight: 600,
                 }}
               >
@@ -313,17 +416,86 @@ export async function GET(request: Request) {
               </div>
             ) : null}
 
+            {/* Price (+ WhatsApp contact) on the left, scannable QR card on the right */}
             <div
               style={{
                 display: 'flex',
-                marginTop: `${Math.round(cfg.pad * 0.28)}px`,
-                fontSize: `${cfg.priceSize}px`,
-                color: '#ffffff',
-                fontWeight: 600,
-                letterSpacing: '-0.03em',
+                alignItems: 'flex-end',
+                justifyContent: 'space-between',
+                marginTop: `${Math.round(cfg.pad * 0.3)}px`,
               }}
             >
-              {price}
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    fontSize: `${cfg.priceSize}px`,
+                    color: theme.ink,
+                    fontWeight: 600,
+                    letterSpacing: '-0.03em',
+                  }}
+                >
+                  {price}
+                </div>
+
+                {phone ? (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      marginTop: `${Math.round(cfg.pad * 0.26)}px`,
+                      padding: `${Math.round(cfg.footerSize * 0.4)}px ${Math.round(cfg.footerSize * 0.72)}px`,
+                      borderRadius: '999px',
+                      backgroundColor: '#25d366',
+                    }}
+                  >
+                    <svg
+                      width={Math.round(cfg.footerSize * 1.12)}
+                      height={Math.round(cfg.footerSize * 1.12)}
+                      viewBox="0 0 24 24"
+                    >
+                      <path d={WHATSAPP_GLYPH_PATH} fill="#ffffff" />
+                    </svg>
+                    <div style={{ display: 'flex', fontSize: `${cfg.footerSize}px`, color: '#ffffff', fontWeight: 600 }}>
+                      {phone}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+
+              {qrPath ? (
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '16px',
+                    borderRadius: '24px',
+                    backgroundColor: '#ffffff',
+                  }}
+                >
+                  <svg
+                    width={qrCardSize}
+                    height={qrCardSize}
+                    viewBox={`0 0 ${qrSizeModules} ${qrSizeModules}`}
+                  >
+                    <path d={qrPath} fill="#0a0a0a" />
+                  </svg>
+                  <div
+                    style={{
+                      display: 'flex',
+                      fontSize: `${Math.round(cfg.footerSize * 0.76)}px`,
+                      color: '#0a0a0a',
+                      fontWeight: 600,
+                      letterSpacing: '0.04em',
+                    }}
+                  >
+                    Karekodu okut
+                  </div>
+                </div>
+              ) : null}
             </div>
 
             <div
@@ -333,7 +505,7 @@ export async function GET(request: Request) {
                 justifyContent: 'space-between',
                 marginTop: `${Math.round(cfg.pad * 0.5)}px`,
                 paddingTop: `${Math.round(cfg.pad * 0.4)}px`,
-                borderTop: '1px solid rgba(255,255,255,0.16)',
+                borderTop: `1px solid ${theme.hairline}`,
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
@@ -345,11 +517,11 @@ export async function GET(request: Request) {
                   height={Math.round(cfg.footerSize * 1.7)}
                   style={{ borderRadius: '12px' }}
                 />
-                <div style={{ display: 'flex', fontSize: `${cfg.footerSize}px`, color: '#ffffff', fontWeight: 600 }}>
+                <div style={{ display: 'flex', fontSize: `${cfg.footerSize}px`, color: theme.ink, fontWeight: 600 }}>
                   Cebindegaleri
                 </div>
               </div>
-              <div style={{ display: 'flex', fontSize: `${cfg.footerSize}px`, color: 'rgba(255,255,255,0.66)', fontWeight: 600 }}>
+              <div style={{ display: 'flex', fontSize: `${cfg.footerSize}px`, color: theme.inkFaint, fontWeight: 600 }}>
                 {tag}
               </div>
             </div>

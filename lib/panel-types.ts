@@ -19,6 +19,8 @@ export type PanelVehicle = {
   image: string | null
   photos: string[]
   description?: string
+  createdAt?: string
+  priceDroppedAt?: string | null
 }
 
 export type PanelLeadSource = 'qr' | 'showroom' | 'whatsapp' | 'telefon' | 'form' | 'test-surusu'

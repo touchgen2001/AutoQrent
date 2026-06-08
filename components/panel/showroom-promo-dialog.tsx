@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { Check, Copy, Download, ImageIcon, Loader2 } from "lucide-react"
+import { Check, Copy, Download, FileArchive, ImageIcon, Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -13,15 +13,35 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
+import { packQrMatrix } from "@/lib/client/qr-matrix"
+import { createZip, type ZipEntry } from "@/lib/client/zip"
+import {
+  buildVehicleMeta,
+  buildVehicleOgUrl,
+  suggestVehicleBadge,
+  vehiclePriceText,
+} from "@/lib/social-image-url"
 import { cn } from "@/lib/utils"
-import { formatPrice } from "@/lib/vehicle-display"
 import type { SocialImageGallery } from "@/components/panel/vehicle-social-image-dialog"
 
 export type ShowroomPromoVehicle = {
   vehicleTitle: string
+  brand: string
+  model: string
+  year: number
+  mileage: number
+  fuel: string
+  transmission: string
   price: number
   image: string | null
+  publicUrl: string
+  createdAt?: string | null
+  priceDroppedAt?: string | null
 }
+
+// Cap on how many vehicle images we fetch in parallel while zipping a whole
+// showroom, so a large inventory doesn't flood the edge route at once.
+const ZIP_CONCURRENCY = 4
 
 type SocialFormat = {
   key: "square" | "story"
@@ -63,10 +83,6 @@ function toHashtag(value: string) {
   return cleaned ? `#${cleaned}` : ""
 }
 
-function priceText(price: number) {
-  return price > 0 ? formatPrice(price) : "Fiyat için arayın"
-}
-
 /**
  * Showroom-wide promo image. One card for the whole gallery: an
  * "N araç vitrinde" headline, up to three highlighted vehicles (photos preferred)
@@ -94,6 +110,11 @@ export function ShowroomPromoDialog({
   const [downloading, setDownloading] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [captionCopied, setCaptionCopied] = useState(false)
+  const [showWhatsapp, setShowWhatsapp] = useState(true)
+  const [showQr, setShowQr] = useState(true)
+  // Per-format ZIP build state: which format is building + how far along.
+  const [zipBusy, setZipBusy] = useState<string | null>(null)
+  const [zipProgress, setZipProgress] = useState<{ done: number; total: number } | null>(null)
 
   const isControlled = openProp !== undefined
   const open = isControlled ? openProp : internalOpen
@@ -106,6 +127,14 @@ export function ShowroomPromoDialog({
       setCaptionCopied(false)
     }
   }
+
+  const galleryPhone = gallery?.phone || ""
+  // The showroom QR encodes the public showroom URL so a scan opens the whole
+  // vitrin. Generated client-side (qrcode lib doesn't bundle for the edge route).
+  const qrShowroom = useMemo(
+    () => (gallery?.showroomUrl ? packQrMatrix(gallery.showroomUrl) : null),
+    [gallery],
+  )
 
   // Up to three highlights, preferring vehicles that have a usable photo so the
   // card looks full; the rest fill any remaining slots.
@@ -134,17 +163,22 @@ export function ShowroomPromoDialog({
       } else if (gallery?.monogram) {
         params.set("monogram", gallery.monogram)
       }
+      if (showWhatsapp && galleryPhone) params.set("phone", galleryPhone)
+      if (showQr && qrShowroom) {
+        params.set("qr", qrShowroom.qr)
+        params.set("qrN", String(qrShowroom.n))
+      }
       // itemTitle/itemPrice/itemPhoto are aligned by index in the OG route, so an
       // empty photo string is appended for highlights without a usable image.
       for (const item of highlights) {
         params.append("itemTitle", item.vehicleTitle)
-        params.append("itemPrice", priceText(item.price))
+        params.append("itemPrice", vehiclePriceText(item.price))
         params.append("itemPhoto", item.image ?? "")
       }
       map[format.key] = `/og/showroom?${params.toString()}`
     }
     return map
-  }, [gallery, vehicleCount, highlights])
+  }, [gallery, vehicleCount, highlights, showWhatsapp, galleryPhone, showQr, qrShowroom])
 
   const caption = useMemo(() => {
     const name = gallery?.name ?? "Galerimiz"
@@ -191,6 +225,74 @@ export function ShowroomPromoDialog({
     }
   }
 
+  // Bulk-download every vehicle's share image (one chosen format) as a single ZIP,
+  // so a dealer can grab the whole showroom in one click instead of one-by-one.
+  // Each image uses the same smart auto-badge + WhatsApp contact as the single
+  // previews, and we fetch with a small concurrency cap to stay gentle on the
+  // edge route.
+  const downloadZip = async (format: SocialFormat) => {
+    if (vehicles.length === 0 || zipBusy) return
+    setZipBusy(format.key)
+    setErrorMessage(null)
+    setZipProgress({ done: 0, total: vehicles.length })
+
+    const phone = showWhatsapp ? galleryPhone || null : null
+    const entries: ZipEntry[] = []
+    let nextIndex = 0
+    let completed = 0
+
+    const worker = async () => {
+      while (nextIndex < vehicles.length) {
+        const current = nextIndex
+        nextIndex += 1
+        const vehicle = vehicles[current]
+        const url = buildVehicleOgUrl({
+          format: format.key,
+          title: vehicle.vehicleTitle,
+          priceText: vehiclePriceText(vehicle.price),
+          meta: buildVehicleMeta(vehicle),
+          galleryName: gallery?.name ?? null,
+          logo: gallery?.logo ?? null,
+          monogram: gallery?.monogram ?? null,
+          showroomUrl: gallery?.showroomUrl ?? null,
+          photo: vehicle.image,
+          badge:
+            suggestVehicleBadge({ createdAt: vehicle.createdAt, priceDroppedAt: vehicle.priceDroppedAt }) || undefined,
+          phoneDisplay: phone,
+        })
+        const response = await fetch(url, { cache: "no-store" })
+        if (!response.ok) throw new Error("download_failed")
+        const data = new Uint8Array(await response.arrayBuffer())
+        const slug = buildFileSlug(`${vehicle.brand}-${vehicle.model}-${vehicle.year}`)
+        const name = `${String(current + 1).padStart(2, "0")}-${slug}-${format.fileSuffix}.png`
+        entries.push({ name, data })
+        completed += 1
+        setZipProgress({ done: completed, total: vehicles.length })
+      }
+    }
+
+    try {
+      const workers = Array.from({ length: Math.min(ZIP_CONCURRENCY, vehicles.length) }, () => worker())
+      await Promise.all(workers)
+      // Workers finish out of order; sort by filename so the ZIP lists vehicles 01..N.
+      entries.sort((a, b) => a.name.localeCompare(b.name))
+      const blob = createZip(entries)
+      const objectUrl = URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.href = objectUrl
+      link.download = `cebindegaleri-vitrin-gorselleri-${fileSlug}-${format.fileSuffix}.zip`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(objectUrl)
+    } catch {
+      setErrorMessage("Görsel paketi hazırlanamadı. Lütfen tekrar deneyin.")
+    } finally {
+      setZipBusy(null)
+      setZipProgress(null)
+    }
+  }
+
   const copyCaption = async () => {
     try {
       await navigator.clipboard.writeText(caption)
@@ -223,6 +325,39 @@ export function ShowroomPromoDialog({
         {errorMessage && (
           <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
             {errorMessage}
+          </div>
+        )}
+
+        {(galleryPhone || qrShowroom) && (
+          <div className="flex flex-col gap-2 rounded-lg border border-border bg-muted/40 p-4">
+            <span className="text-sm font-medium text-foreground">İletişim öğeleri</span>
+            <div className="flex flex-wrap gap-2">
+              {galleryPhone && (
+                <Button
+                  type="button"
+                  variant={showWhatsapp ? "default" : "outline"}
+                  size="sm"
+                  className="h-8"
+                  onClick={() => setShowWhatsapp((value) => !value)}
+                >
+                  WhatsApp numarası · {showWhatsapp ? "açık" : "kapalı"}
+                </Button>
+              )}
+              {qrShowroom && (
+                <Button
+                  type="button"
+                  variant={showQr ? "default" : "outline"}
+                  size="sm"
+                  className="h-8"
+                  onClick={() => setShowQr((value) => !value)}
+                >
+                  Karekod · {showQr ? "açık" : "kapalı"}
+                </Button>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Karekod vitrin bağlantınızı taşır; WhatsApp numarası görseli görenlerin doğrudan size yazmasını sağlar.
+            </p>
           </div>
         )}
 
@@ -273,6 +408,42 @@ export function ShowroomPromoDialog({
             </div>
           ))}
         </div>
+
+        {/* Bulk export: every vehicle's share image as one ZIP */}
+        {vehicles.length > 0 && (
+          <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/40 p-4">
+            <div className="flex flex-col gap-1">
+              <span className="text-sm font-medium text-foreground">Araç görsel paketi (ZIP)</span>
+              <p className="text-xs text-muted-foreground">
+                Vitrindeki {vehicles.length} aracın paylaşım görselini tek dosyada indirin. Her görselde otomatik rozet
+                {galleryPhone ? " ve WhatsApp numaranız" : ""} kullanılır.
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {FORMATS.map((format) => (
+                <Button
+                  key={format.key}
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => void downloadZip(format)}
+                  disabled={zipBusy !== null}
+                >
+                  {zipBusy === format.key ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {zipProgress ? `Hazırlanıyor · ${zipProgress.done}/${zipProgress.total}` : "Hazırlanıyor"}
+                    </>
+                  ) : (
+                    <>
+                      <FileArchive className="mr-2 h-4 w-4" />
+                      {format.fileSuffix === "kare" ? "Kare paketi" : "Hikâye paketi"}
+                    </>
+                  )}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Ready-to-copy Turkish caption */}
         <div className="flex flex-col gap-2">

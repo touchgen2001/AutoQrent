@@ -22,6 +22,8 @@ const paramsSchema = z.object({
 type VehiclePhotoRow = {
   id: string
   photos: string[] | null
+  price: number | null
+  price_dropped_at: string | null
 }
 
 async function parseVehicleId(context: { params: Promise<unknown> }) {
@@ -134,22 +136,33 @@ export async function PATCH(request: Request, context: { params: Promise<unknown
     }
 
     requireSupabaseAdminConfig()
-    const currentRows = parsedBody.data.photos
-      ? await supabaseAdminFetch<VehiclePhotoRow[]>({
-          path: '/rest/v1/vehicles',
-          query: {
-            select: 'id,photos',
-            id: `eq.${parsedParams.data.id}`,
-            gallery_id: `eq.${session.galleryId}`,
-            limit: 1,
-          },
-        })
-      : []
+    const currentRows = await supabaseAdminFetch<VehiclePhotoRow[]>({
+      path: '/rest/v1/vehicles',
+      query: {
+        select: 'id,photos,price,price_dropped_at',
+        id: `eq.${parsedParams.data.id}`,
+        gallery_id: `eq.${session.galleryId}`,
+        limit: 1,
+      },
+    })
     const currentPhotos = currentRows[0]?.photos?.filter(Boolean) || []
     const nextPhotos = parsedBody.data.photos?.filter(Boolean) || []
     const removedPhotos = parsedBody.data.photos
       ? currentPhotos.filter((photo) => !nextPhotos.includes(photo))
       : []
+
+    // Stamp price_dropped_at when the asking price falls (powers the auto
+    // "FİYAT DÜŞTÜ" share badge); clear it when the price rises back up.
+    const currentPrice = currentRows[0]?.price
+    const nextPrice = parsedBody.data.price
+    let priceDropPatch: { price_dropped_at: string | null } | Record<string, never> = {}
+    if (typeof currentPrice === 'number' && Number.isFinite(currentPrice)) {
+      if (nextPrice < currentPrice) {
+        priceDropPatch = { price_dropped_at: new Date().toISOString() }
+      } else if (nextPrice > currentPrice) {
+        priceDropPatch = { price_dropped_at: null }
+      }
+    }
 
     await supabaseAdminFetch<unknown>({
       method: 'PATCH',
@@ -170,6 +183,7 @@ export async function PATCH(request: Request, context: { params: Promise<unknown
         transmission: parsedBody.data.transmission,
         color: parsedBody.data.color || '',
         description: parsedBody.data.description || '',
+        ...priceDropPatch,
         ...(parsedBody.data.photos ? { photos: nextPhotos } : {}),
       },
     })

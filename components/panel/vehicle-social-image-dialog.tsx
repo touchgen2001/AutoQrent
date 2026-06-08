@@ -13,15 +13,14 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
-import { cn } from "@/lib/utils"
+import { packQrMatrix } from "@/lib/client/qr-matrix"
 import {
-  formatMileage,
-  formatPrice,
-  getFuelTypeLabel,
-  getTransmissionLabel,
-  normalizeFuelType,
-  normalizeTransmission,
-} from "@/lib/vehicle-display"
+  buildVehicleMeta,
+  buildVehicleOgUrl,
+  suggestVehicleBadge,
+  vehiclePriceText,
+} from "@/lib/social-image-url"
+import { cn } from "@/lib/utils"
 
 export type SocialImageVehicle = {
   vehicleTitle: string
@@ -34,6 +33,8 @@ export type SocialImageVehicle = {
   price: number
   image: string | null
   publicUrl: string
+  createdAt?: string | null
+  priceDroppedAt?: string | null
 }
 
 export type SocialImageGallery = {
@@ -41,7 +42,19 @@ export type SocialImageGallery = {
   logo: string | null
   monogram: string
   showroomUrl: string
+  phone?: string | null
+  city?: string | null
+  heroTagline?: string | null
+  vehicleCount?: number
 } | null
+
+type ThemeKey = "koyu" | "acik" | "cerceve"
+
+const THEME_OPTIONS: Array<{ value: ThemeKey; label: string }> = [
+  { value: "koyu", label: "Koyu" },
+  { value: "acik", label: "Açık" },
+  { value: "cerceve", label: "Çerçeve" },
+]
 
 type SocialFormat = {
   key: "square" | "story"
@@ -68,14 +81,23 @@ const FORMATS: SocialFormat[] = [
   },
 ]
 
-// Optional corner badge. Empty value = no badge. Keys match /og/vehicle?badge=.
-const BADGE_OPTIONS: Array<{ value: string; label: string }> = [
+// Optional corner badge. `null` = follow the smart auto-suggestion, "" = force no
+// badge, anything else = explicit. Keys match /og/vehicle?badge=.
+const BADGE_OPTIONS: Array<{ value: string | null; label: string }> = [
+  { value: null, label: "Otomatik" },
   { value: "", label: "Rozet yok" },
   { value: "firsat", label: "Fırsat" },
   { value: "yeni", label: "Yeni" },
+  { value: "fiyat-dustu", label: "Fiyat düştü" },
   { value: "satildi", label: "Satıldı" },
   { value: "rezerve", label: "Rezerve" },
 ]
+
+// Turkish display label for whatever the auto-suggestion resolves to.
+const AUTO_BADGE_LABELS: Record<string, string> = {
+  yeni: "Yeni",
+  "fiyat-dustu": "Fiyat düştü",
+}
 
 function buildFileSlug(value: string) {
   return (
@@ -109,6 +131,8 @@ export function toSocialImageVehicle(vehicle: {
   image?: string | null
   photos?: string[]
   publicUrl?: string | null
+  createdAt?: string | null
+  priceDroppedAt?: string | null
 }): SocialImageVehicle {
   const variantPart = vehicle.variant ? ` ${vehicle.variant}` : ""
   return {
@@ -122,6 +146,8 @@ export function toSocialImageVehicle(vehicle: {
     price: vehicle.price,
     image: vehicle.image ?? vehicle.photos?.[0] ?? null,
     publicUrl: vehicle.publicUrl ?? "",
+    createdAt: vehicle.createdAt ?? null,
+    priceDroppedAt: vehicle.priceDroppedAt ?? null,
   }
 }
 
@@ -144,7 +170,11 @@ export function VehicleSocialImageDialog({
   const [loaded, setLoaded] = useState<Record<string, boolean>>({})
   const [downloading, setDownloading] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [badge, setBadge] = useState("")
+  // null = follow the auto-suggestion; "" = forced off; else explicit badge key.
+  const [badgeOverride, setBadgeOverride] = useState<string | null>(null)
+  const [theme, setTheme] = useState<ThemeKey>("koyu")
+  const [showWhatsapp, setShowWhatsapp] = useState(true)
+  const [showQr, setShowQr] = useState(false)
   const [captionCopied, setCaptionCopied] = useState(false)
 
   const isControlled = openProp !== undefined
@@ -159,46 +189,60 @@ export function VehicleSocialImageDialog({
     }
   }
 
-  const priceText = vehicle.price > 0 ? formatPrice(vehicle.price) : "Fiyat için arayın"
+  const priceText = vehiclePriceText(vehicle.price)
 
-  const meta = useMemo(() => {
-    const parts: string[] = []
-    if (vehicle.mileage > 0) parts.push(formatMileage(vehicle.mileage))
-    const fuelLabel = getFuelTypeLabel(normalizeFuelType(vehicle.fuel))
-    if (fuelLabel !== "Bilinmiyor") parts.push(fuelLabel)
-    const transmissionLabel = getTransmissionLabel(normalizeTransmission(vehicle.transmission))
-    if (transmissionLabel !== "Bilinmiyor") parts.push(transmissionLabel)
-    return parts.join(" · ")
-  }, [vehicle.mileage, vehicle.fuel, vehicle.transmission])
+  const meta = useMemo(
+    () => buildVehicleMeta({ mileage: vehicle.mileage, fuel: vehicle.fuel, transmission: vehicle.transmission }),
+    [vehicle.mileage, vehicle.fuel, vehicle.transmission],
+  )
+
+  // Smart default badge from the vehicle's freshness / price history. The user can
+  // override it (including forcing it off); a null override means "use this".
+  const autoBadge = useMemo(
+    () => suggestVehicleBadge({ createdAt: vehicle.createdAt, priceDroppedAt: vehicle.priceDroppedAt }),
+    [vehicle.createdAt, vehicle.priceDroppedAt],
+  )
+  const effectiveBadge = badgeOverride ?? autoBadge
+
+  // QR matrix is generated client-side (the qrcode lib bundles for the browser but
+  // not the edge runtime) and passed to the OG route as a compact base64 string.
+  const qrData = useMemo(() => (vehicle.publicUrl ? packQrMatrix(vehicle.publicUrl) : null), [vehicle.publicUrl])
+  const galleryPhone = gallery?.phone || ""
 
   const urls = useMemo(() => {
     const map: Record<string, string> = {}
     for (const format of FORMATS) {
-      const params = new URLSearchParams({
+      map[format.key] = buildVehicleOgUrl({
         format: format.key,
         title: vehicle.vehicleTitle,
-        price: priceText,
+        priceText,
+        meta,
+        galleryName: gallery?.name ?? null,
+        logo: gallery?.logo ?? null,
+        monogram: gallery?.monogram ?? null,
+        showroomUrl: gallery?.showroomUrl ?? null,
+        photo: vehicle.image,
+        badge: effectiveBadge || undefined,
+        theme,
+        phoneDisplay: showWhatsapp ? galleryPhone || null : null,
+        qr: showQr && qrData ? qrData.qr : null,
+        qrN: showQr && qrData ? qrData.n : null,
       })
-      if (meta) params.set("meta", meta)
-      if (gallery?.name) params.set("gallery", gallery.name)
-      if (gallery?.showroomUrl) {
-        try {
-          params.set("tag", new URL(gallery.showroomUrl).host)
-        } catch {
-          // ignore unparsable showroom url; route falls back to the brand domain
-        }
-      }
-      if (gallery?.logo) {
-        params.set("logo", gallery.logo)
-      } else if (gallery?.monogram) {
-        params.set("monogram", gallery.monogram)
-      }
-      if (vehicle.image) params.set("photo", vehicle.image)
-      if (badge) params.set("badge", badge)
-      map[format.key] = `/og/vehicle?${params.toString()}`
     }
     return map
-  }, [vehicle.vehicleTitle, vehicle.image, priceText, meta, gallery, badge])
+  }, [
+    vehicle.vehicleTitle,
+    vehicle.image,
+    priceText,
+    meta,
+    gallery,
+    effectiveBadge,
+    theme,
+    showWhatsapp,
+    galleryPhone,
+    showQr,
+    qrData,
+  ])
 
   const caption = useMemo(() => {
     const lines: string[] = [vehicle.vehicleTitle, priceText]
@@ -284,23 +328,85 @@ export function VehicleSocialImageDialog({
           </div>
         )}
 
-        {/* Optional badge */}
-        <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-foreground">Köşe rozeti (isteğe bağlı)</span>
-          <div className="flex flex-wrap gap-2">
-            {BADGE_OPTIONS.map((option) => (
-              <Button
-                key={option.value || "none"}
-                type="button"
-                variant={badge === option.value ? "default" : "outline"}
-                size="sm"
-                className="h-8"
-                onClick={() => setBadge(option.value)}
-              >
-                {option.label}
-              </Button>
-            ))}
+        {/* Görsel ayarları: şablon, rozet ve iletişim öğeleri */}
+        <div className="flex flex-col gap-4 rounded-lg border border-border bg-muted/40 p-4">
+          <div className="flex flex-col gap-2">
+            <span className="text-sm font-medium text-foreground">Şablon</span>
+            <div className="flex flex-wrap gap-2">
+              {THEME_OPTIONS.map((option) => (
+                <Button
+                  key={option.value}
+                  type="button"
+                  variant={theme === option.value ? "default" : "outline"}
+                  size="sm"
+                  className="h-8"
+                  onClick={() => setTheme(option.value)}
+                >
+                  {option.label}
+                </Button>
+              ))}
+            </div>
           </div>
+
+          <div className="flex flex-col gap-2">
+            <span className="text-sm font-medium text-foreground">Köşe rozeti</span>
+            <div className="flex flex-wrap gap-2">
+              {BADGE_OPTIONS.map((option) => (
+                <Button
+                  key={option.value ?? "auto"}
+                  type="button"
+                  variant={badgeOverride === option.value ? "default" : "outline"}
+                  size="sm"
+                  className="h-8"
+                  onClick={() => setBadgeOverride(option.value)}
+                >
+                  {option.label}
+                </Button>
+              ))}
+            </div>
+            {badgeOverride === null && (
+              <p className="text-xs text-muted-foreground">
+                {autoBadge
+                  ? `Otomatik öneri: ${AUTO_BADGE_LABELS[autoBadge] ?? autoBadge}`
+                  : "Bu araç için otomatik rozet önerisi yok."}
+              </p>
+            )}
+          </div>
+
+          {(galleryPhone || qrData) && (
+            <div className="flex flex-col gap-2">
+              <span className="text-sm font-medium text-foreground">İletişim öğeleri</span>
+              <div className="flex flex-wrap gap-2">
+                {galleryPhone && (
+                  <Button
+                    type="button"
+                    variant={showWhatsapp ? "default" : "outline"}
+                    size="sm"
+                    className="h-8"
+                    onClick={() => setShowWhatsapp((value) => !value)}
+                  >
+                    WhatsApp numarası · {showWhatsapp ? "açık" : "kapalı"}
+                  </Button>
+                )}
+                {qrData && (
+                  <Button
+                    type="button"
+                    variant={showQr ? "default" : "outline"}
+                    size="sm"
+                    className="h-8"
+                    onClick={() => setShowQr((value) => !value)}
+                  >
+                    Karekod · {showQr ? "açık" : "kapalı"}
+                  </Button>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {galleryPhone
+                  ? "WhatsApp numarası ve karekod, görseli görenlerin size ulaşmasını kolaylaştırır."
+                  : "Karekod, görseli görenlerin araç sayfasını telefonla açmasını sağlar."}
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="grid gap-6 sm:grid-cols-2">

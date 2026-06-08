@@ -31,6 +31,7 @@ type VehicleRow = {
   status: string
   photos: string[] | null
   created_at: string
+  price_dropped_at: string | null
 }
 
 type LeadRow = {
@@ -70,6 +71,8 @@ export type PanelQrVehicleSummary = {
   scans: number
   lastScanAt: string | null
   image: string | null
+  createdAt: string
+  priceDroppedAt: string | null
 }
 
 export type PanelQrScanEvent = {
@@ -84,6 +87,10 @@ export type PanelGalleryShowroomSummary = {
   name: string
   slug: string
   logo: string | null
+  phone: string | null
+  city: string | null
+  district: string | null
+  heroTagline: string | null
   showroomPath: string
   publicShowroomUrl: string
   vehicleCount: number
@@ -242,7 +249,7 @@ async function fetchVehicleRows(limit: number, galleryId?: string | null) {
   return supabaseAdminFetch<VehicleRow[]>({
     path: '/rest/v1/vehicles',
     query: {
-      select: 'id,slug,brand,model,variant,year,price,km,description,fuel,transmission,color,status,photos,created_at',
+      select: 'id,slug,brand,model,variant,year,price,km,description,fuel,transmission,color,status,photos,created_at,price_dropped_at',
       ...(galleryId ? { gallery_id: `eq.${galleryId}` } : {}),
       order: 'created_at.desc',
       limit,
@@ -359,6 +366,8 @@ export async function listPanelVehicles(ownerEmail?: string) {
       image: vehicle.photos?.[0] || null,
       photos: vehicle.photos?.filter(Boolean) || [],
       description: vehicle.description || '',
+      createdAt: vehicle.created_at,
+      priceDroppedAt: vehicle.price_dropped_at ?? null,
     }
   })
 
@@ -420,6 +429,8 @@ export async function listPanelQrVehicleSummaries(ownerEmail?: string) {
       scans: scanCounts.get(vehicle.id) || 0,
       lastScanAt: lastScanAtMap.get(vehicle.id) || null,
       image: vehicle.photos?.[0] || null,
+      createdAt: vehicle.created_at,
+      priceDroppedAt: vehicle.price_dropped_at ?? null,
     }
   })
 
@@ -439,10 +450,14 @@ export async function getPanelGalleryShowroomSummary(ownerEmail?: string) {
     name: string
     slug: string | null
     logo_url: string | null
+    phone: string | null
+    city: string | null
+    district: string | null
+    public_hero_tagline: string | null
   }>>({
     path: '/rest/v1/galleries',
     query: {
-      select: 'id,name,slug,logo_url',
+      select: 'id,name,slug,logo_url,phone,city,district,public_hero_tagline',
       owner_email: `eq.${ownerEmail}`,
       order: 'created_at.asc',
       limit: 1,
@@ -474,6 +489,10 @@ export async function getPanelGalleryShowroomSummary(ownerEmail?: string) {
     name: gallery.name,
     slug,
     logo: gallery.logo_url || null,
+    phone: gallery.phone || null,
+    city: gallery.city || null,
+    district: gallery.district || null,
+    heroTagline: gallery.public_hero_tagline || null,
     showroomPath,
     publicShowroomUrl: absoluteUrl(showroomPath),
     vehicleCount: vehicles.length,
@@ -599,6 +618,8 @@ export async function createPanelVehicle(input: VehicleCreateInput, ownerEmail?:
     image: vehicle.photos?.[0] || null,
     photos: vehicle.photos?.filter(Boolean) || [],
     description: vehicle.description || '',
+    createdAt: vehicle.created_at,
+    priceDroppedAt: vehicle.price_dropped_at ?? null,
   } satisfies PanelVehicle
 }
 
@@ -613,7 +634,7 @@ export async function deletePanelVehicle(vehicleId: string, ownerEmail?: string)
   const rows = await supabaseAdminFetch<VehicleRow[]>({
     path: '/rest/v1/vehicles',
     query: {
-      select: 'id,slug,brand,model,variant,year,price,km,description,fuel,transmission,color,status,photos,created_at',
+      select: 'id,slug,brand,model,variant,year,price,km,description,fuel,transmission,color,status,photos,created_at,price_dropped_at',
       id: `eq.${vehicleId}`,
       gallery_id: `eq.${galleryId}`,
       limit: 1,

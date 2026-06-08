@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 
 import { galleryInitials } from '@/lib/gallery-monogram'
+import { formatTrPhoneDisplay } from '@/lib/phone-display'
 import { getPanelGalleryShowroomSummary } from '@/lib/server/panel-repository'
 import { panelAuthErrorResponse, requirePanelSessionOrThrow } from '@/lib/server/panel-auth-guard'
 
@@ -23,6 +24,10 @@ export async function GET(request: Request) {
             logo: gallery.logo,
             monogram: galleryInitials(gallery.name),
             showroomUrl: gallery.publicShowroomUrl,
+            phone: formatTrPhoneDisplay(gallery.phone),
+            city: gallery.city,
+            heroTagline: gallery.heroTagline,
+            vehicleCount: gallery.vehicleCount,
           }
         : null,
     })

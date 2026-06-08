@@ -26,6 +26,7 @@ import {
   type SocialImageGallery,
 } from "@/components/panel/vehicle-social-image-dialog"
 import { ShowroomPromoDialog } from "@/components/panel/showroom-promo-dialog"
+import { GalleryBrandKitDialog } from "@/components/panel/gallery-brand-kit-dialog"
 import { cn } from "@/lib/utils"
 import { formatPrice } from "@/lib/vehicle-display"
 
@@ -46,6 +47,8 @@ type QrVehicle = {
   scans: number
   lastScanAt: string | null
   image: string | null
+  createdAt: string
+  priceDroppedAt: string | null
 }
 
 type QrScanEvent = {
@@ -320,11 +323,21 @@ export default function QRCodesPage() {
                 vehicleCount={vehicles.length}
                 vehicles={vehicles.map((vehicle) => ({
                   vehicleTitle: vehicle.vehicleTitle,
+                  brand: vehicle.brand,
+                  model: vehicle.model,
+                  year: vehicle.year,
+                  mileage: vehicle.mileage,
+                  fuel: vehicle.fuel,
+                  transmission: vehicle.transmission,
                   price: vehicle.price,
                   image: vehicle.image,
+                  publicUrl: vehicle.publicUrl,
+                  createdAt: vehicle.createdAt,
+                  priceDroppedAt: vehicle.priceDroppedAt,
                 }))}
               />
             )}
+            {gallery && <GalleryBrandKitDialog gallery={gallery} />}
             <Button
               variant="outline"
               disabled={validSelectedVehicleIds.length === 0}

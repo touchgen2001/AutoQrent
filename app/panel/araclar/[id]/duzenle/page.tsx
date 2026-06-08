@@ -148,7 +148,12 @@ export default function EditVehiclePage() {
   )
   const [gallery, setGallery] = useState<SocialImageGallery>(null)
   const [isSocialOpen, setIsSocialOpen] = useState(false)
-  const [shareInfo, setShareInfo] = useState<{ routeId: string; publicUrl: string } | null>(null)
+  const [shareInfo, setShareInfo] = useState<{
+    routeId: string
+    publicUrl: string
+    createdAt: string | null
+    priceDroppedAt: string | null
+  } | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
@@ -173,7 +178,12 @@ export default function EditVehiclePage() {
         }
 
         setFormData(toFormState(data.item))
-        setShareInfo({ routeId: data.item.routeId, publicUrl: data.item.publicUrl })
+        setShareInfo({
+          routeId: data.item.routeId,
+          publicUrl: data.item.publicUrl,
+          createdAt: data.item.createdAt ?? null,
+          priceDroppedAt: data.item.priceDroppedAt ?? null,
+        })
       } catch (error) {
         if ((error as Error).name === 'AbortError') return
         setErrorMessage('Ağ hatası nedeniyle araç detayı alınamadı.')
@@ -709,6 +719,8 @@ export default function EditVehiclePage() {
           price: Number(formData.price) || 0,
           image: formData.photos[0] ?? null,
           publicUrl: shareInfo?.publicUrl ?? '',
+          createdAt: shareInfo?.createdAt ?? null,
+          priceDroppedAt: shareInfo?.priceDroppedAt ?? null,
         })}
         gallery={gallery}
         open={isSocialOpen}
