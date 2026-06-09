@@ -68,8 +68,10 @@
   .tag .rule.r { background: linear-gradient(90deg, rgba(201,164,78,0.9) 0%, rgba(201,164,78,0) 100%); }
   .tag .txt { font-family: 'GeistMono'; font-weight: 400; font-size: 27px; letter-spacing: 0.36em; color: #c5a96a; text-indent: 0.36em; }
 
-  /* ---- Variant: full lockup on dark background ------------------------- */
-  body[data-variant="full"] #art {
+  /* ---- Variant: full lockup + social cards on dark background --------- */
+  body[data-variant="full"] #art,
+  body[data-variant="social-profile"] #art,
+  body[data-variant="social-cover"] #art {
     background:
       radial-gradient(56% 44% at 50% 40%, rgba(201,164,78,0.11) 0%, rgba(201,164,78,0) 60%),
       radial-gradient(120% 120% at 50% 50%, #131313 0%, #070707 62%, #000 100%);
@@ -113,6 +115,40 @@
     letter-spacing: 0.34em; color: #c5a96a;
   }
   .tagh { display: none; }
+
+  /* ---- Variant: maskable icon (Android adaptive, full-bleed safe zone) - */
+  body[data-variant="tile-maskable"] #art {
+    width: 512px; height: 512px; border-radius: 0;
+    background-image:
+      radial-gradient(116% 78% at 27% -12%, rgba(255,255,255,0.18), rgba(255,255,255,0) 56%),
+      linear-gradient(152deg, #2c2c2f 0%, #18181a 52%, #0a0a0a 100%);
+  }
+  body[data-variant="tile-maskable"] .mono .ltr { font-size: 300px; }
+  body[data-variant="tile-maskable"] .mono .g { margin-left: -50px; }
+  body[data-variant="tile-maskable"] .car,
+  body[data-variant="tile-maskable"] .word,
+  body[data-variant="tile-maskable"] .tag { display: none; }
+
+  /* ---- Variant: social profile (1080², circular-crop safe) ------------ */
+  body[data-variant="social-profile"] #art { width: 1080px; height: 1080px; }
+  body[data-variant="social-profile"] .mono .ltr { font-size: 560px; }
+  body[data-variant="social-profile"] .mono .g { margin-left: -92px; }
+  body[data-variant="social-profile"] .car,
+  body[data-variant="social-profile"] .word,
+  body[data-variant="social-profile"] .tag { display: none; }
+
+  /* ---- Variant: social cover (1640×624 banner) ------------------------ */
+  body[data-variant="social-cover"] #art { width: 1640px; height: 624px; flex-direction: row; gap: 58px; padding: 0 90px; }
+  body[data-variant="social-cover"] .mono .ltr { font-size: 286px; }
+  body[data-variant="social-cover"] .mono .g { margin-left: -48px; }
+  body[data-variant="social-cover"] .car,
+  body[data-variant="social-cover"] .tag { display: none; }
+  body[data-variant="social-cover"] .wordwrap { display: flex; flex-direction: column; align-items: flex-start; }
+  body[data-variant="social-cover"] .word { margin-top: 0; font-size: 88px; letter-spacing: 0.06em; }
+  body[data-variant="social-cover"] .tagh {
+    display: block; margin-top: 16px; font-family: 'GeistMono'; font-weight: 400;
+    font-size: 25px; letter-spacing: 0.26em; color: #c5a96a;
+  }
 </style>
 </head>
 <body data-variant="full">
@@ -154,12 +190,10 @@
   </div>
 
   <script>
-    // Pick the variant from the URL hash (#tile, #mark, #horizontal, #full,
-    // #full-transparent). Defaults to the full lockup.
-    var v = (location.hash || '#full').slice(1) || 'full';
-    document.body.dataset.variant = (v === 'full-transparent') ? 'full-transparent' : v;
-    // full-transparent reuses the full lockup layout with no background.
-    if (v === 'full-transparent') document.body.dataset.variant = 'full-transparent';
+    // Pick the variant from the URL hash. Known: tile, tile-maskable, mark,
+    // horizontal, full, full-transparent, social-profile, social-cover.
+    // Defaults to the full lockup.
+    document.body.dataset.variant = (location.hash || '#full').slice(1) || 'full';
   </script>
 </body>
 </html>

@@ -15,7 +15,12 @@
 //   public/icon-light-32x32.png       32  favicon (light browser chrome)
 //   public/icon-dark-32x32.png        32  favicon (dark browser chrome)
 //   public/icon.svg                       favicon (svg, wraps the 256px tile)
+//   public/icon-192.png / icon-512.png    PWA / web-manifest icons (purpose any)
+//   public/icon-maskable-512.png          PWA maskable icon (Android adaptive)
+//   app/favicon.ico                  16/32/48  classic favicon fallback
 //   app/og/logo.png                  180  default share-card brand tile
+//   public/brand/social/cebindegaleri-profil.png    social avatar (1080²)
+//   public/brand/social/cebindegaleri-kapak.png     social cover (1640×624)
 //   public/brand/cebindegaleri-logo.png             full lockup, dark bg
 //   public/brand/cebindegaleri-logo-transparent.png full lockup, transparent
 //   public/brand/cebindegaleri-logo-horizontal.png  wide lockup, transparent
@@ -74,6 +79,35 @@ async function writeRaw(buf, relPath) {
   console.log(`wrote ${out}`)
 }
 
+// Assemble a classic multi-size favicon.ico from PNG entries. The ICO format
+// allows PNG-compressed images (Vista+), which every current browser reads, so
+// we just wrap the sharp-rendered PNGs in an ICONDIR + ICONDIRENTRY header.
+function buildIco(entries) {
+  const header = Buffer.alloc(6)
+  header.writeUInt16LE(0, 0) // reserved
+  header.writeUInt16LE(1, 2) // type = icon
+  header.writeUInt16LE(entries.length, 4)
+  const dir = Buffer.alloc(16 * entries.length)
+  let offset = 6 + dir.length
+  entries.forEach((e, i) => {
+    const o = i * 16
+    dir.writeUInt8(e.size >= 256 ? 0 : e.size, o + 0) // width (0 ⇒ 256)
+    dir.writeUInt8(e.size >= 256 ? 0 : e.size, o + 1) // height
+    dir.writeUInt8(0, o + 2) // palette colours
+    dir.writeUInt8(0, o + 3) // reserved
+    dir.writeUInt16LE(1, o + 4) // colour planes
+    dir.writeUInt16LE(32, o + 6) // bits per pixel
+    dir.writeUInt32LE(e.data.length, o + 8) // image byte length
+    dir.writeUInt32LE(offset, o + 12) // image offset
+    offset += e.data.length
+  })
+  return Buffer.concat([header, dir, ...entries.map((e) => e.data)])
+}
+
+async function tilePng(tile, size) {
+  return sharp(tile).resize(size, size, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } }).png().toBuffer()
+}
+
 async function main() {
   const browser = await chromium.launch()
   try {
@@ -93,6 +127,23 @@ async function main() {
   <image width="256" height="256" href="data:image/png;base64,${tile256.toString('base64')}"/>
 </svg>\n`
     await writeRaw(Buffer.from(svg), 'public/icon.svg')
+
+    // --- PWA / web-manifest icons -------------------------------------------
+    await writePng(tile, 'public/icon-192.png', 192)
+    await writePng(tile, 'public/icon-512.png', 512)
+    // Maskable (Android adaptive): full-bleed, monogram inside the safe zone.
+    const maskable = await renderVariant(browser, { variant: 'tile-maskable', width: 512, height: 512, scale: 2 })
+    await writePng(maskable, 'public/icon-maskable-512.png', 512)
+
+    // --- Classic multi-size favicon.ico (16 / 32 / 48) ----------------------
+    const ico = buildIco(await Promise.all([16, 32, 48].map(async (size) => ({ size, data: await tilePng(tile, size) }))))
+    await writeRaw(ico, 'app/favicon.ico')
+
+    // --- Social-media set (Cebindegaleri's own profiles) --------------------
+    const profile = await renderVariant(browser, { variant: 'social-profile', width: 1080, height: 1080, scale: 1 })
+    await writeRaw(profile, 'public/brand/social/cebindegaleri-profil.png')
+    const cover = await renderVariant(browser, { variant: 'social-cover', width: 1640, height: 624, scale: 1 })
+    await writeRaw(cover, 'public/brand/social/cebindegaleri-kapak.png')
 
     // --- Standalone lockups (deliverables + future site use) ----------------
     const full = await renderVariant(browser, { variant: 'full', width: 1440, height: 1440, scale: 1 })
