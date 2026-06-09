@@ -66,6 +66,7 @@ type QrApiResponse =
       vehicles: QrVehicle[]
       recentScans: QrScanEvent[]
       topShared: PanelTopSharedVehicle[]
+      shareCount: number
       gallery: SocialImageGallery
     }
   | {
@@ -108,6 +109,7 @@ export default function QRCodesPage() {
   const [vehicles, setVehicles] = useState<QrVehicle[]>([])
   const [recentScans, setRecentScans] = useState<QrScanEvent[]>([])
   const [topShared, setTopShared] = useState<PanelTopSharedVehicle[]>([])
+  const [shareCount, setShareCount] = useState(0)
   const [gallery, setGallery] = useState<SocialImageGallery>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -146,6 +148,7 @@ export default function QRCodesPage() {
       setVehicles(data.vehicles)
       setRecentScans(data.recentScans)
       setTopShared(data.topShared ?? [])
+      setShareCount(data.shareCount ?? 0)
       setGallery(data.gallery)
       const validIds = new Set(data.vehicles.map((vehicle) => vehicle.vehicleId))
       setSelectedVehicles((current) => current.filter((id) => validIds.has(id)))
@@ -614,6 +617,20 @@ export default function QRCodesPage() {
             Bu liste yalnızca panelden indirilen paylaşım görsellerini sayar; sosyal medyadaki gerçek paylaşımları
             ölçmez. Son 90 günlük indirmeler dikkate alınır.
           </p>
+
+          <div className="mt-4 flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-muted/30 p-3">
+            <div className="flex items-center gap-2">
+              <Share2 className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <p className="text-sm font-medium text-foreground">Doğrudan paylaşım</p>
+                <p className="text-xs text-muted-foreground">Telefonun paylaş menüsüyle gönderildi</p>
+              </div>
+            </div>
+            <div className="shrink-0 text-right">
+              <div className="text-lg font-semibold text-foreground">{shareCount}</div>
+              <p className="text-xs text-muted-foreground">kez · 90 gün</p>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

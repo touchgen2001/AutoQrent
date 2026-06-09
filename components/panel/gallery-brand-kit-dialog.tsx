@@ -13,7 +13,18 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import type { SocialImageGallery } from "@/components/panel/vehicle-social-image-dialog"
+import { useLogoTheme, type LogoTheme } from "@/lib/client/logo-theme"
 import { buildBrandOgUrl } from "@/lib/social-image-url"
+
+const THEME_OPTIONS: Array<{ value: LogoTheme; label: string }> = [
+  { value: "koyu", label: "Koyu" },
+  { value: "lacivert", label: "Lacivert" },
+  { value: "bordo", label: "Bordo" },
+]
+
+function themeLabel(value: LogoTheme): string {
+  return THEME_OPTIONS.find((option) => option.value === value)?.label ?? value
+}
 
 type BrandFormat = {
   key: "profile" | "cover"
@@ -72,6 +83,11 @@ export function GalleryBrandKitDialog({
   const [loaded, setLoaded] = useState<Record<string, boolean>>({})
   const [downloading, setDownloading] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  // null = follow the logo-color suggestion; else an explicit theme choice.
+  const [themeOverride, setThemeOverride] = useState<LogoTheme | null>(null)
+
+  const suggestedTheme = useLogoTheme(gallery?.logo ?? null)
+  const effectiveTheme: LogoTheme = themeOverride ?? suggestedTheme ?? "koyu"
 
   const isControlled = openProp !== undefined
   const open = isControlled ? openProp : internalOpen
@@ -85,10 +101,10 @@ export function GalleryBrandKitDialog({
   const urls = useMemo(() => {
     const map: Record<string, string> = {}
     for (const format of FORMATS) {
-      map[format.key] = buildBrandOgUrl(gallery, format.key)
+      map[format.key] = buildBrandOgUrl(gallery, format.key, effectiveTheme)
     }
     return map
-  }, [gallery])
+  }, [gallery, effectiveTheme])
 
   const fileSlug = useMemo(() => buildFileSlug(gallery?.name ?? "galeri"), [gallery])
 
@@ -138,6 +154,32 @@ export function GalleryBrandKitDialog({
             {errorMessage}
           </div>
         )}
+
+        <div className="flex flex-col gap-2 rounded-lg border border-border bg-muted/40 p-4">
+          <span className="text-sm font-medium text-foreground">Renk</span>
+          <div className="flex flex-wrap gap-2">
+            {THEME_OPTIONS.map((option) => (
+              <Button
+                key={option.value}
+                type="button"
+                variant={effectiveTheme === option.value ? "default" : "outline"}
+                size="sm"
+                className="h-8"
+                onClick={() => setThemeOverride(option.value)}
+              >
+                {option.label}
+                {suggestedTheme === option.value && themeOverride === null ? " · önerilen" : ""}
+              </Button>
+            ))}
+          </div>
+          {suggestedTheme ? (
+            <p className="text-xs text-muted-foreground">
+              {themeOverride === null
+                ? `Logonuzun rengine göre ${themeLabel(suggestedTheme)} önerildi.`
+                : `Logo önerisi: ${themeLabel(suggestedTheme)}.`}
+            </p>
+          ) : null}
+        </div>
 
         <div className="flex flex-col gap-6">
           {FORMATS.map((format) => (

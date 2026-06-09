@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react"
+import { useMemo, useState, useSyncExternalStore } from "react"
 import { Check, Copy, Download, ImageIcon, Loader2, Share2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -13,6 +13,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
+import { useLogoTheme } from "@/lib/client/logo-theme"
 import { packQrMatrix } from "@/lib/client/qr-matrix"
 import { recordVehicleShareDownloads } from "@/lib/client/social-share-events"
 import { shareImageFile, supportsImageFileShare } from "@/lib/client/web-share"
@@ -20,10 +21,8 @@ import {
   buildVehicleCaption,
   buildVehicleMeta,
   buildVehicleOgUrl,
-  pickThemeFromColor,
   suggestVehicleBadge,
   vehiclePriceText,
-  type RgbColor,
 } from "@/lib/social-image-url"
 import { cn } from "@/lib/utils"
 
@@ -116,78 +115,6 @@ const AUTO_BADGE_LABELS: Record<string, string> = {
 
 function themeLabel(value: ThemeKey): string {
   return THEME_OPTIONS.find((option) => option.value === value)?.label ?? value
-}
-
-// Sample a logo's dominant chromatic color by drawing it small and averaging the
-// opaque, non-background pixels. Returns null when the canvas is unavailable or
-// tainted (cross-origin logo without CORS headers) so the caller keeps the default.
-function averageColorFromImage(img: HTMLImageElement): RgbColor | null {
-  const size = 32
-  const canvas = document.createElement("canvas")
-  canvas.width = size
-  canvas.height = size
-  const ctx = canvas.getContext("2d", { willReadFrequently: true })
-  if (!ctx) return null
-  ctx.drawImage(img, 0, 0, size, size)
-  const { data } = ctx.getImageData(0, 0, size, size)
-  let r = 0
-  let g = 0
-  let b = 0
-  let count = 0
-  let fr = 0
-  let fg = 0
-  let fb = 0
-  let fallbackCount = 0
-  for (let i = 0; i < data.length; i += 4) {
-    if (data[i + 3] < 128) continue
-    const cr = data[i]
-    const cg = data[i + 1]
-    const cb = data[i + 2]
-    fr += cr
-    fg += cg
-    fb += cb
-    fallbackCount += 1
-    const max = Math.max(cr, cg, cb)
-    const min = Math.min(cr, cg, cb)
-    // Skip near-white background and near-black outlines for the chromatic average.
-    if (min > 230 || max < 25) continue
-    r += cr
-    g += cg
-    b += cb
-    count += 1
-  }
-  if (count > 0) return { r: r / count, g: g / count, b: b / count }
-  if (fallbackCount > 0) return { r: fr / fallbackCount, g: fg / fallbackCount, b: fb / fallbackCount }
-  return null
-}
-
-// Read the gallery logo and suggest the OG theme that matches its brand color.
-// State is only set inside the async image onload (never synchronously in the
-// effect body), which keeps react-hooks/set-state-in-effect happy.
-function useLogoTheme(logoUrl: string | null | undefined): "koyu" | "lacivert" | "bordo" | null {
-  const [suggested, setSuggested] = useState<"koyu" | "lacivert" | "bordo" | null>(null)
-
-  useEffect(() => {
-    if (!logoUrl) return
-    let cancelled = false
-    const img = new Image()
-    img.crossOrigin = "anonymous"
-    img.onload = () => {
-      if (cancelled) return
-      try {
-        const color = averageColorFromImage(img)
-        if (color) setSuggested(pickThemeFromColor(color))
-      } catch {
-        // Tainted canvas / no 2d context — keep the default theme.
-      }
-    }
-    img.src = logoUrl
-    return () => {
-      cancelled = true
-    }
-  }, [logoUrl])
-
-  return suggested
 }
 
 // Whether the browser can share an image File via the native share sheet
@@ -404,9 +331,9 @@ export function VehicleSocialImageDialog({
 
   // Push the rendered card straight into the native share sheet (WhatsApp,
   // Instagram, …) on supported phones, so the dealer skips the download → re-upload
-  // round trip. We deliberately do NOT record a download event here: the
-  // "en çok indirilen" card counts real downloads only and never claims a share
-  // actually reached social media, in line with the no-fake-metrics stance.
+  // round trip. A completed share is recorded under its OWN "share" event — kept
+  // separate from downloads, and labelled honestly (it proves the share sheet
+  // completed, not that the image reached a social network).
   const shareImage = async (format: SocialFormat) => {
     setSharing(format.key)
     setErrorMessage(null)
@@ -420,7 +347,12 @@ export function VehicleSocialImageDialog({
         title: vehicle.vehicleTitle,
         text: caption,
       })
-      if (result === "failed" || result === "unsupported") {
+      if (result === "shared") {
+        void recordVehicleShareDownloads(
+          [{ vehicleId: vehicle.vehicleId, vehicleTitle: vehicle.vehicleTitle }],
+          { format: format.key, scope: "single", kind: "share" },
+        )
+      } else if (result === "failed" || result === "unsupported") {
         setErrorMessage("Paylaşım açılamadı. Görseli indirip elle paylaşabilirsiniz.")
       }
     } catch {

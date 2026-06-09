@@ -8,6 +8,11 @@ import { requireSupabaseAdminConfig, supabaseAdminFetch } from '@/lib/server/sup
 // in line with the no-fake-metrics stance.
 
 const SHARE_DOWNLOAD_ACTION = 'vehicle_social_image_download'
+// A distinct action for "doğrudan paylaş": the dealer pushed the card into the
+// device's native share sheet (Web Share API) and it completed (didn't cancel).
+// Kept SEPARATE from downloads and labelled honestly — it proves the share sheet
+// opened-and-completed, NOT that the image reached a social network.
+const SHARE_SHARE_ACTION = 'vehicle_social_image_share'
 
 // Only look back this far when ranking; older downloads shouldn't dominate the card.
 const LOOKBACK_DAYS = 90
@@ -41,10 +46,12 @@ export type RecordVehicleShareInput = {
   items: Array<{ vehicleId: string; vehicleTitle?: string }>
   format?: string
   scope?: string
+  // 'download' (default) = saved to disk / ZIP; 'share' = native share sheet.
+  kind?: 'download' | 'share'
 }
 
-// Bulk-insert one audit row per downloaded vehicle. Best-effort: if the gallery
-// can't be resolved or there are no valid items, it simply records nothing.
+// Bulk-insert one audit row per downloaded (or shared) vehicle. Best-effort: if
+// the gallery can't be resolved or there are no valid items, it records nothing.
 export async function recordVehicleShareDownloads(
   input: RecordVehicleShareInput,
 ): Promise<{ recorded: number }> {
@@ -53,6 +60,7 @@ export async function recordVehicleShareDownloads(
   const galleryId = await resolveGalleryId(input.ownerEmail)
   if (!galleryId) return { recorded: 0 }
 
+  const action = input.kind === 'share' ? SHARE_SHARE_ACTION : SHARE_DOWNLOAD_ACTION
   const scope = input.scope || 'single'
   const format = input.format || ''
 
@@ -60,7 +68,7 @@ export async function recordVehicleShareDownloads(
     .filter((item) => typeof item.vehicleId === 'string' && item.vehicleId.trim().length > 0)
     .slice(0, 250)
     .map((item) => ({
-      action: SHARE_DOWNLOAD_ACTION,
+      action,
       entity_type: 'vehicle',
       entity_id: item.vehicleId,
       actor_email: input.ownerEmail || null,
@@ -143,4 +151,28 @@ export async function getTopSharedVehicles(
       return right.lastDownloadAt.localeCompare(left.lastDownloadAt)
     })
     .slice(0, Math.max(limitTop, 1))
+}
+
+// Total "doğrudan paylaş" events for a gallery over the lookback window. Shown as
+// an honest, separate counter next to downloads — never folded into them.
+export async function getSocialImageShareCount(ownerEmail?: string): Promise<number> {
+  requireSupabaseAdminConfig()
+
+  const galleryId = await resolveGalleryId(ownerEmail)
+  if (!galleryId) return 0
+
+  const since = new Date(Date.now() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString()
+
+  const rows = await supabaseAdminFetch<Array<{ entity_id: string }>>({
+    path: '/rest/v1/audit_logs',
+    query: {
+      select: 'entity_id',
+      action: `eq.${SHARE_SHARE_ACTION}`,
+      'metadata->>galleryId': `eq.${galleryId}`,
+      created_at: `gte.${since}`,
+      limit: 100000,
+    },
+  })
+
+  return rows.length
 }

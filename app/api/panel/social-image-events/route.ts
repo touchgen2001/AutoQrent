@@ -12,6 +12,7 @@ export const runtime = 'nodejs'
 
 const payloadSchema = z.object({
   scope: z.enum(['single', 'zip']).optional(),
+  kind: z.enum(['download', 'share']).optional(),
   format: z.string().trim().max(24).optional(),
   items: z
     .array(
@@ -42,6 +43,7 @@ export async function POST(request: Request) {
       items: parsed.data.items,
       format: parsed.data.format,
       scope: parsed.data.scope,
+      kind: parsed.data.kind,
     })
 
     return NextResponse.json({ ok: true, recorded: result.recorded })

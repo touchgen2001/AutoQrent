@@ -13,6 +13,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
+import { useLogoTheme } from "@/lib/client/logo-theme"
 import { packQrMatrix } from "@/lib/client/qr-matrix"
 import { recordVehicleShareDownloads } from "@/lib/client/social-share-events"
 import { createZip, type ZipEntry } from "@/lib/client/zip"
@@ -135,6 +136,8 @@ export function ShowroomPromoDialog({
   }
 
   const galleryPhone = gallery?.phone || ""
+  // Match the brand-kit images bundled in the ZIP to the logo-suggested color.
+  const suggestedTheme = useLogoTheme(gallery?.logo ?? null)
   // The showroom QR encodes the public showroom URL so a scan opens the whole
   // vitrin. Generated client-side (qrcode lib doesn't bundle for the edge route).
   const qrShowroom = useMemo(
@@ -322,7 +325,9 @@ export function ShowroomPromoDialog({
         await Promise.all(
           brandTargets.map(async (target) => {
             try {
-              const response = await fetch(buildBrandOgUrl(gallery, target.format), { cache: "no-store" })
+              const response = await fetch(buildBrandOgUrl(gallery, target.format, suggestedTheme ?? "koyu"), {
+                cache: "no-store",
+              })
               if (!response.ok) return
               brandEntries.push({ name: target.name, data: new Uint8Array(await response.arrayBuffer()) })
             } catch {

@@ -296,6 +296,13 @@ describe('buildBrandOgUrl', () => {
     expect(paramsOf(buildBrandOgUrl({ vehicleCount: -3 }, 'profile')).has('count')).toBe(false)
   })
 
+  it('omits the theme param for the default "koyu" but sets it otherwise', () => {
+    expect(paramsOf(buildBrandOgUrl(null, 'profile', 'koyu')).has('theme')).toBe(false)
+    expect(paramsOf(buildBrandOgUrl(null, 'profile')).has('theme')).toBe(false)
+    expect(paramsOf(buildBrandOgUrl(null, 'cover', 'lacivert')).get('theme')).toBe('lacivert')
+    expect(paramsOf(buildBrandOgUrl(null, 'cover', 'bordo')).get('theme')).toBe('bordo')
+  })
+
   it('derives the tag from the showroom URL host and ignores an unparseable one', () => {
     expect(
       paramsOf(buildBrandOgUrl({ showroomUrl: 'https://demo.cebindegaleri.com/showroom/x' }, 'profile')).get('tag'),

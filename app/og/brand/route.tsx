@@ -32,6 +32,36 @@ function formatCount(value: number) {
   return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')
 }
 
+// Optional brand-color washes so the profile/cover can match a dealer's identity
+// (the panel auto-suggests one from the gallery logo). Text/marks stay white; only
+// the card background + radial sheen change. `koyu` is the default neutral dark.
+type BrandTheme = { bg: string; backdrop: string; watermark: string }
+const THEMES: Record<string, BrandTheme> = {
+  koyu: {
+    bg: '#0a0a0a',
+    backdrop:
+      'radial-gradient(circle at 50% 30%, rgba(255,255,255,0.12), rgba(255,255,255,0) 55%), linear-gradient(160deg, #1a1a1c 0%, #0a0a0a 100%)',
+    watermark: 'rgba(255,255,255,0.05)',
+  },
+  lacivert: {
+    bg: '#0b1633',
+    backdrop:
+      'radial-gradient(circle at 50% 30%, rgba(120,150,255,0.18), rgba(255,255,255,0) 55%), linear-gradient(160deg, #1e3a8a 0%, #0b1633 100%)',
+    watermark: 'rgba(186,205,255,0.07)',
+  },
+  bordo: {
+    bg: '#2c0a0d',
+    backdrop:
+      'radial-gradient(circle at 50% 30%, rgba(255,150,150,0.16), rgba(255,255,255,0) 55%), linear-gradient(160deg, #7f1d1d 0%, #2c0a0d 100%)',
+    watermark: 'rgba(255,200,200,0.07)',
+  },
+}
+
+function resolveTheme(value: string | null): BrandTheme {
+  const key = (value || '').toLowerCase()
+  return Object.prototype.hasOwnProperty.call(THEMES, key) ? THEMES[key] : THEMES.koyu
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
 
@@ -45,6 +75,8 @@ export async function GET(request: Request) {
 
   const countRaw = Number(searchParams.get('count'))
   const count = Number.isFinite(countRaw) && countRaw > 0 ? Math.floor(countRaw) : 0
+
+  const theme = resolveTheme(searchParams.get('theme'))
 
   const [poppins, brandLogo, galleryLogoSrc] = await Promise.all([
     fetch(new URL('../Poppins-SemiBold.ttf', import.meta.url)).then((res) => res.arrayBuffer()),
@@ -111,14 +143,13 @@ export async function GET(request: Request) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundImage:
-          'radial-gradient(circle at 50% 30%, rgba(255,255,255,0.12), rgba(255,255,255,0) 55%), linear-gradient(160deg, #1a1a1c 0%, #0a0a0a 100%)',
+        backgroundImage: theme.backdrop,
       }}
     >
       <svg width={Math.round(width * 0.5)} height={Math.round(width * 0.5)} viewBox="0 0 100 100" fill="none">
         <path
           d={BRAND_GLYPH_PATH}
-          stroke="rgba(255,255,255,0.05)"
+          stroke={theme.watermark}
           strokeWidth={BRAND_GLYPH_STROKE_WIDTH}
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -313,7 +344,7 @@ export async function GET(request: Request) {
           display: 'flex',
           width: '100%',
           height: '100%',
-          backgroundColor: '#0a0a0a',
+          backgroundColor: theme.bg,
         }}
       >
         {backdrop}

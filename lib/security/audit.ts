@@ -11,6 +11,7 @@ export type AuditAction =
   | 'public_vehicle_cta_click'
   | 'public_showroom_cta_click'
   | 'vehicle_social_image_download'
+  | 'vehicle_social_image_share'
   | 'image_upload'
   | 'image_delete'
   | 'image_reject'

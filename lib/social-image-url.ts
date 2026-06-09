@@ -156,9 +156,11 @@ export type BrandOgGalleryInput = {
 export function buildBrandOgUrl(
   gallery: BrandOgGalleryInput | null | undefined,
   format: BrandOgFormatKey,
+  theme?: string,
 ): string {
   const params = new URLSearchParams()
   params.set("format", format)
+  if (theme && theme !== "koyu") params.set("theme", theme)
   if (gallery?.name) params.set("gallery", gallery.name)
   if (gallery?.showroomUrl) {
     try {
