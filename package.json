@@ -25,6 +25,7 @@
     "security:ops-monitoring": "node scripts/qa/verify-ops-monitoring-contract.mjs",
     "security:restore:supabase": "bash scripts/security/supabase-restore.sh",
     "release:gate": "pnpm verify && pnpm security:predeploy && pnpm smoke:panel-api && E2E_SKIP_BUILD=1 pnpm e2e:safe && bash scripts/qa/check-node-leaks.sh release:after",
+    "deploy": "pnpm lint && pnpm typecheck && pnpm test:unit && vercel --prod --yes",
     "security:vault:encrypt": "bash scripts/security/encrypt-important-files.sh",
     "security:vault:decrypt": "bash scripts/security/decrypt-important-files.sh",
     "security:image-uploads": "node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-transform-types scripts/qa/verify-image-upload-security.mjs",
