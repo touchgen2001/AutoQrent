@@ -489,6 +489,7 @@ export function ShowroomPageClient({ dealer, vehicles }: ShowroomPageClientProps
   const heroCopy = dealer.publicTheme.heroNote || t('showroomHeroCopy')
   const heroEyebrow = dealer.publicTheme.heroTagline || t('showroomSubtitle')
   const showroomNavItems = [
+    { href: '#nasil-calisir', label: t('navHowItWorks') },
     { href: '#araclar', label: t('navVehicles') },
     { href: '#galeri-bilgileri', label: t('navGalleryInfo') },
     { href: '#talep', label: t('navRequest') },
