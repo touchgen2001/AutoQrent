@@ -1,7 +1,7 @@
 "use client"
 
-import { useMemo, useState } from "react"
-import { Check, Copy, Download, ImageIcon, Loader2 } from "lucide-react"
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react"
+import { Check, Copy, Download, ImageIcon, Loader2, Share2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -15,12 +15,15 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { packQrMatrix } from "@/lib/client/qr-matrix"
 import { recordVehicleShareDownloads } from "@/lib/client/social-share-events"
+import { shareImageFile, supportsImageFileShare } from "@/lib/client/web-share"
 import {
   buildVehicleCaption,
   buildVehicleMeta,
   buildVehicleOgUrl,
+  pickThemeFromColor,
   suggestVehicleBadge,
   vehiclePriceText,
+  type RgbColor,
 } from "@/lib/social-image-url"
 import { cn } from "@/lib/utils"
 
@@ -97,6 +100,10 @@ const BADGE_OPTIONS: Array<{ value: string | null; label: string }> = [
   { value: "fiyat-dustu", label: "Fiyat düştü" },
   { value: "satildi", label: "Satıldı" },
   { value: "rezerve", label: "Rezerve" },
+  { value: "pazarlikli", label: "Pazarlıklı" },
+  { value: "takas", label: "Takasa uygun" },
+  { value: "kredi", label: "Krediye uygun" },
+  { value: "acil", label: "Acil" },
 ]
 
 // Turkish display label for whatever the auto-suggestion resolves to.
@@ -105,6 +112,93 @@ const AUTO_BADGE_LABELS: Record<string, string> = {
   "fiyat-dustu": "Fiyat düştü",
   satildi: "Satıldı",
   rezerve: "Rezerve",
+}
+
+function themeLabel(value: ThemeKey): string {
+  return THEME_OPTIONS.find((option) => option.value === value)?.label ?? value
+}
+
+// Sample a logo's dominant chromatic color by drawing it small and averaging the
+// opaque, non-background pixels. Returns null when the canvas is unavailable or
+// tainted (cross-origin logo without CORS headers) so the caller keeps the default.
+function averageColorFromImage(img: HTMLImageElement): RgbColor | null {
+  const size = 32
+  const canvas = document.createElement("canvas")
+  canvas.width = size
+  canvas.height = size
+  const ctx = canvas.getContext("2d", { willReadFrequently: true })
+  if (!ctx) return null
+  ctx.drawImage(img, 0, 0, size, size)
+  const { data } = ctx.getImageData(0, 0, size, size)
+  let r = 0
+  let g = 0
+  let b = 0
+  let count = 0
+  let fr = 0
+  let fg = 0
+  let fb = 0
+  let fallbackCount = 0
+  for (let i = 0; i < data.length; i += 4) {
+    if (data[i + 3] < 128) continue
+    const cr = data[i]
+    const cg = data[i + 1]
+    const cb = data[i + 2]
+    fr += cr
+    fg += cg
+    fb += cb
+    fallbackCount += 1
+    const max = Math.max(cr, cg, cb)
+    const min = Math.min(cr, cg, cb)
+    // Skip near-white background and near-black outlines for the chromatic average.
+    if (min > 230 || max < 25) continue
+    r += cr
+    g += cg
+    b += cb
+    count += 1
+  }
+  if (count > 0) return { r: r / count, g: g / count, b: b / count }
+  if (fallbackCount > 0) return { r: fr / fallbackCount, g: fg / fallbackCount, b: fb / fallbackCount }
+  return null
+}
+
+// Read the gallery logo and suggest the OG theme that matches its brand color.
+// State is only set inside the async image onload (never synchronously in the
+// effect body), which keeps react-hooks/set-state-in-effect happy.
+function useLogoTheme(logoUrl: string | null | undefined): "koyu" | "lacivert" | "bordo" | null {
+  const [suggested, setSuggested] = useState<"koyu" | "lacivert" | "bordo" | null>(null)
+
+  useEffect(() => {
+    if (!logoUrl) return
+    let cancelled = false
+    const img = new Image()
+    img.crossOrigin = "anonymous"
+    img.onload = () => {
+      if (cancelled) return
+      try {
+        const color = averageColorFromImage(img)
+        if (color) setSuggested(pickThemeFromColor(color))
+      } catch {
+        // Tainted canvas / no 2d context — keep the default theme.
+      }
+    }
+    img.src = logoUrl
+    return () => {
+      cancelled = true
+    }
+  }, [logoUrl])
+
+  return suggested
+}
+
+// Whether the browser can share an image File via the native share sheet
+// (Web Share API Level 2). Read through useSyncExternalStore so the server snapshot
+// is always false and we avoid a hydration mismatch and any set-state-in-effect.
+function useImageFileShareSupport(): boolean {
+  return useSyncExternalStore(
+    () => () => {},
+    () => supportsImageFileShare(),
+    () => false,
+  )
 }
 
 function buildFileSlug(value: string) {
@@ -177,13 +271,19 @@ export function VehicleSocialImageDialog({
   const [internalOpen, setInternalOpen] = useState(false)
   const [loaded, setLoaded] = useState<Record<string, boolean>>({})
   const [downloading, setDownloading] = useState<string | null>(null)
+  const [sharing, setSharing] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   // null = follow the auto-suggestion; "" = forced off; else explicit badge key.
   const [badgeOverride, setBadgeOverride] = useState<string | null>(null)
-  const [theme, setTheme] = useState<ThemeKey>("koyu")
+  // null = follow the logo-color suggestion; else an explicit theme choice.
+  const [themeOverride, setThemeOverride] = useState<ThemeKey | null>(null)
   const [showWhatsapp, setShowWhatsapp] = useState(true)
   const [showQr, setShowQr] = useState(false)
   const [captionCopied, setCaptionCopied] = useState(false)
+
+  const suggestedTheme = useLogoTheme(gallery?.logo ?? null)
+  const effectiveTheme: ThemeKey = themeOverride ?? suggestedTheme ?? "koyu"
+  const canShareImages = useImageFileShareSupport()
 
   const isControlled = openProp !== undefined
   const open = isControlled ? openProp : internalOpen
@@ -236,7 +336,7 @@ export function VehicleSocialImageDialog({
         showroomUrl: gallery?.showroomUrl ?? null,
         photo: vehicle.image,
         badge: effectiveBadge || undefined,
-        theme,
+        theme: effectiveTheme,
         phoneDisplay: showWhatsapp ? galleryPhone || null : null,
         qr: showQr && qrData ? qrData.qr : null,
         qrN: showQr && qrData ? qrData.n : null,
@@ -250,7 +350,7 @@ export function VehicleSocialImageDialog({
     meta,
     gallery,
     effectiveBadge,
-    theme,
+    effectiveTheme,
     showWhatsapp,
     galleryPhone,
     showQr,
@@ -302,6 +402,34 @@ export function VehicleSocialImageDialog({
     }
   }
 
+  // Push the rendered card straight into the native share sheet (WhatsApp,
+  // Instagram, …) on supported phones, so the dealer skips the download → re-upload
+  // round trip. We deliberately do NOT record a download event here: the
+  // "en çok indirilen" card counts real downloads only and never claims a share
+  // actually reached social media, in line with the no-fake-metrics stance.
+  const shareImage = async (format: SocialFormat) => {
+    setSharing(format.key)
+    setErrorMessage(null)
+    try {
+      const response = await fetch(urls[format.key], { cache: "no-store" })
+      if (!response.ok) throw new Error("share_failed")
+      const blob = await response.blob()
+      const result = await shareImageFile({
+        blob,
+        filename: `cebindegaleri-${fileSlug}-${format.fileSuffix}.png`,
+        title: vehicle.vehicleTitle,
+        text: caption,
+      })
+      if (result === "failed" || result === "unsupported") {
+        setErrorMessage("Paylaşım açılamadı. Görseli indirip elle paylaşabilirsiniz.")
+      }
+    } catch {
+      setErrorMessage("Paylaşım açılamadı. Görseli indirip elle paylaşabilirsiniz.")
+    } finally {
+      setSharing(null)
+    }
+  }
+
   const copyCaption = async () => {
     try {
       await navigator.clipboard.writeText(caption)
@@ -350,15 +478,23 @@ export function VehicleSocialImageDialog({
                 <Button
                   key={option.value}
                   type="button"
-                  variant={theme === option.value ? "default" : "outline"}
+                  variant={effectiveTheme === option.value ? "default" : "outline"}
                   size="sm"
                   className="h-8"
-                  onClick={() => setTheme(option.value)}
+                  onClick={() => setThemeOverride(option.value)}
                 >
                   {option.label}
+                  {suggestedTheme === option.value && themeOverride === null ? " · önerilen" : ""}
                 </Button>
               ))}
             </div>
+            {suggestedTheme && (
+              <p className="text-xs text-muted-foreground">
+                {themeOverride === null
+                  ? `Logonuzun rengine göre ${themeLabel(suggestedTheme)} şablonu önerildi.`
+                  : `Logo önerisi: ${themeLabel(suggestedTheme)}.`}
+              </p>
+            )}
           </div>
 
           <div className="flex flex-col gap-2">
@@ -448,24 +584,45 @@ export function VehicleSocialImageDialog({
                 />
               </div>
 
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => void downloadImage(format)}
-                disabled={downloading !== null}
-              >
-                {downloading === format.key ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Hazırlanıyor
-                  </>
-                ) : (
-                  <>
-                    <Download className="mr-2 h-4 w-4" />
-                    İndir
-                  </>
+              <div className="flex gap-2">
+                {canShareImages && (
+                  <Button
+                    className="flex-1"
+                    onClick={() => void shareImage(format)}
+                    disabled={downloading !== null || sharing !== null}
+                  >
+                    {sharing === format.key ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Paylaşılıyor
+                      </>
+                    ) : (
+                      <>
+                        <Share2 className="mr-2 h-4 w-4" />
+                        Paylaş
+                      </>
+                    )}
+                  </Button>
                 )}
-              </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => void downloadImage(format)}
+                  disabled={downloading !== null || sharing !== null}
+                >
+                  {downloading === format.key ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Hazırlanıyor
+                    </>
+                  ) : (
+                    <>
+                      <Download className="mr-2 h-4 w-4" />
+                      İndir
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           ))}
         </div>

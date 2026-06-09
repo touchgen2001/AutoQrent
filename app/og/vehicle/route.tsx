@@ -77,6 +77,10 @@ const BADGE_LABELS: Record<string, string> = {
   yeni: 'YENİ',
   rezerve: 'REZERVE',
   'fiyat-dustu': 'FİYAT DÜŞTÜ',
+  pazarlikli: 'PAZARLIKLI',
+  takas: 'TAKASA UYGUN',
+  kredi: 'KREDİYE UYGUN',
+  acil: 'ACİL',
 }
 
 function resolveBadge(value: string | null) {

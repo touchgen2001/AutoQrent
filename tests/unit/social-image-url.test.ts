@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import { buildVehicleCaption, buildVehicleOgUrl, suggestVehicleBadge } from '../../lib/social-image-url'
+import {
+  buildBrandOgUrl,
+  buildVehicleCaption,
+  buildVehicleOgUrl,
+  pickThemeFromColor,
+  suggestVehicleBadge,
+} from '../../lib/social-image-url'
 
 const DAY = 24 * 60 * 60 * 1000
 const NOW = Date.parse('2026-06-08T12:00:00.000Z')
@@ -226,5 +232,83 @@ describe('buildVehicleOgUrl', () => {
     expect(params.get('photo')).toBe('https://cdn.example.com/car.jpg')
     expect(params.get('badge')).toBe('fiyat-dustu')
     expect(params.get('phone')).toBe('0555 123 45 67')
+  })
+})
+
+describe('pickThemeFromColor', () => {
+  it('keeps near-grayscale logos on the default "koyu" theme', () => {
+    expect(pickThemeFromColor({ r: 0, g: 0, b: 0 })).toBe('koyu')
+    expect(pickThemeFromColor({ r: 255, g: 255, b: 255 })).toBe('koyu')
+    expect(pickThemeFromColor({ r: 128, g: 130, b: 127 })).toBe('koyu')
+  })
+
+  it('maps strong reds and warm tones to "bordo"', () => {
+    expect(pickThemeFromColor({ r: 200, g: 20, b: 20 })).toBe('bordo')
+    expect(pickThemeFromColor({ r: 210, g: 90, b: 40 })).toBe('bordo')
+  })
+
+  it('maps blues to "lacivert"', () => {
+    expect(pickThemeFromColor({ r: 30, g: 60, b: 200 })).toBe('lacivert')
+    expect(pickThemeFromColor({ r: 20, g: 30, b: 160 })).toBe('lacivert')
+  })
+
+  it('falls back to "koyu" for greens (no dedicated theme)', () => {
+    expect(pickThemeFromColor({ r: 40, g: 180, b: 60 })).toBe('koyu')
+  })
+
+  it('treats the chroma threshold as a cutoff (just-saturated vs near-gray)', () => {
+    // chroma 30 (< 40) → koyu; chroma 60 red → bordo
+    expect(pickThemeFromColor({ r: 130, g: 100, b: 100 })).toBe('koyu')
+    expect(pickThemeFromColor({ r: 160, g: 100, b: 100 })).toBe('bordo')
+  })
+
+  it('clamps invalid channel values instead of throwing', () => {
+    expect(pickThemeFromColor({ r: Number.NaN, g: 0, b: 0 })).toBe('koyu')
+    expect(pickThemeFromColor({ r: 999, g: -50, b: -50 })).toBe('bordo')
+  })
+})
+
+describe('buildBrandOgUrl', () => {
+  it('builds a minimal profile URL', () => {
+    const url = buildBrandOgUrl(null, 'profile')
+    expect(url.startsWith('/og/brand?')).toBe(true)
+    const params = paramsOf(url)
+    expect(params.get('format')).toBe('profile')
+    expect(params.has('gallery')).toBe(false)
+  })
+
+  it('passes through name, city, tagline and a positive count', () => {
+    const params = paramsOf(
+      buildBrandOgUrl(
+        { name: 'Demo Galeri', city: 'İzmir', heroTagline: 'Güvenle alın', vehicleCount: 12 },
+        'cover',
+      ),
+    )
+    expect(params.get('format')).toBe('cover')
+    expect(params.get('gallery')).toBe('Demo Galeri')
+    expect(params.get('city')).toBe('İzmir')
+    expect(params.get('tagline')).toBe('Güvenle alın')
+    expect(params.get('count')).toBe('12')
+  })
+
+  it('omits a zero or negative vehicle count', () => {
+    expect(paramsOf(buildBrandOgUrl({ vehicleCount: 0 }, 'profile')).has('count')).toBe(false)
+    expect(paramsOf(buildBrandOgUrl({ vehicleCount: -3 }, 'profile')).has('count')).toBe(false)
+  })
+
+  it('derives the tag from the showroom URL host and ignores an unparseable one', () => {
+    expect(
+      paramsOf(buildBrandOgUrl({ showroomUrl: 'https://demo.cebindegaleri.com/showroom/x' }, 'profile')).get('tag'),
+    ).toBe('demo.cebindegaleri.com')
+    expect(paramsOf(buildBrandOgUrl({ showroomUrl: 'not a url' }, 'profile')).has('tag')).toBe(false)
+  })
+
+  it('prefers logo over monogram but falls back to the monogram', () => {
+    const withLogo = paramsOf(
+      buildBrandOgUrl({ logo: 'https://cdn.example.com/logo.png', monogram: 'AB' }, 'profile'),
+    )
+    expect(withLogo.get('logo')).toBe('https://cdn.example.com/logo.png')
+    expect(withLogo.has('monogram')).toBe(false)
+    expect(paramsOf(buildBrandOgUrl({ monogram: 'AB' }, 'profile')).get('monogram')).toBe('AB')
   })
 })

@@ -15,6 +15,7 @@ import {
   Plus,
   Store,
   ExternalLink,
+  Download,
 } from "lucide-react"
 import Link from "next/link"
 import { headers } from "next/headers"
@@ -23,6 +24,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { LiveAlertCenter } from "@/components/dashboard/live-alert-center"
 import { ShareLinkButtons } from "@/components/panel/share-link-buttons"
+import type { PanelTopSharedVehicle } from "@/lib/panel-types"
 import { getLeadFunnelAnalytics } from "@/lib/server/analytics-repository"
 import { readPanelSessionFromCookieHeader } from "@/lib/server/panel-auth"
 import {
@@ -31,6 +33,7 @@ import {
   listPanelQrVehicleSummaries,
   listRecentPanelQrScans,
 } from "@/lib/server/panel-repository"
+import { getTopSharedVehicles } from "@/lib/server/social-share-repository"
 
 export const dynamic = "force-dynamic"
 
@@ -62,12 +65,14 @@ export default async function DashboardPage() {
     redirect("/giris")
   }
 
-  const [qrVehicles, leads, recentScans, funnel, showroomSummary] = await Promise.all([
+  const [qrVehicles, leads, recentScans, funnel, showroomSummary, topShared] = await Promise.all([
     listPanelQrVehicleSummaries(session.email),
     listPanelLeads(session.email),
     listRecentPanelQrScans(250, session.email),
     getLeadFunnelAnalytics("30days", session.email),
     getPanelGalleryShowroomSummary(session.email),
+    // Download stats are a non-critical extra; never let them break the dashboard.
+    getTopSharedVehicles(session.email).catch(() => [] as PanelTopSharedVehicle[]),
   ])
 
   const totalVehicles = qrVehicles.items.length
@@ -114,6 +119,8 @@ export default async function DashboardPage() {
   const topVehicles = [...qrVehicles.items]
     .sort((left, right) => right.scans - left.scans)
     .slice(0, 4)
+  const topSharedItems = topShared.slice(0, 4)
+  const summaryLeads = leads.items.slice(0, 4)
   const leadCountByVehicle = new Map<string, number>()
   for (const lead of leads.items) {
     if (!lead.vehicleId) continue
@@ -349,6 +356,103 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <CardTitle>Vitrin Özeti</CardTitle>
+              <CardDescription>Paylaşılan görseller, QR taramalar ve son talepler tek bakışta</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-6 md:grid-cols-3">
+            {/* En çok indirilen araç görselleri (son 90 gün, gerçek indirme sayısı) */}
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <Download className="h-4 w-4 text-accent" />
+                  En çok indirilen görseller
+                </span>
+                <Link href="/panel/qr-kodlar" className="text-xs text-accent hover:underline">
+                  Detay
+                </Link>
+              </div>
+              {topSharedItems.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Henüz araç görseli indirilmedi.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {topSharedItems.map((item, index) => (
+                    <li key={item.vehicleId} className="flex items-center justify-between gap-2">
+                      <span className="flex min-w-0 items-center gap-2">
+                        <span className="w-4 shrink-0 text-xs font-semibold text-muted-foreground">{index + 1}</span>
+                        <span className="truncate text-sm text-foreground">{item.vehicleTitle || "Araç"}</span>
+                      </span>
+                      <span className="shrink-0 text-xs text-muted-foreground">{item.downloads} indirme</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* En çok taranan araçlar */}
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <Eye className="h-4 w-4 text-accent" />
+                  En çok taranan araçlar
+                </span>
+                <Link href="/panel/qr-kodlar" className="text-xs text-accent hover:underline">
+                  Detay
+                </Link>
+              </div>
+              {topVehicles.length === 0 || totalScans === 0 ? (
+                <p className="text-sm text-muted-foreground">Henüz QR tarama bulunmuyor.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {topVehicles.map((vehicle, index) => (
+                    <li key={vehicle.vehicleId} className="flex items-center justify-between gap-2">
+                      <span className="flex min-w-0 items-center gap-2">
+                        <span className="w-4 shrink-0 text-xs font-semibold text-muted-foreground">{index + 1}</span>
+                        <span className="truncate text-sm text-foreground">{vehicle.vehicleTitle}</span>
+                      </span>
+                      <span className="shrink-0 text-xs text-muted-foreground">{vehicle.scans} tarama</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* Son müşteri talepleri */}
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <MessageSquare className="h-4 w-4 text-accent" />
+                  Son talepler
+                </span>
+                <Link href="/panel/leadler" className="text-xs text-accent hover:underline">
+                  Detay
+                </Link>
+              </div>
+              {summaryLeads.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Henüz müşteri talebi bulunmuyor.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {summaryLeads.map((lead) => (
+                    <li key={lead.id} className="flex flex-col gap-0.5">
+                      <span className="truncate text-sm text-foreground">{lead.customerName}</span>
+                      <span className="truncate text-xs text-muted-foreground">
+                        {lead.vehicleTitle || "Araç belirtilmedi"}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2">

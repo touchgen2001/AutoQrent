@@ -17,11 +17,13 @@ import { packQrMatrix } from "@/lib/client/qr-matrix"
 import { recordVehicleShareDownloads } from "@/lib/client/social-share-events"
 import { createZip, type ZipEntry } from "@/lib/client/zip"
 import {
+  buildBrandOgUrl,
   buildVehicleCaption,
   buildVehicleMeta,
   buildVehicleOgUrl,
   suggestVehicleBadge,
   vehiclePriceText,
+  type BrandOgFormatKey,
 } from "@/lib/social-image-url"
 import { cn } from "@/lib/utils"
 import type { SocialImageGallery } from "@/components/panel/vehicle-social-image-dialog"
@@ -308,7 +310,30 @@ export function ShowroomPromoDialog({
       })
       const captionText = [intro, ...blocks].join("\n\n----------------------------------------\n\n")
       entries.push({ name: "metinler.txt", data: new TextEncoder().encode(captionText) })
-      const blob = createZip(entries)
+
+      // Marka kiti: galeri profil + kapak görseli. "00-" önekiyle paketin başına
+      // sıralanır. Bonus içerik olduğu için bir hata tüm paketi düşürmez.
+      const brandEntries: ZipEntry[] = []
+      if (gallery) {
+        const brandTargets: Array<{ format: BrandOgFormatKey; name: string }> = [
+          { format: "profile", name: `00-${fileSlug}-galeri-profil.png` },
+          { format: "cover", name: `00-${fileSlug}-galeri-kapak.png` },
+        ]
+        await Promise.all(
+          brandTargets.map(async (target) => {
+            try {
+              const response = await fetch(buildBrandOgUrl(gallery, target.format), { cache: "no-store" })
+              if (!response.ok) return
+              brandEntries.push({ name: target.name, data: new Uint8Array(await response.arrayBuffer()) })
+            } catch {
+              // Tek bir marka görseli alınamazsa diğerini ve araçları yine de paketle.
+            }
+          }),
+        )
+        brandEntries.sort((a, b) => a.name.localeCompare(b.name))
+      }
+
+      const blob = createZip([...brandEntries, ...entries])
       const objectUrl = URL.createObjectURL(blob)
       const link = document.createElement("a")
       link.href = objectUrl
@@ -456,8 +481,8 @@ export function ShowroomPromoDialog({
             <div className="flex flex-col gap-1">
               <span className="text-sm font-medium text-foreground">Araç görsel paketi (ZIP)</span>
               <p className="text-xs text-muted-foreground">
-                Vitrindeki {vehicles.length} aracın paylaşım görselini ve her araç için hazır paylaşım metnini
-                (metinler.txt) tek dosyada indirin. Her görselde otomatik rozet
+                Vitrindeki {vehicles.length} aracın paylaşım görselini, her araç için hazır paylaşım metnini
+                (metinler.txt) ve galeri profil + kapak görselinizi tek dosyada indirin. Her görselde otomatik rozet
                 {galleryPhone ? " ve WhatsApp numaranız" : ""} kullanılır.
               </p>
             </div>

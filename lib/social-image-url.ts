@@ -102,6 +102,82 @@ export function suggestVehicleBadge(
   return ""
 }
 
+export type RgbColor = { r: number; g: number; b: number }
+
+function clampChannel(value: number): number {
+  if (!Number.isFinite(value)) return 0
+  if (value < 0) return 0
+  if (value > 255) return 255
+  return value
+}
+
+// Pick the OG theme whose accent best matches a gallery's dominant logo color.
+// Near-grayscale logos (low chroma) stay on the default dark "koyu" theme; strong
+// reds/magentas map to "bordo"; blues/teals map to "lacivert". Pure function so it
+// is unit-tested; the dialog feeds it a color sampled from the logo on the canvas.
+export function pickThemeFromColor(rgb: RgbColor): "koyu" | "lacivert" | "bordo" {
+  const r = clampChannel(rgb.r)
+  const g = clampChannel(rgb.g)
+  const b = clampChannel(rgb.b)
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  const chroma = max - min
+  if (chroma < 40) return "koyu"
+  let hue: number
+  if (max === r) {
+    hue = ((g - b) / chroma) % 6
+  } else if (max === g) {
+    hue = (b - r) / chroma + 2
+  } else {
+    hue = (r - g) / chroma + 4
+  }
+  hue *= 60
+  if (hue < 0) hue += 360
+  if (hue >= 330 || hue < 45) return "bordo"
+  if (hue >= 195 && hue < 290) return "lacivert"
+  return "koyu"
+}
+
+export type BrandOgFormatKey = "profile" | "cover"
+
+export type BrandOgGalleryInput = {
+  name?: string | null
+  showroomUrl?: string | null
+  logo?: string | null
+  monogram?: string | null
+  city?: string | null
+  heroTagline?: string | null
+  vehicleCount?: number | null
+}
+
+// Build the gallery brand-kit image URL (/og/brand). Shared by the brand-kit
+// preview dialog and the showroom ZIP export so the profile/cover images in the
+// pack are byte-for-byte the ones the dealer previewed.
+export function buildBrandOgUrl(
+  gallery: BrandOgGalleryInput | null | undefined,
+  format: BrandOgFormatKey,
+): string {
+  const params = new URLSearchParams()
+  params.set("format", format)
+  if (gallery?.name) params.set("gallery", gallery.name)
+  if (gallery?.showroomUrl) {
+    try {
+      params.set("tag", new URL(gallery.showroomUrl).host)
+    } catch {
+      // ignore unparsable showroom url; the route falls back to the brand domain
+    }
+  }
+  if (gallery?.logo) {
+    params.set("logo", gallery.logo)
+  } else if (gallery?.monogram) {
+    params.set("monogram", gallery.monogram)
+  }
+  if (gallery?.city) params.set("city", gallery.city)
+  if (gallery?.heroTagline) params.set("tagline", gallery.heroTagline)
+  if (gallery?.vehicleCount && gallery.vehicleCount > 0) params.set("count", String(gallery.vehicleCount))
+  return `/og/brand?${params.toString()}`
+}
+
 function toHashtag(value: string): string {
   const cleaned = value.normalize("NFC").replace(/[^\p{L}\p{N}]+/gu, "")
   return cleaned ? `#${cleaned}` : ""

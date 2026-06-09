@@ -13,6 +13,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import type { SocialImageGallery } from "@/components/panel/vehicle-social-image-dialog"
+import { buildBrandOgUrl } from "@/lib/social-image-url"
 
 type BrandFormat = {
   key: "profile" | "cover"
@@ -84,25 +85,7 @@ export function GalleryBrandKitDialog({
   const urls = useMemo(() => {
     const map: Record<string, string> = {}
     for (const format of FORMATS) {
-      const params = new URLSearchParams()
-      params.set("format", format.key)
-      if (gallery?.name) params.set("gallery", gallery.name)
-      if (gallery?.showroomUrl) {
-        try {
-          params.set("tag", new URL(gallery.showroomUrl).host)
-        } catch {
-          // ignore unparsable showroom url; route falls back to the brand domain
-        }
-      }
-      if (gallery?.logo) {
-        params.set("logo", gallery.logo)
-      } else if (gallery?.monogram) {
-        params.set("monogram", gallery.monogram)
-      }
-      if (gallery?.city) params.set("city", gallery.city)
-      if (gallery?.heroTagline) params.set("tagline", gallery.heroTagline)
-      if (gallery?.vehicleCount && gallery.vehicleCount > 0) params.set("count", String(gallery.vehicleCount))
-      map[format.key] = `/og/brand?${params.toString()}`
+      map[format.key] = buildBrandOgUrl(gallery, format.key)
     }
     return map
   }, [gallery])
