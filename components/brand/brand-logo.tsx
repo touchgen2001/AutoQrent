@@ -22,6 +22,8 @@ type BrandLogoProps = {
   mode?: BrandLogoMode
   subtitle?: string
   className?: string
+  /** Animate a subtle metallic sweep across the CG monogram (e.g. landing header). */
+  shimmer?: boolean
 }
 
 type TileTheme = {
@@ -76,16 +78,17 @@ const toneClasses: Record<BrandLogoTone, { text: string; muted: string; word: st
 
 // Bespoke monogram mark — the interlocked metallic "CG" (gold C over silver G),
 // matching the master logo. Decorative; the wordmark carries the accessible name.
-function BrandMonogram({ paint }: { paint: TileTheme['mono'] }) {
+function BrandMonogram({ paint, shimmer }: { paint: TileTheme['mono']; shimmer?: boolean }) {
+  const shine = shimmer ? 'brand-shimmer' : undefined
   return (
     <span aria-hidden className="flex items-center font-black leading-none tracking-tight" style={{ fontSize: '1.6rem' }}>
-      <span className="relative z-[2]" style={{ ...CLIP_TEXT, ...paint.c }}>C</span>
-      <span className="relative z-[1]" style={{ ...CLIP_TEXT, ...paint.g, marginLeft: '-0.2em' }}>G</span>
+      <span className={cn('relative z-[2]', shine)} style={{ ...CLIP_TEXT, ...paint.c }}>C</span>
+      <span className={cn('relative z-[1]', shine)} style={{ ...CLIP_TEXT, ...paint.g, marginLeft: '-0.2em' }}>G</span>
     </span>
   )
 }
 
-function BrandIcon({ tone }: { tone: BrandLogoTone }) {
+function BrandIcon({ tone, shimmer }: { tone: BrandLogoTone; shimmer?: boolean }) {
   const { tile } = toneClasses[tone]
 
   return (
@@ -93,16 +96,16 @@ function BrandIcon({ tone }: { tone: BrandLogoTone }) {
       className={cn('flex size-10 shrink-0 items-center justify-center rounded-2xl', tile.border)}
       style={tile.style}
     >
-      <BrandMonogram paint={tile.mono} />
+      <BrandMonogram paint={tile.mono} shimmer={shimmer} />
     </span>
   )
 }
 
-function Wordmark({ tone, mode, subtitle }: { tone: BrandLogoTone; mode: BrandLogoMode; subtitle?: string }) {
+function Wordmark({ tone, mode, subtitle, shimmer }: { tone: BrandLogoTone; mode: BrandLogoMode; subtitle?: string; shimmer?: boolean }) {
   const classes = toneClasses[tone]
 
   if (mode === 'compact') {
-    return <BrandIcon tone={tone} />
+    return <BrandIcon tone={tone} shimmer={shimmer} />
   }
 
   return (
@@ -115,11 +118,11 @@ function Wordmark({ tone, mode, subtitle }: { tone: BrandLogoTone; mode: BrandLo
   )
 }
 
-export function BrandLogo({ href = '/', tone = 'light', mode = 'full', subtitle, className }: BrandLogoProps) {
+export function BrandLogo({ href = '/', tone = 'light', mode = 'full', subtitle, className, shimmer }: BrandLogoProps) {
   const content = (
     <>
-      {mode !== 'compact' ? <BrandIcon tone={tone} /> : null}
-      <Wordmark tone={tone} mode={mode} subtitle={subtitle} />
+      {mode !== 'compact' ? <BrandIcon tone={tone} shimmer={shimmer} /> : null}
+      <Wordmark tone={tone} mode={mode} subtitle={subtitle} shimmer={shimmer} />
     </>
   )
 

@@ -227,3 +227,17 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Metallic shimmer for the brand monogram — a gentle specular sweep across the
+   gold/silver gradient-clipped text (the bright band drifts via background-
+   position). Static fallback = bright centre, so the prefers-reduced-motion
+   rule above leaves a correct still mark. */
+.brand-shimmer {
+  background-size: 250% 100% !important;
+  background-position: 50% 50%;
+  animation: brand-shine 4.2s ease-in-out infinite;
+}
+@keyframes brand-shine {
+  0%, 100% { background-position: 32% 50%; }
+  50% { background-position: 68% 50%; }
+}
