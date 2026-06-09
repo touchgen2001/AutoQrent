@@ -1,12 +1,14 @@
-// Single source of truth for the Cebindegaleri monogram — a bold monoline "G".
-// The open ring nods to the "C" of Cebinde; the inward bar makes the "G" of
-// Galeri. One continuous stroke so it stays crisp from a 32px favicon up to a
-// hero lockup. Shared by the React BrandLogo component, the QR-center badge
-// (lib/qr-logo.ts) and the social share cards (app/og/*).
+// Monoline "G" glyph — an open ring (the "C" of Cebinde) flowing into an inward
+// bar (the "G" of Galeri). A single continuous stroke that stays crisp and
+// theme-adaptive (it draws in `currentColor`) where a metallic raster mark
+// can't go: the Satori-rendered share cards (app/og/{vehicle,showroom,brand})
+// and the QR-center badge (lib/qr-logo.ts), which must survive a single-colour
+// stroke and tiny sizes.
 //
-// The raster + favicon assets are produced offline by
-// scripts/brand/generate-logo.mjs, which keeps an in-sync copy of this path
-// (it's a plain .mjs build script and can't import this TS module).
+// The primary brand mark — the interlocked metallic "CG" — lives in
+// scripts/brand/logo.html and is rendered by scripts/brand/generate-logo.mjs
+// into the favicon / touch icon / OG tile; the React BrandLogo header tile
+// (components/brand/brand-logo.tsx) paints the same gold/silver CG in CSS.
 export const BRAND_GLYPH_PATH = 'M76.21 31.65 A32 32 0 1 0 80.43 59.89 L56 59.89'
 export const BRAND_GLYPH_VIEWBOX = '0 0 100 100'
 export const BRAND_GLYPH_STROKE_WIDTH = 13

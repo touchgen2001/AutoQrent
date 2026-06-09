@@ -1,8 +1,17 @@
 import type { CSSProperties } from 'react'
 import Link from 'next/link'
 
-import { BRAND_GLYPH_PATH, BRAND_GLYPH_STROKE_WIDTH } from '@/lib/brand-glyph'
 import { cn } from '@/lib/utils'
+
+// Metallic monogram fills, mirroring the master logo (scripts/brand/logo.html).
+// Gold C + silver G on dark tiles; on light/white tiles the pair steps down to
+// antique-gold + graphite so both letters stay legible.
+const GOLD_ON_DARK = 'linear-gradient(160deg,#7c5f1f 0%,#d8b757 32%,#fff7da 50%,#ca9d38 68%,#7c5f1f 100%)'
+const SILVER_ON_DARK = 'linear-gradient(160deg,#71777d 0%,#c4cacf 32%,#ffffff 50%,#aab0b6 68%,#71777d 100%)'
+const GOLD_ON_LIGHT = 'linear-gradient(160deg,#5e4715 0%,#a87f24 50%,#6b521a 100%)'
+const GRAPHITE_ON_LIGHT = 'linear-gradient(160deg,#3a3a3d 0%,#19191b 100%)'
+
+const CLIP_TEXT: CSSProperties = { WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }
 
 type BrandLogoTone = 'light' | 'dark' | 'sidebar'
 type BrandLogoMode = 'full' | 'compact' | 'stacked'
@@ -17,7 +26,7 @@ type BrandLogoProps = {
 
 type TileTheme = {
   style: CSSProperties
-  glyph: string
+  mono: { c: CSSProperties; g: CSSProperties }
   border: string
 }
 
@@ -30,7 +39,7 @@ const DARK_TILE: TileTheme = {
       'radial-gradient(110% 72% at 28% -10%, rgba(255,255,255,0.24), transparent 55%), linear-gradient(152deg, oklch(0.33 0.004 60) 0%, oklch(0.17 0.004 60) 52%, oklch(0.09 0.004 60) 100%)',
     boxShadow: '0 1px 2px rgba(8,8,10,0.40), 0 14px 30px -12px rgba(8,8,10,0.72), inset 0 1px 0 rgba(255,255,255,0.14)',
   },
-  glyph: 'text-white',
+  mono: { c: { backgroundImage: GOLD_ON_DARK }, g: { backgroundImage: SILVER_ON_DARK } },
   border: 'border border-white/10',
 }
 
@@ -40,7 +49,7 @@ const LIGHT_TILE: TileTheme = {
       'radial-gradient(110% 72% at 28% -10%, rgba(255,255,255,0.92), transparent 60%), linear-gradient(152deg, #ffffff 0%, oklch(0.95 0.002 75) 55%, oklch(0.88 0.003 75) 100%)',
     boxShadow: '0 1px 2px rgba(8,8,10,0.10), 0 14px 28px -14px rgba(8,8,10,0.40), inset 0 1px 0 rgba(255,255,255,0.92)',
   },
-  glyph: 'text-neutral-900',
+  mono: { c: { backgroundImage: GOLD_ON_LIGHT }, g: { backgroundImage: GRAPHITE_ON_LIGHT } },
   border: 'border border-black/5',
 }
 
@@ -65,18 +74,14 @@ const toneClasses: Record<BrandLogoTone, { text: string; muted: string; word: st
   },
 }
 
-// Bespoke monogram mark — the shared monoline "G" (see lib/brand-glyph.ts).
-function BrandGlyph({ className }: { className?: string }) {
+// Bespoke monogram mark — the interlocked metallic "CG" (gold C over silver G),
+// matching the master logo. Decorative; the wordmark carries the accessible name.
+function BrandMonogram({ paint }: { paint: TileTheme['mono'] }) {
   return (
-    <svg viewBox="0 0 100 100" fill="none" aria-hidden className={className}>
-      <path
-        d={BRAND_GLYPH_PATH}
-        stroke="currentColor"
-        strokeWidth={BRAND_GLYPH_STROKE_WIDTH}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+    <span aria-hidden className="flex items-center font-black leading-none tracking-tight" style={{ fontSize: '1.6rem' }}>
+      <span className="relative z-[2]" style={{ ...CLIP_TEXT, ...paint.c }}>C</span>
+      <span className="relative z-[1]" style={{ ...CLIP_TEXT, ...paint.g, marginLeft: '-0.2em' }}>G</span>
+    </span>
   )
 }
 
@@ -88,7 +93,7 @@ function BrandIcon({ tone }: { tone: BrandLogoTone }) {
       className={cn('flex size-10 shrink-0 items-center justify-center rounded-2xl', tile.border)}
       style={tile.style}
     >
-      <BrandGlyph className={cn('size-6', tile.glyph)} />
+      <BrandMonogram paint={tile.mono} />
     </span>
   )
 }
