@@ -71,6 +71,7 @@ export type PanelQrVehicleSummary = {
   scans: number
   lastScanAt: string | null
   image: string | null
+  status: PanelVehicleStatus
   createdAt: string
   priceDroppedAt: string | null
 }
@@ -429,6 +430,7 @@ export async function listPanelQrVehicleSummaries(ownerEmail?: string) {
       scans: scanCounts.get(vehicle.id) || 0,
       lastScanAt: lastScanAtMap.get(vehicle.id) || null,
       image: vehicle.photos?.[0] || null,
+      status: toVehicleStatus(vehicle.status),
       createdAt: vehicle.created_at,
       priceDroppedAt: vehicle.price_dropped_at ?? null,
     }

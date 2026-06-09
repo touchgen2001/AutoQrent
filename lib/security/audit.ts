@@ -10,6 +10,7 @@ export type AuditAction =
   | 'contact_form_blocked'
   | 'public_vehicle_cta_click'
   | 'public_showroom_cta_click'
+  | 'vehicle_social_image_download'
   | 'image_upload'
   | 'image_delete'
   | 'image_reject'

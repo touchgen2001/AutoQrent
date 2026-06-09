@@ -87,10 +87,11 @@ function resolveBadge(value: string | null) {
   return raw.slice(0, 14).toUpperCase()
 }
 
-// Three background/treatment themes so a dealer's posts don't all look identical.
-// The car photo stays full-bleed in every theme; only the overlay gradient, text
-// ink, and framing change. `koyu` is the original dark treatment (default).
-type ThemeKey = 'koyu' | 'acik' | 'cerceve'
+// Background/treatment themes so a dealer's posts don't all look identical. The
+// car photo stays full-bleed in every theme; only the overlay gradient, text ink,
+// and framing change. `koyu` is the original dark treatment (default); `lacivert`
+// and `bordo` add a colored wash so a dealer can match their brand identity.
+type ThemeKey = 'koyu' | 'acik' | 'cerceve' | 'lacivert' | 'bordo'
 
 type ThemeConfig = {
   overlay: string
@@ -153,11 +154,43 @@ const THEMES: Record<ThemeKey, ThemeConfig> = {
     badgeInk: '#0a0a0a',
     frame: true,
   },
+  lacivert: {
+    overlay:
+      'linear-gradient(180deg, rgba(10,16,40,0.68) 0%, rgba(10,16,40,0.08) 24%, rgba(10,16,40,0) 42%, rgba(10,16,40,0.76) 68%, rgba(8,12,32,0.97) 100%)',
+    ink: '#ffffff',
+    inkSoft: 'rgba(255,255,255,0.82)',
+    inkFaint: 'rgba(214,222,255,0.66)',
+    eyebrow: 'rgba(198,210,255,0.8)',
+    hairline: 'rgba(180,196,255,0.22)',
+    chipBackground: 'linear-gradient(152deg, #1e3a8a 0%, #16276b 52%, #0b1633 100%)',
+    chipBorder: 'rgba(160,180,255,0.34)',
+    chipInk: '#ffffff',
+    badgeBackground: '#2563eb',
+    badgeInk: '#ffffff',
+    frame: false,
+  },
+  bordo: {
+    overlay:
+      'linear-gradient(180deg, rgba(46,10,18,0.68) 0%, rgba(46,10,18,0.08) 24%, rgba(46,10,18,0) 42%, rgba(46,10,18,0.76) 68%, rgba(36,8,14,0.97) 100%)',
+    ink: '#ffffff',
+    inkSoft: 'rgba(255,255,255,0.82)',
+    inkFaint: 'rgba(255,219,219,0.66)',
+    eyebrow: 'rgba(255,205,205,0.82)',
+    hairline: 'rgba(255,190,190,0.22)',
+    chipBackground: 'linear-gradient(152deg, #7f1d1d 0%, #5f1417 52%, #2c0a0d 100%)',
+    chipBorder: 'rgba(255,180,180,0.32)',
+    chipInk: '#ffffff',
+    badgeBackground: '#b91c1c',
+    badgeInk: '#ffffff',
+    frame: false,
+  },
 }
 
 function resolveTheme(value: string | null): ThemeConfig {
   const key = (value || '').toLowerCase()
-  if (key === 'acik' || key === 'cerceve') return THEMES[key]
+  if (key && Object.prototype.hasOwnProperty.call(THEMES, key)) {
+    return THEMES[key as ThemeKey]
+  }
   return THEMES.koyu
 }
 

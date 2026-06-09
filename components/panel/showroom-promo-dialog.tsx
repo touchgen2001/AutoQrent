@@ -14,8 +14,10 @@ import {
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { packQrMatrix } from "@/lib/client/qr-matrix"
+import { recordVehicleShareDownloads } from "@/lib/client/social-share-events"
 import { createZip, type ZipEntry } from "@/lib/client/zip"
 import {
+  buildVehicleCaption,
   buildVehicleMeta,
   buildVehicleOgUrl,
   suggestVehicleBadge,
@@ -25,6 +27,7 @@ import { cn } from "@/lib/utils"
 import type { SocialImageGallery } from "@/components/panel/vehicle-social-image-dialog"
 
 export type ShowroomPromoVehicle = {
+  vehicleId?: string | null
   vehicleTitle: string
   brand: string
   model: string
@@ -35,6 +38,7 @@ export type ShowroomPromoVehicle = {
   price: number
   image: string | null
   publicUrl: string
+  status?: string | null
   createdAt?: string | null
   priceDroppedAt?: string | null
 }
@@ -238,6 +242,11 @@ export function ShowroomPromoDialog({
 
     const phone = showWhatsapp ? galleryPhone || null : null
     const entries: ZipEntry[] = []
+    // Per-vehicle captions + image names collected by index so the ZIP's
+    // `metinler.txt` lines up with the numbered images even though the workers
+    // below finish out of order.
+    const captions: string[] = new Array(vehicles.length)
+    const imageNames: string[] = new Array(vehicles.length)
     let nextIndex = 0
     let completed = 0
 
@@ -257,7 +266,11 @@ export function ShowroomPromoDialog({
           showroomUrl: gallery?.showroomUrl ?? null,
           photo: vehicle.image,
           badge:
-            suggestVehicleBadge({ createdAt: vehicle.createdAt, priceDroppedAt: vehicle.priceDroppedAt }) || undefined,
+            suggestVehicleBadge({
+              status: vehicle.status,
+              createdAt: vehicle.createdAt,
+              priceDroppedAt: vehicle.priceDroppedAt,
+            }) || undefined,
           phoneDisplay: phone,
         })
         const response = await fetch(url, { cache: "no-store" })
@@ -266,6 +279,16 @@ export function ShowroomPromoDialog({
         const slug = buildFileSlug(`${vehicle.brand}-${vehicle.model}-${vehicle.year}`)
         const name = `${String(current + 1).padStart(2, "0")}-${slug}-${format.fileSuffix}.png`
         entries.push({ name, data })
+        imageNames[current] = name
+        captions[current] = buildVehicleCaption({
+          title: vehicle.vehicleTitle,
+          priceText: vehiclePriceText(vehicle.price),
+          meta: buildVehicleMeta(vehicle),
+          galleryName: gallery?.name ?? null,
+          publicUrl: vehicle.publicUrl,
+          brand: vehicle.brand,
+          model: vehicle.model,
+        })
         completed += 1
         setZipProgress({ done: completed, total: vehicles.length })
       }
@@ -276,6 +299,15 @@ export function ShowroomPromoDialog({
       await Promise.all(workers)
       // Workers finish out of order; sort by filename so the ZIP lists vehicles 01..N.
       entries.sort((a, b) => a.name.localeCompare(b.name))
+      // A ready-to-paste caption per vehicle, each headed by its image file name so
+      // the dealer knows which text goes with which picture.
+      const intro = `${gallery?.name ?? "Vitrin"} · araç paylaşım metinleri\nHer başlık, ZIP içindeki aynı isimli görsele aittir.`
+      const blocks = vehicles.map((vehicle, index) => {
+        const heading = imageNames[index] ?? `${String(index + 1).padStart(2, "0")} · ${vehicle.vehicleTitle}`
+        return `# ${heading}\n\n${captions[index] ?? ""}`
+      })
+      const captionText = [intro, ...blocks].join("\n\n----------------------------------------\n\n")
+      entries.push({ name: "metinler.txt", data: new TextEncoder().encode(captionText) })
       const blob = createZip(entries)
       const objectUrl = URL.createObjectURL(blob)
       const link = document.createElement("a")
@@ -285,6 +317,15 @@ export function ShowroomPromoDialog({
       link.click()
       link.remove()
       URL.revokeObjectURL(objectUrl)
+      // Best-effort: log one download event per vehicle so the panel's
+      // "en çok indirilen araç görselleri" card reflects ZIP exports too.
+      void recordVehicleShareDownloads(
+        vehicles.map((vehicle) => ({
+          vehicleId: vehicle.vehicleId,
+          vehicleTitle: vehicle.vehicleTitle,
+        })),
+        { format: format.key, scope: "zip" },
+      )
     } catch {
       setErrorMessage("Görsel paketi hazırlanamadı. Lütfen tekrar deneyin.")
     } finally {
@@ -415,7 +456,8 @@ export function ShowroomPromoDialog({
             <div className="flex flex-col gap-1">
               <span className="text-sm font-medium text-foreground">Araç görsel paketi (ZIP)</span>
               <p className="text-xs text-muted-foreground">
-                Vitrindeki {vehicles.length} aracın paylaşım görselini tek dosyada indirin. Her görselde otomatik rozet
+                Vitrindeki {vehicles.length} aracın paylaşım görselini ve her araç için hazır paylaşım metnini
+                (metinler.txt) tek dosyada indirin. Her görselde otomatik rozet
                 {galleryPhone ? " ve WhatsApp numaranız" : ""} kullanılır.
               </p>
             </div>

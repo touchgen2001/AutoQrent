@@ -79,10 +79,12 @@ export function buildVehicleOgUrl(input: VehicleOgUrlInput): string {
   return `/og/vehicle?${params.toString()}`
 }
 
-// Suggest an automatic corner badge from a vehicle's freshness / price history.
-// A recent price drop wins over newness. Returns "" when nothing applies.
+// Suggest an automatic corner badge from a vehicle's status / freshness / price
+// history. Status (sold/reserved) is the most important thing to communicate, so
+// it wins over a price drop, which in turn wins over newness. Returns "" when
+// nothing applies.
 export function suggestVehicleBadge(
-  input: { createdAt?: string | null; priceDroppedAt?: string | null },
+  input: { status?: string | null; createdAt?: string | null; priceDroppedAt?: string | null },
   now: number = Date.now(),
 ): string {
   const within = (iso: string | null | undefined, days: number) => {
@@ -93,7 +95,43 @@ export function suggestVehicleBadge(
     return delta >= 0 && delta <= days * 24 * 60 * 60 * 1000
   }
 
+  if (input.status === "sold") return "satildi"
+  if (input.status === "reserved") return "rezerve"
   if (within(input.priceDroppedAt, 30)) return "fiyat-dustu"
   if (within(input.createdAt, 14)) return "yeni"
   return ""
+}
+
+function toHashtag(value: string): string {
+  const cleaned = value.normalize("NFC").replace(/[^\p{L}\p{N}]+/gu, "")
+  return cleaned ? `#${cleaned}` : ""
+}
+
+// Build the ready-to-post Turkish caption for a single vehicle. Shared by the
+// per-vehicle share dialog and the showroom ZIP export (one caption per car in
+// `metinler.txt`) so a dealer gets the exact same text in both places.
+export function buildVehicleCaption(input: {
+  title: string
+  priceText: string
+  meta?: string | null
+  galleryName?: string | null
+  publicUrl?: string | null
+  brand?: string | null
+  model?: string | null
+}): string {
+  const lines: string[] = [input.title, input.priceText]
+  if (input.meta) lines.push(input.meta)
+  lines.push("")
+  const galleryLabel = input.galleryName ? `${input.galleryName} vitrininde.` : "Vitrinimizde."
+  lines.push(`${galleryLabel} Detaylı fotoğraflar ve test sürüşü için WhatsApp'tan yazabilirsiniz.`)
+  if (input.publicUrl) {
+    lines.push("")
+    lines.push(input.publicUrl)
+  }
+  const tags = ["#ikinciel", "#otomobil", toHashtag(input.brand ?? ""), toHashtag(input.model ?? "")].filter(Boolean)
+  if (tags.length > 0) {
+    lines.push("")
+    lines.push(tags.join(" "))
+  }
+  return lines.join("\n")
 }

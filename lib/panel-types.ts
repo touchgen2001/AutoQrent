@@ -23,6 +23,16 @@ export type PanelVehicle = {
   priceDroppedAt?: string | null
 }
 
+// One row of the "en çok indirilen araç görselleri" panel card. `downloads` is the
+// honest count of social-share image downloads (single previews + ZIP packs); it is
+// never inflated to imply confirmed social-media shares.
+export type PanelTopSharedVehicle = {
+  vehicleId: string
+  vehicleTitle: string
+  downloads: number
+  lastDownloadAt: string
+}
+
 export type PanelLeadSource = 'qr' | 'showroom' | 'whatsapp' | 'telefon' | 'form' | 'test-surusu'
 export type PanelLeadStatus = 'yeni' | 'arandi' | 'gorusuluyor' | 'test-surusu' | 'satisa-dondu' | 'kayip'
 
@@ -95,6 +105,7 @@ export type PanelAuditAction =
   | 'contact_form_blocked'
   | 'public_vehicle_cta_click'
   | 'public_showroom_cta_click'
+  | 'vehicle_social_image_download'
   | 'image_upload'
   | 'image_delete'
   | 'image_reject'

@@ -151,6 +151,7 @@ export default function EditVehiclePage() {
   const [shareInfo, setShareInfo] = useState<{
     routeId: string
     publicUrl: string
+    status: string | null
     createdAt: string | null
     priceDroppedAt: string | null
   } | null>(null)
@@ -181,6 +182,7 @@ export default function EditVehiclePage() {
         setShareInfo({
           routeId: data.item.routeId,
           publicUrl: data.item.publicUrl,
+          status: data.item.status ?? null,
           createdAt: data.item.createdAt ?? null,
           priceDroppedAt: data.item.priceDroppedAt ?? null,
         })
@@ -709,6 +711,7 @@ export default function EditVehiclePage() {
 
       <VehicleSocialImageDialog
         vehicle={toSocialImageVehicle({
+          vehicleId,
           brand: formData.brand,
           model: formData.model,
           variant: formData.variant,
@@ -719,6 +722,7 @@ export default function EditVehiclePage() {
           price: Number(formData.price) || 0,
           image: formData.photos[0] ?? null,
           publicUrl: shareInfo?.publicUrl ?? '',
+          status: shareInfo?.status ?? null,
           createdAt: shareInfo?.createdAt ?? null,
           priceDroppedAt: shareInfo?.priceDroppedAt ?? null,
         })}

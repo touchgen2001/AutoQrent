@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { buildVehicleOgUrl, suggestVehicleBadge } from '../../lib/social-image-url'
+import { buildVehicleCaption, buildVehicleOgUrl, suggestVehicleBadge } from '../../lib/social-image-url'
 
 const DAY = 24 * 60 * 60 * 1000
 const NOW = Date.parse('2026-06-08T12:00:00.000Z')
@@ -48,6 +48,95 @@ describe('suggestVehicleBadge', () => {
   it('treats the 30-day / 14-day edges as inclusive', () => {
     expect(suggestVehicleBadge({ priceDroppedAt: new Date(NOW - 30 * DAY).toISOString() }, NOW)).toBe('fiyat-dustu')
     expect(suggestVehicleBadge({ createdAt: new Date(NOW - 14 * DAY).toISOString() }, NOW)).toBe('yeni')
+  })
+
+  it('returns "satildi" for a sold vehicle', () => {
+    expect(suggestVehicleBadge({ status: 'sold' }, NOW)).toBe('satildi')
+  })
+
+  it('returns "rezerve" for a reserved vehicle', () => {
+    expect(suggestVehicleBadge({ status: 'reserved' }, NOW)).toBe('rezerve')
+  })
+
+  it('prefers status over a recent price drop or newness', () => {
+    const recent = new Date(NOW - 1 * DAY).toISOString()
+    expect(
+      suggestVehicleBadge({ status: 'sold', createdAt: recent, priceDroppedAt: recent }, NOW),
+    ).toBe('satildi')
+    expect(
+      suggestVehicleBadge({ status: 'reserved', createdAt: recent, priceDroppedAt: recent }, NOW),
+    ).toBe('rezerve')
+  })
+
+  it('ignores an "active" status and falls back to recency rules', () => {
+    const recent = new Date(NOW - 2 * DAY).toISOString()
+    expect(suggestVehicleBadge({ status: 'active', createdAt: recent }, NOW)).toBe('yeni')
+    expect(suggestVehicleBadge({ status: 'active' }, NOW)).toBe('')
+  })
+})
+
+describe('buildVehicleCaption', () => {
+  it('starts with the title and price, then the meta line', () => {
+    const caption = buildVehicleCaption({
+      title: '2021 BMW 320i',
+      priceText: '1.250.000 TL',
+      meta: '45.000 km · Benzin · Otomatik',
+    })
+    const lines = caption.split('\n')
+    expect(lines[0]).toBe('2021 BMW 320i')
+    expect(lines[1]).toBe('1.250.000 TL')
+    expect(lines[2]).toBe('45.000 km · Benzin · Otomatik')
+  })
+
+  it('names the gallery in the call-to-action when provided', () => {
+    const caption = buildVehicleCaption({
+      title: 't',
+      priceText: 'p',
+      galleryName: 'Demo Galeri',
+    })
+    expect(caption).toContain('Demo Galeri vitrininde.')
+  })
+
+  it('falls back to a generic call-to-action without a gallery name', () => {
+    const caption = buildVehicleCaption({ title: 't', priceText: 'p' })
+    expect(caption).toContain('Vitrinimizde.')
+  })
+
+  it('includes the public URL when given', () => {
+    const caption = buildVehicleCaption({
+      title: 't',
+      priceText: 'p',
+      publicUrl: 'https://demo.cebindegaleri.com/arac/abc',
+    })
+    expect(caption).toContain('https://demo.cebindegaleri.com/arac/abc')
+  })
+
+  it('builds hashtags from the brand and model alongside the defaults', () => {
+    const caption = buildVehicleCaption({
+      title: 't',
+      priceText: 'p',
+      brand: 'BMW',
+      model: '320i',
+    })
+    const lastLine = caption.split('\n').at(-1)
+    expect(lastLine).toBe('#ikinciel #otomobil #BMW #320i')
+  })
+
+  it('strips spaces and punctuation out of multi-word brand/model hashtags', () => {
+    const caption = buildVehicleCaption({
+      title: 't',
+      priceText: 'p',
+      brand: 'Mercedes-Benz',
+      model: 'C 200 d',
+    })
+    const lastLine = caption.split('\n').at(-1)
+    expect(lastLine).toBe('#ikinciel #otomobil #MercedesBenz #C200d')
+  })
+
+  it('keeps only the default hashtags when brand and model are empty', () => {
+    const caption = buildVehicleCaption({ title: 't', priceText: 'p', brand: '', model: '' })
+    const lastLine = caption.split('\n').at(-1)
+    expect(lastLine).toBe('#ikinciel #otomobil')
   })
 })
 

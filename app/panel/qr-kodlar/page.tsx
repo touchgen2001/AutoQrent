@@ -28,6 +28,7 @@ import {
 import { ShowroomPromoDialog } from "@/components/panel/showroom-promo-dialog"
 import { GalleryBrandKitDialog } from "@/components/panel/gallery-brand-kit-dialog"
 import { cn } from "@/lib/utils"
+import type { PanelTopSharedVehicle, PanelVehicleStatus } from "@/lib/panel-types"
 import { formatPrice } from "@/lib/vehicle-display"
 
 type QrVehicle = {
@@ -47,6 +48,7 @@ type QrVehicle = {
   scans: number
   lastScanAt: string | null
   image: string | null
+  status: PanelVehicleStatus
   createdAt: string
   priceDroppedAt: string | null
 }
@@ -63,6 +65,7 @@ type QrApiResponse =
       ok: true
       vehicles: QrVehicle[]
       recentScans: QrScanEvent[]
+      topShared: PanelTopSharedVehicle[]
       gallery: SocialImageGallery
     }
   | {
@@ -104,6 +107,7 @@ export default function QRCodesPage() {
   const [downloadMessage, setDownloadMessage] = useState<string | null>(null)
   const [vehicles, setVehicles] = useState<QrVehicle[]>([])
   const [recentScans, setRecentScans] = useState<QrScanEvent[]>([])
+  const [topShared, setTopShared] = useState<PanelTopSharedVehicle[]>([])
   const [gallery, setGallery] = useState<SocialImageGallery>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -141,6 +145,7 @@ export default function QRCodesPage() {
 
       setVehicles(data.vehicles)
       setRecentScans(data.recentScans)
+      setTopShared(data.topShared ?? [])
       setGallery(data.gallery)
       const validIds = new Set(data.vehicles.map((vehicle) => vehicle.vehicleId))
       setSelectedVehicles((current) => current.filter((id) => validIds.has(id)))
@@ -322,6 +327,7 @@ export default function QRCodesPage() {
                 gallery={gallery}
                 vehicleCount={vehicles.length}
                 vehicles={vehicles.map((vehicle) => ({
+                  vehicleId: vehicle.vehicleId,
                   vehicleTitle: vehicle.vehicleTitle,
                   brand: vehicle.brand,
                   model: vehicle.model,
@@ -332,6 +338,7 @@ export default function QRCodesPage() {
                   price: vehicle.price,
                   image: vehicle.image,
                   publicUrl: vehicle.publicUrl,
+                  status: vehicle.status,
                   createdAt: vehicle.createdAt,
                   priceDroppedAt: vehicle.priceDroppedAt,
                 }))}
@@ -561,6 +568,52 @@ export default function QRCodesPage() {
               ))}
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Download className="h-4 w-4" />
+            En çok indirilen araç görselleri
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {topShared.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Henüz araç paylaşım görseli indirilmemiş. Araçlarınızın sosyal medya görsellerini indirdikçe en çok ilgi
+              gören araçlarınız burada listelenir.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {topShared.map((item, index) => (
+                <div
+                  key={item.vehicleId}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-border/60 p-3"
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-foreground">
+                      {index + 1}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-foreground">{item.vehicleTitle || "Araç"}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Son indirme: {formatRelativeTime(item.lastDownloadAt)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <div className="text-sm font-semibold text-foreground">{item.downloads}</div>
+                    <p className="text-xs text-muted-foreground">indirme</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="mt-3 text-xs text-muted-foreground">
+            Bu liste yalnızca panelden indirilen paylaşım görsellerini sayar; sosyal medyadaki gerçek paylaşımları
+            ölçmez. Son 90 günlük indirmeler dikkate alınır.
+          </p>
         </CardContent>
       </Card>
     </div>

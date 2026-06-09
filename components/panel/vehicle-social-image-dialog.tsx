@@ -14,7 +14,9 @@ import {
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { packQrMatrix } from "@/lib/client/qr-matrix"
+import { recordVehicleShareDownloads } from "@/lib/client/social-share-events"
 import {
+  buildVehicleCaption,
   buildVehicleMeta,
   buildVehicleOgUrl,
   suggestVehicleBadge,
@@ -23,6 +25,7 @@ import {
 import { cn } from "@/lib/utils"
 
 export type SocialImageVehicle = {
+  vehicleId?: string | null
   vehicleTitle: string
   brand: string
   model: string
@@ -33,6 +36,7 @@ export type SocialImageVehicle = {
   price: number
   image: string | null
   publicUrl: string
+  status?: string | null
   createdAt?: string | null
   priceDroppedAt?: string | null
 }
@@ -48,12 +52,14 @@ export type SocialImageGallery = {
   vehicleCount?: number
 } | null
 
-type ThemeKey = "koyu" | "acik" | "cerceve"
+type ThemeKey = "koyu" | "acik" | "cerceve" | "lacivert" | "bordo"
 
 const THEME_OPTIONS: Array<{ value: ThemeKey; label: string }> = [
   { value: "koyu", label: "Koyu" },
   { value: "acik", label: "Açık" },
   { value: "cerceve", label: "Çerçeve" },
+  { value: "lacivert", label: "Lacivert" },
+  { value: "bordo", label: "Bordo" },
 ]
 
 type SocialFormat = {
@@ -97,6 +103,8 @@ const BADGE_OPTIONS: Array<{ value: string | null; label: string }> = [
 const AUTO_BADGE_LABELS: Record<string, string> = {
   yeni: "Yeni",
   "fiyat-dustu": "Fiyat düştü",
+  satildi: "Satıldı",
+  rezerve: "Rezerve",
 }
 
 function buildFileSlug(value: string) {
@@ -109,17 +117,14 @@ function buildFileSlug(value: string) {
   )
 }
 
-function toHashtag(value: string) {
-  const cleaned = value.normalize("NFC").replace(/[^\p{L}\p{N}]+/gu, "")
-  return cleaned ? `#${cleaned}` : ""
-}
-
 /**
  * Build a `SocialImageVehicle` from a panel vehicle shape (which carries
  * brand/model/year rather than a pre-built title). Used by the vehicle list and
  * edit pages where the dialog is opened from a row/header rather than the QR page.
  */
 export function toSocialImageVehicle(vehicle: {
+  id?: string | null
+  vehicleId?: string | null
   brand: string
   model: string
   variant?: string | null
@@ -131,11 +136,13 @@ export function toSocialImageVehicle(vehicle: {
   image?: string | null
   photos?: string[]
   publicUrl?: string | null
+  status?: string | null
   createdAt?: string | null
   priceDroppedAt?: string | null
 }): SocialImageVehicle {
   const variantPart = vehicle.variant ? ` ${vehicle.variant}` : ""
   return {
+    vehicleId: vehicle.vehicleId ?? vehicle.id ?? null,
     vehicleTitle: `${vehicle.year} ${vehicle.brand} ${vehicle.model}${variantPart}`.trim(),
     brand: vehicle.brand,
     model: vehicle.model,
@@ -146,6 +153,7 @@ export function toSocialImageVehicle(vehicle: {
     price: vehicle.price,
     image: vehicle.image ?? vehicle.photos?.[0] ?? null,
     publicUrl: vehicle.publicUrl ?? "",
+    status: vehicle.status ?? null,
     createdAt: vehicle.createdAt ?? null,
     priceDroppedAt: vehicle.priceDroppedAt ?? null,
   }
@@ -199,8 +207,13 @@ export function VehicleSocialImageDialog({
   // Smart default badge from the vehicle's freshness / price history. The user can
   // override it (including forcing it off); a null override means "use this".
   const autoBadge = useMemo(
-    () => suggestVehicleBadge({ createdAt: vehicle.createdAt, priceDroppedAt: vehicle.priceDroppedAt }),
-    [vehicle.createdAt, vehicle.priceDroppedAt],
+    () =>
+      suggestVehicleBadge({
+        status: vehicle.status,
+        createdAt: vehicle.createdAt,
+        priceDroppedAt: vehicle.priceDroppedAt,
+      }),
+    [vehicle.status, vehicle.createdAt, vehicle.priceDroppedAt],
   )
   const effectiveBadge = badgeOverride ?? autoBadge
 
@@ -244,23 +257,19 @@ export function VehicleSocialImageDialog({
     qrData,
   ])
 
-  const caption = useMemo(() => {
-    const lines: string[] = [vehicle.vehicleTitle, priceText]
-    if (meta) lines.push(meta)
-    lines.push("")
-    const galleryLabel = gallery?.name ? `${gallery.name} vitrininde.` : "Vitrinimizde."
-    lines.push(`${galleryLabel} Detaylı fotoğraflar ve test sürüşü için WhatsApp'tan yazabilirsiniz.`)
-    if (vehicle.publicUrl) {
-      lines.push("")
-      lines.push(vehicle.publicUrl)
-    }
-    const tags = ["#ikinciel", "#otomobil", toHashtag(vehicle.brand), toHashtag(vehicle.model)].filter(Boolean)
-    if (tags.length > 0) {
-      lines.push("")
-      lines.push(tags.join(" "))
-    }
-    return lines.join("\n")
-  }, [vehicle.vehicleTitle, vehicle.brand, vehicle.model, vehicle.publicUrl, priceText, meta, gallery])
+  const caption = useMemo(
+    () =>
+      buildVehicleCaption({
+        title: vehicle.vehicleTitle,
+        priceText,
+        meta,
+        galleryName: gallery?.name ?? null,
+        publicUrl: vehicle.publicUrl,
+        brand: vehicle.brand,
+        model: vehicle.model,
+      }),
+    [vehicle.vehicleTitle, vehicle.brand, vehicle.model, vehicle.publicUrl, priceText, meta, gallery],
+  )
 
   const fileSlug = useMemo(
     () => buildFileSlug(`${vehicle.brand}-${vehicle.model}-${vehicle.year}`),
@@ -282,6 +291,10 @@ export function VehicleSocialImageDialog({
       link.click()
       link.remove()
       URL.revokeObjectURL(objectUrl)
+      void recordVehicleShareDownloads(
+        [{ vehicleId: vehicle.vehicleId, vehicleTitle: vehicle.vehicleTitle }],
+        { format: format.key, scope: "single" },
+      )
     } catch {
       setErrorMessage("Görsel indirilemedi. Lütfen tekrar deneyin.")
     } finally {
