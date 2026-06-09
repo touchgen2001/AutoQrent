@@ -233,6 +233,15 @@ describe('buildVehicleOgUrl', () => {
     expect(params.get('badge')).toBe('fiyat-dustu')
     expect(params.get('phone')).toBe('0555 123 45 67')
   })
+
+  it('sets the price-drop strip text when provided and omits it otherwise', () => {
+    const withDrop = paramsOf(
+      buildVehicleOgUrl({ format: 'square', title: 't', priceText: 'p', drop: '30.000 TL' }),
+    )
+    expect(withDrop.get('drop')).toBe('30.000 TL')
+    const without = paramsOf(buildVehicleOgUrl({ format: 'square', title: 't', priceText: 'p' }))
+    expect(without.has('drop')).toBe(false)
+  })
 })
 
 describe('pickThemeFromColor', () => {

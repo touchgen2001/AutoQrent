@@ -32,6 +32,7 @@ type VehicleRow = {
   photos: string[] | null
   created_at: string
   price_dropped_at: string | null
+  previous_price: number | null
 }
 
 type LeadRow = {
@@ -74,6 +75,7 @@ export type PanelQrVehicleSummary = {
   status: PanelVehicleStatus
   createdAt: string
   priceDroppedAt: string | null
+  previousPrice: number | null
 }
 
 export type PanelQrScanEvent = {
@@ -250,7 +252,7 @@ async function fetchVehicleRows(limit: number, galleryId?: string | null) {
   return supabaseAdminFetch<VehicleRow[]>({
     path: '/rest/v1/vehicles',
     query: {
-      select: 'id,slug,brand,model,variant,year,price,km,description,fuel,transmission,color,status,photos,created_at,price_dropped_at',
+      select: 'id,slug,brand,model,variant,year,price,km,description,fuel,transmission,color,status,photos,created_at,price_dropped_at,previous_price',
       ...(galleryId ? { gallery_id: `eq.${galleryId}` } : {}),
       order: 'created_at.desc',
       limit,
@@ -369,6 +371,7 @@ export async function listPanelVehicles(ownerEmail?: string) {
       description: vehicle.description || '',
       createdAt: vehicle.created_at,
       priceDroppedAt: vehicle.price_dropped_at ?? null,
+      previousPrice: vehicle.previous_price ?? null,
     }
   })
 
@@ -433,6 +436,7 @@ export async function listPanelQrVehicleSummaries(ownerEmail?: string) {
       status: toVehicleStatus(vehicle.status),
       createdAt: vehicle.created_at,
       priceDroppedAt: vehicle.price_dropped_at ?? null,
+      previousPrice: vehicle.previous_price ?? null,
     }
   })
 
@@ -622,6 +626,7 @@ export async function createPanelVehicle(input: VehicleCreateInput, ownerEmail?:
     description: vehicle.description || '',
     createdAt: vehicle.created_at,
     priceDroppedAt: vehicle.price_dropped_at ?? null,
+    previousPrice: vehicle.previous_price ?? null,
   } satisfies PanelVehicle
 }
 
@@ -636,7 +641,7 @@ export async function deletePanelVehicle(vehicleId: string, ownerEmail?: string)
   const rows = await supabaseAdminFetch<VehicleRow[]>({
     path: '/rest/v1/vehicles',
     query: {
-      select: 'id,slug,brand,model,variant,year,price,km,description,fuel,transmission,color,status,photos,created_at,price_dropped_at',
+      select: 'id,slug,brand,model,variant,year,price,km,description,fuel,transmission,color,status,photos,created_at,price_dropped_at,previous_price',
       id: `eq.${vehicleId}`,
       gallery_id: `eq.${galleryId}`,
       limit: 1,

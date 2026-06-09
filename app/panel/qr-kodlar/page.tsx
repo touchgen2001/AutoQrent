@@ -51,6 +51,7 @@ type QrVehicle = {
   status: PanelVehicleStatus
   createdAt: string
   priceDroppedAt: string | null
+  previousPrice: number | null
 }
 
 type QrScanEvent = {
@@ -344,6 +345,7 @@ export default function QRCodesPage() {
                   status: vehicle.status,
                   createdAt: vehicle.createdAt,
                   priceDroppedAt: vehicle.priceDroppedAt,
+                  previousPrice: vehicle.previousPrice,
                 }))}
               />
             )}

@@ -212,6 +212,7 @@ export async function GET(request: Request) {
   const tag = clamp(searchParams.get('tag'), 'cebindegaleri.com', 36)
   const monogram = sanitizeMonogram(searchParams.get('monogram'))
   const badge = resolveBadge(searchParams.get('badge'))
+  const drop = clamp(searchParams.get('drop'), '', 24)
   const theme = resolveTheme(searchParams.get('theme'))
   const phone = (searchParams.get('phone') || '').trim().slice(0, 24)
 
@@ -463,6 +464,28 @@ export async function GET(request: Request) {
               }}
             >
               <div style={{ display: 'flex', flexDirection: 'column' }}>
+                {drop ? (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      alignSelf: 'flex-start',
+                      marginBottom: `${Math.round(cfg.pad * 0.22)}px`,
+                      padding: `${Math.round(cfg.metaSize * 0.34)}px ${Math.round(cfg.metaSize * 0.62)}px`,
+                      borderRadius: '999px',
+                      backgroundColor: '#15803d',
+                      color: '#ffffff',
+                      fontSize: `${Math.round(cfg.metaSize * 0.92)}px`,
+                      fontWeight: 600,
+                    }}
+                  >
+                    <svg width={Math.round(cfg.metaSize * 0.6)} height={Math.round(cfg.metaSize * 0.5)} viewBox="0 0 12 10" fill="none">
+                      <path d="M1 1 L11 1 L6 9 Z" fill="#ffffff" />
+                    </svg>
+                    {`${drop} düştü`}
+                  </div>
+                ) : null}
                 <div
                   style={{
                     display: 'flex',

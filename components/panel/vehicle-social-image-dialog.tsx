@@ -41,6 +41,7 @@ export type SocialImageVehicle = {
   status?: string | null
   createdAt?: string | null
   priceDroppedAt?: string | null
+  previousPrice?: number | null
 }
 
 export type SocialImageGallery = {
@@ -160,6 +161,7 @@ export function toSocialImageVehicle(vehicle: {
   status?: string | null
   createdAt?: string | null
   priceDroppedAt?: string | null
+  previousPrice?: number | null
 }): SocialImageVehicle {
   const variantPart = vehicle.variant ? ` ${vehicle.variant}` : ""
   return {
@@ -177,6 +179,7 @@ export function toSocialImageVehicle(vehicle: {
     status: vehicle.status ?? null,
     createdAt: vehicle.createdAt ?? null,
     priceDroppedAt: vehicle.priceDroppedAt ?? null,
+    previousPrice: vehicle.previousPrice ?? null,
   }
 }
 
@@ -249,6 +252,15 @@ export function VehicleSocialImageDialog({
   const qrData = useMemo(() => (vehicle.publicUrl ? packQrMatrix(vehicle.publicUrl) : null), [vehicle.publicUrl])
   const galleryPhone = gallery?.phone || ""
 
+  // When the auto/explicit badge is "fiyat düştü" and we know the pre-drop price,
+  // surface the discount amount (e.g. "30.000 TL") as a strip on the card.
+  const dropText =
+    effectiveBadge === "fiyat-dustu" &&
+    typeof vehicle.previousPrice === "number" &&
+    vehicle.previousPrice > vehicle.price
+      ? vehiclePriceText(vehicle.previousPrice - vehicle.price)
+      : undefined
+
   const urls = useMemo(() => {
     const map: Record<string, string> = {}
     for (const format of FORMATS) {
@@ -263,6 +275,7 @@ export function VehicleSocialImageDialog({
         showroomUrl: gallery?.showroomUrl ?? null,
         photo: vehicle.image,
         badge: effectiveBadge || undefined,
+        drop: dropText,
         theme: effectiveTheme,
         phoneDisplay: showWhatsapp ? galleryPhone || null : null,
         qr: showQr && qrData ? qrData.qr : null,
@@ -277,6 +290,7 @@ export function VehicleSocialImageDialog({
     meta,
     gallery,
     effectiveBadge,
+    dropText,
     effectiveTheme,
     showWhatsapp,
     galleryPhone,

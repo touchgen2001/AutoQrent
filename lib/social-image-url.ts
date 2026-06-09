@@ -43,6 +43,8 @@ export type VehicleOgUrlInput = {
   photo?: string | null
   badge?: string
   theme?: string
+  /** Pre-formatted discount amount text (e.g. "30.000 TL") for the price-drop strip. */
+  drop?: string
   phoneDisplay?: string | null
   qr?: string | null
   qrN?: number | null
@@ -70,6 +72,7 @@ export function buildVehicleOgUrl(input: VehicleOgUrlInput): string {
   }
   if (input.photo) params.set("photo", input.photo)
   if (input.badge) params.set("badge", input.badge)
+  if (input.drop) params.set("drop", input.drop)
   if (input.theme && input.theme !== "koyu") params.set("theme", input.theme)
   if (input.phoneDisplay) params.set("phone", input.phoneDisplay)
   if (input.qr && input.qrN) {

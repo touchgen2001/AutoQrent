@@ -154,6 +154,7 @@ export default function EditVehiclePage() {
     status: string | null
     createdAt: string | null
     priceDroppedAt: string | null
+    previousPrice: number | null
   } | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
@@ -185,6 +186,7 @@ export default function EditVehiclePage() {
           status: data.item.status ?? null,
           createdAt: data.item.createdAt ?? null,
           priceDroppedAt: data.item.priceDroppedAt ?? null,
+          previousPrice: data.item.previousPrice ?? null,
         })
       } catch (error) {
         if ((error as Error).name === 'AbortError') return
@@ -725,6 +727,7 @@ export default function EditVehiclePage() {
           status: shareInfo?.status ?? null,
           createdAt: shareInfo?.createdAt ?? null,
           priceDroppedAt: shareInfo?.priceDroppedAt ?? null,
+          previousPrice: shareInfo?.previousPrice ?? null,
         })}
         gallery={gallery}
         open={isSocialOpen}

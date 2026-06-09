@@ -21,6 +21,7 @@ export type PanelVehicle = {
   description?: string
   createdAt?: string
   priceDroppedAt?: string | null
+  previousPrice?: number | null
 }
 
 // One row of the "en çok indirilen araç görselleri" panel card. `downloads` is the

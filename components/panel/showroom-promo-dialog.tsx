@@ -44,6 +44,7 @@ export type ShowroomPromoVehicle = {
   status?: string | null
   createdAt?: string | null
   priceDroppedAt?: string | null
+  previousPrice?: number | null
 }
 
 // Cap on how many vehicle images we fetch in parallel while zipping a whole
@@ -260,6 +261,18 @@ export function ShowroomPromoDialog({
         const current = nextIndex
         nextIndex += 1
         const vehicle = vehicles[current]
+        const badge =
+          suggestVehicleBadge({
+            status: vehicle.status,
+            createdAt: vehicle.createdAt,
+            priceDroppedAt: vehicle.priceDroppedAt,
+          }) || undefined
+        const drop =
+          badge === "fiyat-dustu" &&
+          typeof vehicle.previousPrice === "number" &&
+          vehicle.previousPrice > vehicle.price
+            ? vehiclePriceText(vehicle.previousPrice - vehicle.price)
+            : undefined
         const url = buildVehicleOgUrl({
           format: format.key,
           title: vehicle.vehicleTitle,
@@ -270,12 +283,8 @@ export function ShowroomPromoDialog({
           monogram: gallery?.monogram ?? null,
           showroomUrl: gallery?.showroomUrl ?? null,
           photo: vehicle.image,
-          badge:
-            suggestVehicleBadge({
-              status: vehicle.status,
-              createdAt: vehicle.createdAt,
-              priceDroppedAt: vehicle.priceDroppedAt,
-            }) || undefined,
+          badge,
+          drop,
           phoneDisplay: phone,
         })
         const response = await fetch(url, { cache: "no-store" })

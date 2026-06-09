@@ -152,15 +152,18 @@ export async function PATCH(request: Request, context: { params: Promise<unknown
       : []
 
     // Stamp price_dropped_at when the asking price falls (powers the auto
-    // "FİYAT DÜŞTÜ" share badge); clear it when the price rises back up.
+    // "FİYAT DÜŞTÜ" share badge) and remember the pre-drop price (powers the
+    // "X TL düştü" strip); clear both when the price rises back up.
     const currentPrice = currentRows[0]?.price
     const nextPrice = parsedBody.data.price
-    let priceDropPatch: { price_dropped_at: string | null } | Record<string, never> = {}
+    let priceDropPatch:
+      | { price_dropped_at: string | null; previous_price: number | null }
+      | Record<string, never> = {}
     if (typeof currentPrice === 'number' && Number.isFinite(currentPrice)) {
       if (nextPrice < currentPrice) {
-        priceDropPatch = { price_dropped_at: new Date().toISOString() }
+        priceDropPatch = { price_dropped_at: new Date().toISOString(), previous_price: currentPrice }
       } else if (nextPrice > currentPrice) {
-        priceDropPatch = { price_dropped_at: null }
+        priceDropPatch = { price_dropped_at: null, previous_price: null }
       }
     }
 
