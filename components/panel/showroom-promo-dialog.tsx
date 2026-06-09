@@ -76,6 +76,16 @@ const FORMATS: SocialFormat[] = [
   },
 ]
 
+// Vehicles added within the last `days` days. Date.now() lives here (a plain
+// module function), not in render scope, to keep react-hooks/purity happy.
+function vehiclesAddedWithinDays<T extends { createdAt?: string | null }>(items: T[], days: number): T[] {
+  const cutoff = Date.now() - days * 24 * 60 * 60 * 1000
+  return items.filter((item) => {
+    const time = item.createdAt ? Date.parse(item.createdAt) : Number.NaN
+    return Number.isFinite(time) && time >= cutoff
+  })
+}
+
 function buildFileSlug(value: string) {
   return (
     value
@@ -120,6 +130,9 @@ export function ShowroomPromoDialog({
   const [captionCopied, setCaptionCopied] = useState(false)
   const [showWhatsapp, setShowWhatsapp] = useState(true)
   const [showQr, setShowQr] = useState(true)
+  // "Bu haftanın vitrini" preset: frames the single promo card around vehicles
+  // added in the last 7 days, with a weekly headline + caption.
+  const [weekly, setWeekly] = useState(false)
   // Per-format ZIP build state: which format is building + how far along.
   const [zipBusy, setZipBusy] = useState<string | null>(null)
   const [zipProgress, setZipProgress] = useState<{ done: number; total: number } | null>(null)
@@ -146,13 +159,22 @@ export function ShowroomPromoDialog({
     [gallery],
   )
 
+  // Vehicles added in the last 7 days — the pool for the weekly preset.
+  const weeklyVehicles = useMemo(() => vehiclesAddedWithinDays(vehicles, 7), [vehicles])
+
+  const hasWeekly = weeklyVehicles.length > 0
+  const weeklyActive = weekly && hasWeekly
+  const activeCount = weeklyActive ? weeklyVehicles.length : vehicleCount
+
   // Up to three highlights, preferring vehicles that have a usable photo so the
-  // card looks full; the rest fill any remaining slots.
+  // card looks full; the rest fill any remaining slots. In weekly mode the pool is
+  // just this week's additions.
   const highlights = useMemo(() => {
-    const withImage = vehicles.filter((vehicle) => vehicle.image)
-    const withoutImage = vehicles.filter((vehicle) => !vehicle.image)
+    const source = weeklyActive ? weeklyVehicles : vehicles
+    const withImage = source.filter((vehicle) => vehicle.image)
+    const withoutImage = source.filter((vehicle) => !vehicle.image)
     return [...withImage, ...withoutImage].slice(0, 3)
-  }, [vehicles])
+  }, [vehicles, weeklyVehicles, weeklyActive])
 
   const urls = useMemo(() => {
     const map: Record<string, string> = {}
@@ -160,7 +182,8 @@ export function ShowroomPromoDialog({
       const params = new URLSearchParams()
       params.set("format", format.key)
       if (gallery?.name) params.set("gallery", gallery.name)
-      if (vehicleCount > 0) params.set("count", String(vehicleCount))
+      if (activeCount > 0) params.set("count", String(activeCount))
+      if (weeklyActive) params.set("headline", "araç bu hafta eklendi")
       if (gallery?.showroomUrl) {
         try {
           params.set("tag", new URL(gallery.showroomUrl).host)
@@ -188,28 +211,34 @@ export function ShowroomPromoDialog({
       map[format.key] = `/og/showroom?${params.toString()}`
     }
     return map
-  }, [gallery, vehicleCount, highlights, showWhatsapp, galleryPhone, showQr, qrShowroom])
+  }, [gallery, activeCount, weeklyActive, highlights, showWhatsapp, galleryPhone, showQr, qrShowroom])
 
   const caption = useMemo(() => {
     const name = gallery?.name ?? "Galerimiz"
     const lines: string[] = []
-    if (vehicleCount > 0) {
-      lines.push(`${name} vitrininde ${vehicleCount} araç sizi bekliyor.`)
+    if (weeklyActive) {
+      lines.push(`Bu hafta ${name} vitrinine ${activeCount} araç eklendi! 🚗`)
+      lines.push("Yeni gelenleri görmek, fotoğraflara bakmak ve test sürüşü için bize WhatsApp'tan yazabilirsiniz.")
     } else {
-      lines.push(`${name} vitrinindeki araçlar sizi bekliyor.`)
+      if (vehicleCount > 0) {
+        lines.push(`${name} vitrininde ${vehicleCount} araç sizi bekliyor.`)
+      } else {
+        lines.push(`${name} vitrinindeki araçlar sizi bekliyor.`)
+      }
+      lines.push("Tüm araçları görüntülemek, fotoğraflara bakmak ve test sürüşü için bize WhatsApp'tan yazabilirsiniz.")
     }
-    lines.push("Tüm araçları görüntülemek, fotoğraflara bakmak ve test sürüşü için bize WhatsApp'tan yazabilirsiniz.")
     if (gallery?.showroomUrl) {
       lines.push("")
       lines.push(gallery.showroomUrl)
     }
-    const tags = ["#galeri", "#ikinciel", "#otomobil", toHashtag(gallery?.name ?? "")].filter(Boolean)
+    const weeklyTag = weeklyActive ? "#yenigelenler" : ""
+    const tags = ["#galeri", "#ikinciel", "#otomobil", weeklyTag, toHashtag(gallery?.name ?? "")].filter(Boolean)
     if (tags.length > 0) {
       lines.push("")
       lines.push(tags.join(" "))
     }
     return lines.join("\n")
-  }, [gallery, vehicleCount])
+  }, [gallery, vehicleCount, weeklyActive, activeCount])
 
   const fileSlug = useMemo(() => buildFileSlug(gallery?.name ?? "vitrin"), [gallery])
 
@@ -407,6 +436,27 @@ export function ShowroomPromoDialog({
             {errorMessage}
           </div>
         )}
+
+        <div className="flex flex-col gap-2 rounded-lg border border-border bg-muted/40 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-sm font-medium text-foreground">Bu haftanın vitrini</span>
+            <Button
+              type="button"
+              variant={weeklyActive ? "default" : "outline"}
+              size="sm"
+              className="h-8"
+              disabled={!hasWeekly}
+              onClick={() => setWeekly((value) => !value)}
+            >
+              {weeklyActive ? "Açık" : "Kapalı"}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {hasWeekly
+              ? `Tanıtım görselini ve metnini bu hafta eklenen ${weeklyVehicles.length} araçla hazırlar.`
+              : "Bu hafta eklenen araç yok; vitrine yeni araç ekledikçe haftalık görsel burada hazırlanır."}
+          </p>
+        </div>
 
         {(galleryPhone || qrShowroom) && (
           <div className="flex flex-col gap-2 rounded-lg border border-border bg-muted/40 p-4">

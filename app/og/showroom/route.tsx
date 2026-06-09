@@ -104,6 +104,9 @@ export async function GET(request: Request) {
 
   const countRaw = Number(searchParams.get('count'))
   const count = Number.isFinite(countRaw) && countRaw > 0 ? Math.floor(countRaw) : 0
+  // Subtitle under the big count. Defaults to the evergreen "araç vitrinde";
+  // the weekly preset passes "araç bu hafta eklendi".
+  const headline = clamp(searchParams.get('headline'), 'araç vitrinde', 28)
 
   const itemTitles = searchParams.getAll('itemTitle').slice(0, 3)
   const itemPrices = searchParams.getAll('itemPrice')
@@ -309,7 +312,7 @@ export async function GET(request: Request) {
                     letterSpacing: '-0.01em',
                   }}
                 >
-                  araç vitrinde
+                  {headline}
                 </div>
               </div>
             ) : (
