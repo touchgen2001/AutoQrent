@@ -349,6 +349,18 @@ export default function AddVehiclePage() {
     }
   }
 
+  // Promote any photo to the cover slot (index 0 = cover everywhere).
+  const makeCover = (index: number) => {
+    if (index <= 0) return
+    setUploadedImages((previous) => {
+      if (index >= previous.length) return previous
+      const next = [...previous]
+      const [picked] = next.splice(index, 1)
+      next.unshift(picked)
+      return next
+    })
+  }
+
   const saveButton = (
     <Button
       onClick={() => void handleSubmit()}
@@ -360,8 +372,68 @@ export default function AddVehiclePage() {
     </Button>
   )
 
+  // Live "as the customer sees it" preview — one place where the photo + all the
+  // key fields come together while the dealer fills the (otherwise long) form.
+  const previewTitle = [formData.brand, formData.model, formData.variant]
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .join(" ")
+  const previewPriceDigits = formData.price.replace(/\D/g, "")
+  const previewPrice = previewPriceDigits ? `${Number(previewPriceDigits).toLocaleString("tr-TR")} TL` : ""
+  const previewKm = formData.mileage.replace(/\D/g, "")
+  const previewSpecs = [
+    formData.year,
+    previewKm ? `${Number(previewKm).toLocaleString("tr-TR")} km` : "",
+    formData.fuel,
+    formData.transmission,
+  ].filter(Boolean)
+  const coverImage = uploadedImages[0]
+
+  const previewCard = (
+    <Card className="overflow-hidden">
+      <div className="border-b border-border px-4 py-2.5">
+        <p className="text-sm font-semibold text-foreground">Önizleme</p>
+        <p className="text-xs text-muted-foreground">Müşteri ilanı böyle görecek</p>
+      </div>
+      <div className="relative aspect-[4/3] bg-muted">
+        {coverImage ? (
+          <Image src={coverImage.publicUrl} alt={previewTitle || "Araç"} fill sizes="360px" className="object-cover" />
+        ) : (
+          <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-muted-foreground">
+            <Car className="h-8 w-8" />
+            <span className="text-xs">Henüz fotoğraf eklenmedi</span>
+          </div>
+        )}
+        {uploadedImages.length > 0 && (
+          <span className="absolute bottom-2 right-2 rounded-md bg-black/70 px-2 py-0.5 text-xs text-white">
+            {uploadedImages.length} fotoğraf
+          </span>
+        )}
+      </div>
+      <CardContent className="space-y-2 p-4">
+        <p className="truncate text-base font-semibold text-foreground">
+          {previewTitle || <span className="text-muted-foreground">Marka ve model</span>}
+        </p>
+        <p className="text-lg font-bold text-accent">
+          {previewPrice || <span className="text-sm font-medium text-muted-foreground">Fiyat girilmedi</span>}
+        </p>
+        {previewSpecs.length > 0 ? (
+          <div className="flex flex-wrap gap-1.5 pt-1">
+            {previewSpecs.map((spec) => (
+              <span key={spec} className="rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
+                {spec}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground">Detaylar doldukça burada görünecek.</p>
+        )}
+      </CardContent>
+    </Card>
+  )
+
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-6xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -377,6 +449,10 @@ export default function AddVehiclePage() {
         </div>
         <div className="hidden sm:block">{saveButton}</div>
       </div>
+
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start">
+        {/* Sol sütun — form */}
+        <div className="min-w-0 space-y-6">
 
       {/* Temel Bilgiler */}
       <Card>
@@ -658,21 +734,35 @@ export default function AddVehiclePage() {
             Yüklenen: {uploadedImages.length} / {MAX_TOTAL_IMAGES}
           </div>
 
-          {uploadedImages.length > 0 && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {(uploadedImages.length > 0 || isUploadingImages) && (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {uploadedImages.map((image, index) => (
-                <div key={index} className="relative aspect-video bg-muted rounded-lg overflow-hidden group">
+                <div
+                  key={image.id}
+                  className="group relative aspect-[4/3] overflow-hidden rounded-lg bg-muted ring-1 ring-border"
+                >
                   <Image
                     src={image.publicUrl}
                     alt={image.name || `Araç fotoğrafı ${index + 1}`}
                     fill
-                    sizes="(max-width: 768px) 50vw, 25vw"
+                    sizes="(max-width: 640px) 50vw, 240px"
                     className="object-cover"
                   />
-                  {index === 0 && (
-                    <span className="absolute top-2 left-2 px-2 py-0.5 bg-accent text-accent-foreground text-xs rounded">
+                  {index === 0 ? (
+                    <span className="absolute left-2 top-2 rounded-md bg-accent px-2 py-0.5 text-xs font-medium text-accent-foreground">
                       Kapak
                     </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        makeCover(index)
+                      }}
+                      className="absolute bottom-2 left-2 rounded-md bg-black/70 px-2 py-0.5 text-xs text-white opacity-100 transition-opacity lg:opacity-0 lg:group-hover:opacity-100"
+                    >
+                      Kapak yap
+                    </button>
                   )}
                   <button
                     type="button"
@@ -680,12 +770,18 @@ export default function AddVehiclePage() {
                       event.stopPropagation()
                       void removeImage(index)
                     }}
-                    className="absolute top-2 right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    aria-label="Fotoğrafı kaldır"
+                    className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-destructive text-destructive-foreground opacity-100 transition-opacity lg:opacity-0 lg:group-hover:opacity-100"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="h-4 w-4" />
                   </button>
                 </div>
               ))}
+              {isUploadingImages && (
+                <div className="flex aspect-[4/3] items-center justify-center rounded-lg bg-muted ring-1 ring-border">
+                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-accent" />
+                </div>
+              )}
             </div>
           )}
         </CardContent>
@@ -808,6 +904,13 @@ export default function AddVehiclePage() {
           <Link href="/panel/araclar">Vazgeç</Link>
         </Button>
         {saveButton}
+      </div>
+        </div>
+
+        {/* Sağ sütun — canlı önizleme */}
+        <aside className="space-y-4 xl:sticky xl:top-6">
+          {previewCard}
+        </aside>
       </div>
     </div>
   )
