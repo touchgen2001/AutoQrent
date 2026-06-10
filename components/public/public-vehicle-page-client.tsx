@@ -11,12 +11,6 @@ import {
   Share2,
   ChevronLeft,
   ChevronRight,
-  Fuel,
-  Gauge,
-  Palette,
-  Settings,
-  Shield,
-  Users,
   X,
   Check,
   Clock,
@@ -372,6 +366,40 @@ export function PublicVehiclePageClient({ routeId, vehicle }: PublicVehiclePageC
     }
   }, [hasVehicleImages, showGallery, vehicle.images.length])
 
+  // One consolidated, sorted spec list (sahibinden tarzı) — replaces the three
+  // scattered spec blocks so the info reads as a single tidy table.
+  const damageText =
+    vehicle.status.hasDamage === null ? t("damageUnknown") : vehicle.status.hasDamage ? t("damageYes") : t("damageNo")
+  const serviceText =
+    vehicle.status.serviceHistory === null
+      ? t("serviceUnknown")
+      : vehicle.status.serviceHistory === "partial"
+        ? t("servicePartial")
+        : vehicle.status.serviceHistory
+          ? t("serviceFull")
+          : t("serviceNo")
+  const warrantyText =
+    vehicle.status.warranty === null ? t("warrantyUnknown") : vehicle.status.warranty ? t("warrantyYes") : t("warrantyNo")
+  const ownerText = getOwnerLabel(vehicle.status.previousOwners, locale, t("ownerUnknown"), t("ownerSuffix"))
+
+  const specRows = [
+    { label: t("modelYear"), value: String(vehicle.year) },
+    { label: t("mileage"), value: `${formatPublicNumber(vehicle.mileage, locale)} km` },
+    { label: t("fuel"), value: vehicle.fuel },
+    { label: t("transmission"), value: vehicle.transmission },
+    { label: t("bodyType"), value: vehicle.bodyType },
+    { label: t("engineSize"), value: vehicle.engineSize },
+    { label: t("horsePower"), value: vehicle.horsePower },
+    { label: t("color"), value: vehicle.color },
+  ].filter((row) => typeof row.value === "string" && row.value.trim().length > 0 && row.value.trim() !== "-")
+
+  const conditionChips = [
+    { text: damageText, ok: vehicle.status.hasDamage === false },
+    { text: serviceText, ok: vehicle.status.serviceHistory === true || vehicle.status.serviceHistory === "partial" },
+    { text: ownerText, ok: false },
+    { text: warrantyText, ok: vehicle.status.warranty === true },
+  ]
+
   return (
     <div className="min-h-screen bg-background pb-[calc(6.5rem+env(safe-area-inset-bottom))]" dir={dir}>
       <script
@@ -423,8 +451,9 @@ export function PublicVehiclePageClient({ routeId, vehicle }: PublicVehiclePageC
         </div>
       </header>
 
+      <div className="mx-auto max-w-5xl lg:grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:items-start lg:gap-8 lg:px-4 lg:py-6">
       {/* Image Gallery */}
-      <div className="relative">
+      <div className="relative lg:sticky lg:top-20 lg:self-start lg:overflow-hidden lg:rounded-2xl lg:border lg:border-border">
         <div
           className={cn("aspect-[4/3] bg-muted overflow-hidden", hasVehicleImages && "cursor-pointer")}
           onClick={() => {
@@ -472,25 +501,37 @@ export function PublicVehiclePageClient({ routeId, vehicle }: PublicVehiclePageC
           </div>
         )}
 
-        {/* Thumbnail Strip */}
+        {/* Thumbnail Strip — gerçek küçük fotoğraflar */}
         {hasVehicleImages && vehicle.images.length > 1 && (
-          <div className="flex gap-1 p-2 bg-muted/50">
-            {vehicle.images.map((_, index) => (
+          <div className="flex gap-2 overflow-x-auto bg-muted/40 p-2">
+            {vehicle.images.map((imageSrc, index) => (
               <button
                 key={index}
+                type="button"
                 onClick={() => setCurrentImageIndex(index)}
+                aria-label={`${t("thumbnail")} ${index + 1}`}
                 className={cn(
-                  "flex-1 h-1 rounded-full transition-all",
-                  index === currentImageIndex ? "bg-accent" : "bg-muted-foreground/30"
+                  "relative h-16 w-20 shrink-0 overflow-hidden rounded-md border-2 transition-all",
+                  index === currentImageIndex ? "border-accent" : "border-transparent opacity-70 hover:opacity-100",
                 )}
-              />
+              >
+                <VehicleImageFrame
+                  src={imageSrc}
+                  alt={`${vehicleTitle} ${t("thumbnail")} ${index + 1}`}
+                  sizes="80px"
+                  quality={60}
+                  imageClassName="object-cover"
+                  loading="lazy"
+                  placeholderClassName="[&_svg]:h-4 [&_svg]:w-4 [&_span]:sr-only"
+                />
+              </button>
             ))}
           </div>
         )}
       </div>
 
       {/* Vehicle Info */}
-      <div className="px-4 py-5">
+      <div className="px-4 py-5 lg:px-0 lg:py-0">
         {/* Title & Price */}
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -556,148 +597,36 @@ export function PublicVehiclePageClient({ routeId, vehicle }: PublicVehiclePageC
           </section>
         )}
 
-        {/* Quick Specs */}
-        <div className="mt-5 grid grid-cols-2 gap-3">
-          <div className="flex items-center gap-3 p-3 bg-muted rounded-xl">
-            <div className="w-9 h-9 bg-background rounded-lg flex items-center justify-center">
-              <Gauge className="w-5 h-5 text-muted-foreground" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">{t("mileage")}</p>
-              <p className="text-sm font-medium">{formatPublicNumber(vehicle.mileage, locale)} km</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 p-3 bg-muted rounded-xl">
-            <div className="w-9 h-9 bg-background rounded-lg flex items-center justify-center">
-              <Fuel className="w-5 h-5 text-muted-foreground" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">{t("fuel")}</p>
-              <p className="text-sm font-medium">{vehicle.fuel}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 p-3 bg-muted rounded-xl">
-            <div className="w-9 h-9 bg-background rounded-lg flex items-center justify-center">
-              <Settings className="w-5 h-5 text-muted-foreground" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">{t("transmission")}</p>
-              <p className="text-sm font-medium">{vehicle.transmission}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 p-3 bg-muted rounded-xl">
-            <div className="w-9 h-9 bg-background rounded-lg flex items-center justify-center">
-              <Palette className="w-5 h-5 text-muted-foreground" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">{t("color")}</p>
-              <p className="text-sm font-medium">{vehicle.color}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Vehicle Status */}
-        <div className="mt-5 p-4 bg-muted rounded-xl">
-          <h3 className="font-semibold text-foreground mb-3">{t("vehicleCondition")}</h3>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex items-center gap-2">
-              <div className={cn(
-                "w-5 h-5 rounded-full flex items-center justify-center",
-                vehicle.status.hasDamage === true
-                  ? "bg-red-100"
-                  : vehicle.status.hasDamage === false
-                    ? "bg-green-100"
-                    : "bg-muted"
-              )}>
-                {vehicle.status.hasDamage === true ? (
-                  <X className="w-3 h-3 text-red-600" />
-                ) : vehicle.status.hasDamage === false ? (
-                  <Check className="w-3 h-3 text-green-600" />
-                ) : (
-                  <Clock className="w-3 h-3 text-muted-foreground" />
-                )}
-              </div>
-              <span className="text-sm">
-                {vehicle.status.hasDamage === null
-                  ? t("damageUnknown")
-                  : vehicle.status.hasDamage
-                    ? t("damageYes")
-                    : t("damageNo")}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className={cn(
-                "w-5 h-5 rounded-full flex items-center justify-center",
-                vehicle.status.serviceHistory === true
-                  ? "bg-green-100"
-                  : vehicle.status.serviceHistory === "partial"
-                    ? "bg-amber-100"
-                    : "bg-muted"
-              )}>
-                {vehicle.status.serviceHistory === true ? (
-                  <Check className="w-3 h-3 text-green-600" />
-                ) : vehicle.status.serviceHistory === "partial" ? (
-                  <Clock className="w-3 h-3 text-amber-600" />
-                ) : vehicle.status.serviceHistory === false ? (
-                  <X className="w-3 h-3 text-muted-foreground" />
-                ) : (
-                  <Clock className="w-3 h-3 text-muted-foreground" />
-                )}
-              </div>
-              <span className="text-sm">
-                {vehicle.status.serviceHistory === null
-                  ? t("serviceUnknown")
-                  : vehicle.status.serviceHistory
-                    ? vehicle.status.serviceHistory === "partial"
-                      ? t("servicePartial")
-                      : t("serviceFull")
-                    : t("serviceNo")}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-5 h-5 bg-muted rounded-full flex items-center justify-center">
-                <Users className="w-3 h-3 text-muted-foreground" />
-              </div>
-              <span className="text-sm">
-                {getOwnerLabel(vehicle.status.previousOwners, locale, t("ownerUnknown"), t("ownerSuffix"))}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className={cn(
-                "w-5 h-5 rounded-full flex items-center justify-center",
-                vehicle.status.warranty === true ? "bg-green-100" : "bg-muted"
-              )}>
-                {vehicle.status.warranty === true ? (
-                  <Shield className="w-3 h-3 text-green-600" />
-                ) : vehicle.status.warranty === false ? (
-                  <Shield className="w-3 h-3 text-muted-foreground" />
-                ) : (
-                  <Clock className="w-3 h-3 text-muted-foreground" />
-                )}
-              </div>
-              <span className="text-sm">
-                {vehicle.status.warranty === null
-                  ? t("warrantyUnknown")
-                  : vehicle.status.warranty
-                    ? t("warrantyYes")
-                    : t("warrantyNo")}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Technical Specs */}
+        {/* Araç Bilgileri — tek, sıralı liste (sahibinden tarzı) */}
         <div className="mt-5">
-          <h3 className="font-semibold text-foreground mb-3">{t("technicalSpecs")}</h3>
-          <div className="grid grid-cols-2 gap-y-3 text-sm">
-            <div className="text-muted-foreground">{t("engineSize")}</div>
-            <div className="font-medium">{vehicle.engineSize}</div>
-            <div className="text-muted-foreground">{t("horsePower")}</div>
-            <div className="font-medium">{vehicle.horsePower}</div>
-            <div className="text-muted-foreground">{t("bodyType")}</div>
-            <div className="font-medium">{vehicle.bodyType}</div>
-            <div className="text-muted-foreground">{t("modelYear")}</div>
-            <div className="font-medium">{vehicle.year}</div>
+          <h3 className="mb-3 font-semibold text-foreground">{t("technicalSpecs")}</h3>
+          <div className="overflow-hidden rounded-xl border border-border">
+            {specRows.map((row, index) => (
+              <div
+                key={row.label}
+                className={cn(
+                  "flex items-center justify-between gap-4 px-4 py-2.5 text-sm",
+                  index % 2 === 1 && "bg-muted/40",
+                )}
+              >
+                <span className="text-muted-foreground">{row.label}</span>
+                <span className="text-right font-medium text-foreground">{row.value}</span>
+              </div>
+            ))}
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {conditionChips.map((chip) => (
+              <span
+                key={chip.text}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium",
+                  chip.ok ? "bg-emerald-100 text-emerald-700" : "bg-muted text-muted-foreground",
+                )}
+              >
+                {chip.ok ? <Check className="size-3.5" /> : null}
+                {chip.text}
+              </span>
+            ))}
           </div>
         </div>
 
@@ -763,6 +692,7 @@ export function PublicVehiclePageClient({ routeId, vehicle }: PublicVehiclePageC
             </Button>
           )}
         </div>
+      </div>
       </div>
 
       {/* Contact Form Modal */}
