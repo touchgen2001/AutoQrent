@@ -448,8 +448,85 @@ export default function EditVehiclePage() {
     }
   }
 
+  const makeCover = (index: number) => {
+    if (index <= 0) return
+    setFormData((prev) => {
+      if (index >= prev.photos.length) return prev
+      const photos = [...prev.photos]
+      const [picked] = photos.splice(index, 1)
+      photos.unshift(picked)
+      return { ...prev, photos }
+    })
+  }
+
+  // Live "müşteri böyle görecek" preview — the listing as it will appear.
+  const previewTitle = [formData.brand, formData.model, formData.variant]
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .join(' ')
+  const previewPriceDigits = formData.price.replace(/\D/g, '')
+  const previewPrice = previewPriceDigits ? `${Number(previewPriceDigits).toLocaleString('tr-TR')} TL` : ''
+  const previewKm = formData.mileage.replace(/\D/g, '')
+  const previewSpecRows = [
+    { label: 'Model Yılı', value: formData.year },
+    { label: 'Kilometre', value: previewKm ? `${Number(previewKm).toLocaleString('tr-TR')} km` : '' },
+    { label: 'Yakıt', value: formData.fuel },
+    { label: 'Vites', value: formData.transmission },
+    { label: 'Renk', value: formData.color },
+  ].filter((row) => row.value.trim().length > 0)
+  const coverImage = formData.photos[0]
+
+  const previewCard = (
+    <Card className="overflow-hidden">
+      <div className="border-b border-border px-4 py-2.5">
+        <p className="text-sm font-semibold text-foreground">Önizleme</p>
+        <p className="text-xs text-muted-foreground">Müşteri ilanı böyle görecek</p>
+      </div>
+      <div className="relative aspect-[4/3] bg-muted">
+        {coverImage ? (
+          <Image src={coverImage} alt={previewTitle || 'Araç'} fill sizes="420px" className="object-cover" />
+        ) : (
+          <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-muted-foreground">
+            <ImageIcon className="h-8 w-8" />
+            <span className="text-xs">Henüz fotoğraf eklenmedi</span>
+          </div>
+        )}
+        {formData.photos.length > 0 && (
+          <span className="absolute bottom-2 right-2 rounded-md bg-black/70 px-2 py-0.5 text-xs text-white">
+            {formData.photos.length} fotoğraf
+          </span>
+        )}
+      </div>
+      <CardContent className="space-y-3 p-4">
+        <div>
+          <p className="truncate text-lg font-semibold text-foreground">
+            {previewTitle || <span className="text-muted-foreground">Marka ve model</span>}
+          </p>
+          <p className="mt-0.5 text-xl font-bold text-accent">
+            {previewPrice || <span className="text-sm font-medium text-muted-foreground">Fiyat girilmedi</span>}
+          </p>
+        </div>
+        {previewSpecRows.length > 0 ? (
+          <div className="overflow-hidden rounded-lg border border-border">
+            {previewSpecRows.map((row, index) => (
+              <div
+                key={row.label}
+                className={`flex items-center justify-between gap-3 px-3 py-2 text-sm ${index % 2 === 1 ? 'bg-muted/40' : ''}`}
+              >
+                <span className="text-muted-foreground">{row.label}</span>
+                <span className="text-right font-medium text-foreground">{row.value}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground">Detaylar doldukça burada özellik listesi oluşacak.</p>
+        )}
+      </CardContent>
+    </Card>
+  )
+
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-6xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <Link
@@ -487,6 +564,10 @@ export default function EditVehiclePage() {
           {errorMessage}
         </div>
       )}
+
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px] xl:items-start">
+        {/* Sol sütun — form */}
+        <div className="min-w-0 space-y-6">
 
       <Card>
         <CardContent className="p-6 md:p-8">
@@ -668,7 +749,7 @@ export default function EditVehiclePage() {
                   Bu araçta seçili fotoğraf: {formData.photos.length} / {MAX_TOTAL_IMAGES}
                 </div>
 
-                {formData.photos.length === 0 ? (
+                {formData.photos.length === 0 && !isUploadingImages ? (
                   <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-800">
                     <Info className="mt-0.5 h-4 w-4 shrink-0" />
                     <p>
@@ -678,31 +759,47 @@ export default function EditVehiclePage() {
                     </p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                     {formData.photos.map((photo, index) => (
-                      <div key={photo} className="relative aspect-video overflow-hidden rounded-lg border border-border bg-muted">
+                      <div
+                        key={photo}
+                        className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-border bg-muted"
+                      >
                         <Image
                           src={photo}
                           alt={`Araç fotoğrafı ${index + 1}`}
                           fill
-                          sizes="(max-width: 768px) 50vw, 25vw"
+                          sizes="(max-width: 640px) 50vw, 240px"
                           className="object-cover"
                         />
-                        {index === 0 && (
-                          <span className="absolute left-2 top-2 rounded bg-accent px-2 py-0.5 text-xs text-accent-foreground">
+                        {index === 0 ? (
+                          <span className="absolute left-2 top-2 rounded-md bg-accent px-2 py-0.5 text-xs font-medium text-accent-foreground">
                             Kapak
                           </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => makeCover(index)}
+                            className="absolute bottom-2 left-2 rounded-md bg-black/70 px-2 py-0.5 text-xs text-white opacity-100 transition-opacity lg:opacity-0 lg:group-hover:opacity-100"
+                          >
+                            Kapak yap
+                          </button>
                         )}
                         <button
                           type="button"
                           onClick={() => void removePhoto(photo)}
-                          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-sm"
                           aria-label="Fotoğrafı kaldır"
+                          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-destructive text-destructive-foreground opacity-100 transition-opacity lg:opacity-0 lg:group-hover:opacity-100"
                         >
                           <X className="h-4 w-4" />
                         </button>
                       </div>
                     ))}
+                    {isUploadingImages && (
+                      <div className="flex aspect-[4/3] items-center justify-center rounded-lg border border-border bg-muted">
+                        <div className="h-6 w-6 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-accent" />
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -710,6 +807,13 @@ export default function EditVehiclePage() {
           )}
         </CardContent>
       </Card>
+        </div>
+
+        {/* Sağ sütun — canlı önizleme */}
+        <aside className="space-y-4 xl:sticky xl:top-6">
+          {previewCard}
+        </aside>
+      </div>
 
       <VehicleSocialImageDialog
         vehicle={toSocialImageVehicle({
