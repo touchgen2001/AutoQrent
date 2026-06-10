@@ -200,6 +200,7 @@ export function VehicleSocialImageDialog({
 }) {
   const [internalOpen, setInternalOpen] = useState(false)
   const [loaded, setLoaded] = useState<Record<string, boolean>>({})
+  const [failed, setFailed] = useState<Record<string, boolean>>({})
   const [downloading, setDownloading] = useState<string | null>(null)
   const [sharing, setSharing] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -515,9 +516,15 @@ export function VehicleSocialImageDialog({
               <div
                 className={`relative ${format.aspectClass} w-full overflow-hidden rounded-lg border border-border bg-muted`}
               >
-                {!loaded[urls[format.key]] && (
+                {!loaded[urls[format.key]] && !failed[urls[format.key]] && (
                   <div className="absolute inset-0 flex items-center justify-center">
                     <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                )}
+                {failed[urls[format.key]] && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 px-4 text-center text-xs text-muted-foreground">
+                    <span>Önizleme yüklenemedi.</span>
+                    <span>İndir / Paylaş yine de çalışır.</span>
                   </div>
                 )}
                 {/* eslint-disable-next-line @next/next/no-img-element -- on-demand OG render, not a static asset */}
@@ -526,7 +533,10 @@ export function VehicleSocialImageDialog({
                   src={urls[format.key]}
                   alt={`${vehicle.vehicleTitle} ${format.label} önizleme`}
                   className="h-full w-full object-contain"
-                  onLoad={() => setLoaded((current) => ({ ...current, [urls[format.key]]: true }))}
+                  onLoad={() =>
+                    setLoaded((current) => ({ ...current, [urls[format.key]]: true }))
+                  }
+                  onError={() => setFailed((current) => ({ ...current, [urls[format.key]]: true }))}
                 />
               </div>
 
