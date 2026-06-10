@@ -381,12 +381,16 @@ export default function AddVehiclePage() {
   const previewPriceDigits = formData.price.replace(/\D/g, "")
   const previewPrice = previewPriceDigits ? `${Number(previewPriceDigits).toLocaleString("tr-TR")} TL` : ""
   const previewKm = formData.mileage.replace(/\D/g, "")
-  const previewSpecs = [
-    formData.year,
-    previewKm ? `${Number(previewKm).toLocaleString("tr-TR")} km` : "",
-    formData.fuel,
-    formData.transmission,
-  ].filter(Boolean)
+  const previewSpecRows = [
+    { label: "Model Yılı", value: formData.year },
+    { label: "Kilometre", value: previewKm ? `${Number(previewKm).toLocaleString("tr-TR")} km` : "" },
+    { label: "Yakıt", value: formData.fuel },
+    { label: "Vites", value: formData.transmission },
+    { label: "Kasa Tipi", value: formData.bodyType },
+    { label: "Motor Hacmi", value: formData.engineSize },
+    { label: "Motor Gücü", value: formData.horsePower },
+    { label: "Renk", value: formData.color },
+  ].filter((row) => row.value.trim().length > 0)
   const coverImage = uploadedImages[0]
 
   const previewCard = (
@@ -397,7 +401,7 @@ export default function AddVehiclePage() {
       </div>
       <div className="relative aspect-[4/3] bg-muted">
         {coverImage ? (
-          <Image src={coverImage.publicUrl} alt={previewTitle || "Araç"} fill sizes="360px" className="object-cover" />
+          <Image src={coverImage.publicUrl} alt={previewTitle || "Araç"} fill sizes="420px" className="object-cover" />
         ) : (
           <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-muted-foreground">
             <Car className="h-8 w-8" />
@@ -410,23 +414,29 @@ export default function AddVehiclePage() {
           </span>
         )}
       </div>
-      <CardContent className="space-y-2 p-4">
-        <p className="truncate text-base font-semibold text-foreground">
-          {previewTitle || <span className="text-muted-foreground">Marka ve model</span>}
-        </p>
-        <p className="text-lg font-bold text-accent">
-          {previewPrice || <span className="text-sm font-medium text-muted-foreground">Fiyat girilmedi</span>}
-        </p>
-        {previewSpecs.length > 0 ? (
-          <div className="flex flex-wrap gap-1.5 pt-1">
-            {previewSpecs.map((spec) => (
-              <span key={spec} className="rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
-                {spec}
-              </span>
+      <CardContent className="space-y-3 p-4">
+        <div>
+          <p className="truncate text-lg font-semibold text-foreground">
+            {previewTitle || <span className="text-muted-foreground">Marka ve model</span>}
+          </p>
+          <p className="mt-0.5 text-xl font-bold text-accent">
+            {previewPrice || <span className="text-sm font-medium text-muted-foreground">Fiyat girilmedi</span>}
+          </p>
+        </div>
+        {previewSpecRows.length > 0 ? (
+          <div className="overflow-hidden rounded-lg border border-border">
+            {previewSpecRows.map((row, index) => (
+              <div
+                key={row.label}
+                className={`flex items-center justify-between gap-3 px-3 py-2 text-sm ${index % 2 === 1 ? "bg-muted/40" : ""}`}
+              >
+                <span className="text-muted-foreground">{row.label}</span>
+                <span className="text-right font-medium text-foreground">{row.value}</span>
+              </div>
             ))}
           </div>
         ) : (
-          <p className="text-xs text-muted-foreground">Detaylar doldukça burada görünecek.</p>
+          <p className="text-xs text-muted-foreground">Detaylar doldukça burada özellik listesi oluşacak.</p>
         )}
       </CardContent>
     </Card>
@@ -450,7 +460,7 @@ export default function AddVehiclePage() {
         <div className="hidden sm:block">{saveButton}</div>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px] xl:items-start">
         {/* Sol sütun — form */}
         <div className="min-w-0 space-y-6">
 
