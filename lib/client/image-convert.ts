@@ -24,9 +24,6 @@ const EXTENSION_BY_MIME: Record<string, string> = {
   'image/jpeg': 'jpg',
 }
 
-// Formats Satori/resvg can embed directly — no re-encode needed.
-const SHARE_SAFE_PHOTO_TYPES = new Set(['image/png', 'image/jpeg'])
-
 function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -91,13 +88,17 @@ export async function convertImageFile(file: File, options: ImageConvertOptions 
 }
 
 /**
- * Vehicle photos appear on the social share card, which can't embed WebP. Convert
- * non-PNG/JPEG photos (e.g. WebP) to JPEG so they render on the card. Fail-soft:
- * on any error the original file is returned unchanged — the server still accepts
- * WebP, so the upload succeeds; only the share preview would fall back.
+ * Prepares a vehicle photo for upload. Modern phone cameras produce photos that
+ * are 48–200 MP and frequently exceed the server's 10 MB / 60 MP safety limits,
+ * so a full-resolution upload gets rejected ("görsel çok büyük") — and retrying
+ * the same photo fails the same way. To make uploads "just work", EVERY photo is
+ * scaled down to a web-friendly 2000 px long edge and re-encoded to JPEG (a car
+ * photo needs no transparency and 2000 px is ample for the showroom + share card,
+ * which can't embed WebP anyway). The server-side type/size/dimension checks stay
+ * in place as a backstop. Fail-soft: on any decode/encode error the original file
+ * is returned unchanged so the upload can still proceed and the server decides.
  */
 export async function ensureShareSafePhoto(file: File): Promise<File> {
-  if (SHARE_SAFE_PHOTO_TYPES.has(file.type)) return file
   try {
     return await convertImageFile(file, {
       mimeType: 'image/jpeg',
