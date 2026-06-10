@@ -7,6 +7,7 @@ import { recordApiError, recordApiTiming, recordOperationalEvent } from '@/lib/s
 import { hasSecurePublicRouteToken, MAX_PUBLIC_ROUTE_SLUG_LENGTH } from '@/lib/security/public-route-token'
 import { checkRateLimit, estimateBotRisk, getClientIp, trustedMutationOriginResponse } from '@/lib/security/request-guards'
 import { insertContactLead } from '@/lib/server/panel-repository'
+import { sendLeadPushToGallery } from '@/lib/server/web-push'
 
 export const runtime = 'nodejs'
 
@@ -361,6 +362,17 @@ export async function POST(request: Request) {
         panelVehicleId: panelLeadResult.vehicleId,
       },
     })
+
+    // Out-of-app alert: ping the dealer's registered devices (Web Push) so a
+    // closed panel never means a missed lead. Best-effort — wrapped so a push
+    // failure can never break the customer's submission.
+    if (panelLeadResult.stored && panelLeadResult.galleryId) {
+      await sendLeadPushToGallery(panelLeadResult.galleryId, {
+        title: `Yeni talep · ${parsed.data.vehicleTitle}`,
+        body: phone ? `${parsed.data.name} — ${phone}` : parsed.data.name,
+        url: '/panel/leadler',
+      }).catch(() => {})
+    }
 
     const response = NextResponse.json({
       ok: true,

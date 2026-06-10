@@ -7,6 +7,7 @@ import {
   Bell,
   BellRing,
   BellOff,
+  Smartphone,
   Check,
   Search,
   ChevronDown,
@@ -42,6 +43,7 @@ import { MobileMenuButton } from "./sidebar"
 import type { PanelAlertCenterResponse, PanelLead, PanelVehicle } from "@/lib/panel-types"
 import { clearPanelAuthSession, getPanelAuthSession } from "@/lib/client/panel-auth"
 import { useAlertDesktopNotifications } from "@/lib/client/use-alert-notifications"
+import { enablePushNotifications, hasActivePushSubscription, isPushSupported } from "@/lib/client/push-notifications"
 
 const ALERT_POLL_INTERVAL_MS = 30 * 1000
 
@@ -77,6 +79,28 @@ export function DashboardHeader({ onMobileMenuClick }: HeaderProps) {
   const [accountGallery, setAccountGallery] = useState("Galeri")
   const { permission: notificationPermission, requestPermission: requestNotificationPermission } =
     useAlertDesktopNotifications(alerts)
+  const [pushStatus, setPushStatus] = useState<"idle" | "working" | "enabled" | "denied" | "unsupported" | "failed">("idle")
+
+  useEffect(() => {
+    let active = true
+    void (async () => {
+      if (!isPushSupported()) {
+        if (active) setPushStatus("unsupported")
+        return
+      }
+      const has = await hasActivePushSubscription()
+      if (active && has) setPushStatus("enabled")
+    })()
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const handleEnablePush = async () => {
+    setPushStatus("working")
+    const result = await enablePushNotifications()
+    setPushStatus(result)
+  }
 
   const handleSearchDialogOpenChange = (open: boolean) => {
     setIsSearchOpen(open)
@@ -297,6 +321,39 @@ export function DashboardHeader({ onMobileMenuClick }: HeaderProps) {
                   <div className="flex items-start gap-2 px-2 py-1.5 text-xs text-muted-foreground">
                     <BellOff className="w-3.5 h-3.5 mt-0.5 shrink-0" />
                     <span>Masaüstü bildirimleri engellenmiş. Tarayıcı ayarlarından izin verebilirsiniz.</span>
+                  </div>
+                )}
+                {pushStatus !== "unsupported" && pushStatus !== "enabled" && (
+                  <>
+                    <DropdownMenuItem
+                      className="gap-2"
+                      disabled={pushStatus === "working"}
+                      onSelect={(event) => {
+                        event.preventDefault()
+                        void handleEnablePush()
+                      }}
+                    >
+                      <Smartphone className="w-4 h-4 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium">Telefona bildirim gönder</p>
+                        <p className="text-xs text-muted-foreground">
+                          {pushStatus === "working"
+                            ? "Etkinleştiriliyor..."
+                            : pushStatus === "denied"
+                              ? "İzin verilmedi — tarayıcı ayarından açabilirsiniz."
+                              : pushStatus === "failed"
+                                ? "Kurulamadı, lütfen tekrar deneyin."
+                                : "Panel kapalıyken bile yeni talepleri telefonuna bildir."}
+                        </p>
+                      </div>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+                {pushStatus === "enabled" && (
+                  <div className="flex items-center gap-2 px-2 py-1.5 text-xs text-muted-foreground">
+                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                    Telefon bildirimleri açık
                   </div>
                 )}
                 {isAlertsLoading && (
