@@ -296,22 +296,29 @@ export type PublicGallerySummary = {
 export async function listPublicGalleries(limit = 12): Promise<PublicGallerySummary[]> {
   try {
     requireSupabaseAdminConfig()
-    const rows = await supabaseAdminFetch<GalleryRow[]>({
-      path: '/rest/v1/galleries',
-      query: {
-        select: BASE_GALLERY_SELECT,
-        status: 'eq.active',
-        order: 'name.asc',
-        limit: 120,
-      },
-    })
+    // Galleries are public when they have a secure-token slug (there is no
+    // `status` column on this table). We also only feature galleries that have
+    // at least one active vehicle — never an empty showroom.
+    const [galleryRows, vehicleRows] = await Promise.all([
+      supabaseAdminFetch<GalleryRow[]>({
+        path: '/rest/v1/galleries',
+        query: { select: BASE_GALLERY_SELECT, order: 'name.asc', limit: 120 },
+      }),
+      supabaseAdminFetch<Array<{ gallery_id: string | null }>>({
+        path: '/rest/v1/vehicles',
+        query: { select: 'gallery_id', status: 'eq.active', limit: 5000 },
+      }).catch(() => [] as Array<{ gallery_id: string | null }>),
+    ])
+
+    const stockedGalleryIds = new Set(vehicleRows.map((vehicle) => vehicle.gallery_id).filter(Boolean))
 
     const seen = new Set<string>()
     const result: PublicGallerySummary[] = []
-    for (const row of rows) {
+    for (const row of galleryRows) {
       if (!row.slug || !hasSecurePublicRouteToken(row.slug)) continue
       const dealer = mapGalleryRow(row)
       if (!dealer.name?.trim() || seen.has(dealer.slug)) continue
+      if (!stockedGalleryIds.has(dealer.id)) continue
       seen.add(dealer.slug)
       result.push({
         slug: dealer.slug,
