@@ -1,5 +1,7 @@
 import { CheckCircle2, Headset, PhoneCall, QrCode, ScanLine, Settings2, ShieldCheck, Workflow } from "lucide-react"
 
+import { landingAccent } from "@/lib/landing-accents"
+
 const problemSolutionItems = [
   {
     title: "Dağınık müşteri akışı",
@@ -96,9 +98,9 @@ export function HomeRichSections() {
             </p>
           </div>
           <div className="mt-8 grid gap-4 lg:grid-cols-3">
-            {qrJourney.map((step) => (
-              <article key={step.title} className="rounded-xl border border-border/70 bg-card p-6">
-                <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10 text-accent">
+            {qrJourney.map((step, index) => (
+              <article key={step.title} className="rounded-xl border border-border/70 bg-card p-6 transition-all hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-sm">
+                <div className={`inline-flex h-10 w-10 items-center justify-center rounded-lg ${landingAccent(index)}`}>
                   <step.icon className="h-5 w-5" />
                 </div>
                 <h3 className="mt-4 text-lg font-semibold text-foreground">{step.title}</h3>
@@ -123,10 +125,10 @@ export function HomeRichSections() {
                 Araç vitrini, lead takibi ve müşteri iletişimi dağınık kalmadan aynı operasyon çerçevesinde yürütülür.
               </p>
               <div className="mt-6 space-y-3">
-                {operations.map((item) => (
+                {operations.map((item, index) => (
                   <div key={item.title} className="rounded-xl border border-border/70 bg-card p-4">
                     <div className="flex items-start gap-3">
-                      <div className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-accent/10 text-accent">
+                      <div className={`inline-flex h-8 w-8 items-center justify-center rounded-md ${landingAccent(index)}`}>
                         <item.icon className="h-4 w-4" />
                       </div>
                       <div>

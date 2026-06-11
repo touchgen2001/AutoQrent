@@ -1,5 +1,7 @@
 import { ArrowRightLeft, BadgeCheck, CalendarCheck, Headset, ReceiptText, ShieldCheck } from "lucide-react"
 
+import { landingAccent } from "@/lib/landing-accents"
+
 // Pre-purchase reassurance strip shown right before the final CTA. Every claim
 // below is grounded in verifiable product behaviour (lib/faq-items.ts) or real
 // platform security (components/landing/trust-section.tsx) — no fabricated
@@ -63,7 +65,7 @@ export function HomeTrustGuarantees({ pricingDescription }: HomeTrustGuaranteesP
     <section className="border-t border-border/60 bg-muted/20 py-16 md:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="max-w-3xl">
-          <div className="inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/10 px-3 py-1 text-xs font-medium text-accent">
+          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-700">
             <ShieldCheck className="h-3.5 w-3.5" />
             Güvenle başlayın
           </div>
@@ -76,12 +78,12 @@ export function HomeTrustGuarantees({ pricingDescription }: HomeTrustGuaranteesP
         </div>
 
         <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {items.map((item) => (
+          {items.map((item, index) => (
             <div
               key={item.title}
-              className="rounded-xl border border-border/70 bg-card p-6 transition-colors hover:border-accent/40"
+              className="rounded-xl border border-border/70 bg-card p-6 transition-all hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-sm"
             >
-              <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10 text-accent">
+              <div className={`inline-flex h-10 w-10 items-center justify-center rounded-lg ${landingAccent(index)}`}>
                 <item.icon className="h-5 w-5" />
               </div>
               <h3 className="mt-4 text-lg font-semibold text-foreground">{item.title}</h3>
