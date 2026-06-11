@@ -9,6 +9,7 @@ import type {
 import { absoluteUrl } from '@/lib/seo'
 import { buildSecurePublicSlug, hasSecurePublicRouteToken } from '@/lib/security/public-route-token'
 import { requireSupabaseAdminConfig, supabaseAdminFetch } from '@/lib/server/supabase-admin'
+import { fetchVehicleFavoriteCountsByIds } from '@/lib/server/favorite-stats'
 import { deleteVehicleImageObjectsForGallery } from '@/lib/server/storage-images'
 import {
   markUploadedAssetsAttached,
@@ -412,12 +413,13 @@ export async function listPanelVehicles(ownerEmail?: string) {
   const vehicles = await fetchVehicleRows(500, galleryId)
   const vehicleIds = vehicles.map((vehicle) => vehicle.id)
 
-  const [scanRows, leadRows] = await Promise.all([
+  const [scanRows, leadRows, favoriteCounts] = await Promise.all([
     fetchQrScanRowsByVehicleIds(vehicleIds, {
       perChunkLimit: 50000,
       overallLimit: 500000,
     }).catch(() => []),
     fetchLeadVehicleCounts(100000, galleryId).catch(() => []),
+    fetchVehicleFavoriteCountsByIds(vehicleIds).catch(() => new Map<string, number>()),
   ])
 
   const scanCounts = new Map<string, number>()
@@ -451,6 +453,7 @@ export async function listPanelVehicles(ownerEmail?: string) {
       status: toVehicleStatus(vehicle.status),
       scans: scanCounts.get(vehicle.id) || 0,
       leads: leadCounts.get(vehicle.id) || 0,
+      favorites: favoriteCounts.get(vehicle.id) || 0,
       image: vehicle.photos?.[0] || null,
       photos: vehicle.photos?.filter(Boolean) || [],
       description: vehicle.description || '',

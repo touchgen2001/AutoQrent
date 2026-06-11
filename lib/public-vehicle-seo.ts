@@ -3,6 +3,7 @@ import { DEMO_PUBLIC_VEHICLE_DETAIL, isDemoVehicleRouteId } from '@/lib/demo-pub
 import { vehicleImageUrl } from '@/lib/public-vehicle-jsonld'
 import { hasSecurePublicRouteToken } from '@/lib/security/public-route-token'
 import { requireSupabaseAdminConfig, supabaseAdminFetch } from '@/lib/server/supabase-admin'
+import { getVehicleFavoriteCount } from '@/lib/server/favorite-stats'
 
 type VehicleRow = {
   id: string
@@ -254,7 +255,7 @@ export async function getPublicVehicleDetail(routeId: string): Promise<PublicVeh
   const vehicle = await findVehicleByRouteId(routeId)
   if (!vehicle) return null
 
-  const [galleryRows, featureRows] = await Promise.all([
+  const [galleryRows, featureRows, favoriteCount] = await Promise.all([
     supabaseAdminFetch<GalleryRow[]>({
       path: '/rest/v1/galleries',
       query: {
@@ -271,7 +272,11 @@ export async function getPublicVehicleDetail(routeId: string): Promise<PublicVeh
         limit: 200,
       },
     }).catch(() => []),
+    getVehicleFavoriteCount(vehicle.id).catch(() => 0),
   ])
 
-  return mapToVehicleDetail(vehicle, galleryRows[0] || null, featureRows, vehicle.slug || vehicle.id)
+  return {
+    ...mapToVehicleDetail(vehicle, galleryRows[0] || null, featureRows, vehicle.slug || vehicle.id),
+    favoriteCount,
+  }
 }

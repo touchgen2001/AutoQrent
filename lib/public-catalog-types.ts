@@ -62,6 +62,8 @@ export type PublicVehicle = {
 export type PublicVehicleDetail = {
   routeId: string
   stockId: string
+  /** How many visitors have favourited this vehicle (social proof). */
+  favoriteCount?: number
   brand: string
   model: string
   variant: string

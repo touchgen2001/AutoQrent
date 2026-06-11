@@ -8,6 +8,7 @@ import {
   Filter,
   MoreVertical,
   Eye,
+  Heart,
   Edit,
   Trash2,
   QrCode,
@@ -464,7 +465,13 @@ export default function VehiclesPage() {
                     <Eye className="w-4 h-4" />
                     <span>{vehicle.scans} tarama</span>
                   </div>
-                  <div className="flex items-center gap-1 text-muted-foreground">
+                  <div className="flex items-center gap-3 text-muted-foreground">
+                    {vehicle.favorites ? (
+                      <span className="flex items-center gap-1 font-medium text-rose-600">
+                        <Heart className="w-4 h-4 fill-current" />
+                        {vehicle.favorites}
+                      </span>
+                    ) : null}
                     <span>{vehicle.leads} müşteri talebi</span>
                   </div>
                 </div>
@@ -513,7 +520,15 @@ export default function VehiclesPage() {
                     <td className="p-4 hidden sm:table-cell">
                       <Badge className={statusMap[vehicle.status].color}>{statusMap[vehicle.status].label}</Badge>
                     </td>
-                    <td className="p-4 hidden lg:table-cell">{vehicle.scans}</td>
+                    <td className="p-4 hidden lg:table-cell">
+                      {vehicle.scans}
+                      {vehicle.favorites ? (
+                        <span className="ml-2 inline-flex items-center gap-0.5 font-medium text-rose-600">
+                          <Heart className="inline h-3.5 w-3.5 fill-current" />
+                          {vehicle.favorites}
+                        </span>
+                      ) : null}
+                    </td>
                     <td className="p-4 text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>

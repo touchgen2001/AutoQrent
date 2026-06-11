@@ -16,6 +16,7 @@ export type PanelVehicle = {
   status: PanelVehicleStatus
   scans: number
   leads: number
+  favorites?: number
   image: string | null
   photos: string[]
   description?: string

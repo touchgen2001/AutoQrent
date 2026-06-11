@@ -17,6 +17,7 @@ import {
   Building2,
   QrCode,
   ClipboardCheck,
+  Heart,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -26,6 +27,7 @@ import { PublicLanguageSwitcher, usePublicLocale } from "@/components/shared/pub
 import { VehicleImageFrame } from "@/components/shared/vehicle-image-frame"
 import { FavoriteButton } from "@/components/shared/favorite-button"
 import { FavoritesTray } from "@/components/shared/favorites-tray"
+import { FAVORITES_I18N } from "@/lib/favorites"
 import type { PublicVehicle, PublicVehicleDetail } from "@/lib/public-catalog-types"
 import { buildVehicleBreadcrumbJsonLd, buildVehicleFaqItems, buildVehicleFaqJsonLd, buildVehicleJsonLd } from "@/lib/public-vehicle-jsonld"
 import { IMAGE_PRESETS } from "@/lib/image-presets"
@@ -565,6 +567,12 @@ export function PublicVehiclePageClient({ routeId, vehicle, otherVehicles = [] }
                 {routeSource === "qr" ? <QrCode className="size-3" /> : <ClipboardCheck className="size-3" />}
                 {sourceBadgeText}
               </span>
+              {typeof vehicle.favoriteCount === "number" && vehicle.favoriteCount >= 3 ? (
+                <span className="inline-flex items-center gap-1 rounded bg-rose-50 px-2 py-0.5 text-xs font-semibold text-rose-600">
+                  <Heart className="size-3 fill-current" />
+                  {vehicle.favoriteCount} {FAVORITES_I18N[locale].social}
+                </span>
+              ) : null}
             </div>
             <h1 className="text-xl font-bold text-foreground">
               {vehicle.brand} {vehicle.model}

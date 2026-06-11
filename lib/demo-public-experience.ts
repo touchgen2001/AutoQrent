@@ -75,6 +75,7 @@ export const DEMO_PUBLIC_VEHICLE: PublicVehicle = {
 export const DEMO_PUBLIC_VEHICLE_DETAIL: PublicVehicleDetail = {
   routeId: DEMO_VEHICLE_ROUTE_ID,
   stockId: DEMO_VEHICLE_ROUTE_ID,
+  favoriteCount: 7,
   brand: DEMO_PUBLIC_VEHICLE.brand,
   model: DEMO_PUBLIC_VEHICLE.model,
   variant: DEMO_PUBLIC_VEHICLE.variant,

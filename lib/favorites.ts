@@ -67,6 +67,8 @@ export type FavoritesLabels = {
   fuel: string
   transmission: string
   body: string
+  /** Social-proof suffix, e.g. "12 {social}" → "12 kişi favoriledi". */
+  social: string
 }
 
 export const FAVORITES_I18N: Record<PublicLocale, FavoritesLabels> = {
@@ -88,6 +90,7 @@ export const FAVORITES_I18N: Record<PublicLocale, FavoritesLabels> = {
     fuel: 'Yakıt',
     transmission: 'Vites',
     body: 'Kasa',
+    social: 'kişi favoriledi',
   },
   en: {
     open: 'My favourites',
@@ -107,6 +110,7 @@ export const FAVORITES_I18N: Record<PublicLocale, FavoritesLabels> = {
     fuel: 'Fuel',
     transmission: 'Transmission',
     body: 'Body',
+    social: 'people favourited',
   },
   de: {
     open: 'Meine Favoriten',
@@ -126,6 +130,7 @@ export const FAVORITES_I18N: Record<PublicLocale, FavoritesLabels> = {
     fuel: 'Kraftstoff',
     transmission: 'Getriebe',
     body: 'Karosserie',
+    social: 'Personen favorisiert',
   },
   ru: {
     open: 'Избранное',
@@ -145,6 +150,7 @@ export const FAVORITES_I18N: Record<PublicLocale, FavoritesLabels> = {
     fuel: 'Топливо',
     transmission: 'КПП',
     body: 'Кузов',
+    social: 'чел. в избранном',
   },
   ar: {
     open: 'المفضلة',
@@ -164,5 +170,6 @@ export const FAVORITES_I18N: Record<PublicLocale, FavoritesLabels> = {
     fuel: 'الوقود',
     transmission: 'ناقل الحركة',
     body: 'الهيكل',
+    social: 'شخصًا أضافوها للمفضلة',
   },
 }
