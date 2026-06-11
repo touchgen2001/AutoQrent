@@ -24,7 +24,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import { PublicLanguageSwitcher, usePublicLocale } from "@/components/shared/public-language-switcher"
 import { VehicleImageFrame } from "@/components/shared/vehicle-image-frame"
-import type { PublicVehicleDetail } from "@/lib/public-catalog-types"
+import type { PublicVehicle, PublicVehicleDetail } from "@/lib/public-catalog-types"
 import { buildVehicleBreadcrumbJsonLd, buildVehicleFaqItems, buildVehicleFaqJsonLd, buildVehicleJsonLd } from "@/lib/public-vehicle-jsonld"
 import { IMAGE_PRESETS } from "@/lib/image-presets"
 import { formatPublicNumber, formatPublicPrice, type PublicLocale } from "@/lib/public-i18n"
@@ -64,6 +64,7 @@ function buildInitialLeadFormData(): VehicleLeadFormData {
 type PublicVehiclePageClientProps = {
   routeId: string
   vehicle: PublicVehicleDetail
+  otherVehicles?: PublicVehicle[]
 }
 
 function buildLocalizedLeadDefaultMessage(vehicleTitle: string, locale: PublicLocale, leadDefaultMessage: string) {
@@ -88,7 +89,7 @@ function hasUsableAddress(value: string) {
   return Boolean(normalized && !normalized.includes("adres bilgisi eklenmedi"))
 }
 
-export function PublicVehiclePageClient({ routeId, vehicle }: PublicVehiclePageClientProps) {
+export function PublicVehiclePageClient({ routeId, vehicle, otherVehicles = [] }: PublicVehiclePageClientProps) {
   const { locale, setLocale, t, dir } = usePublicLocale()
   const searchParams = useSearchParams()
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
@@ -669,6 +670,43 @@ export function PublicVehiclePageClient({ routeId, vehicle }: PublicVehiclePageC
             ))}
           </div>
         </div>
+
+        {/* Bu galeriden diğer araçlar */}
+        {otherVehicles.length > 0 && (
+          <div className="mt-5">
+            <h3 className="mb-3 font-semibold text-foreground">{t("moreFromGallery")}</h3>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {otherVehicles.map((item) => (
+                <Link
+                  key={item.routeId}
+                  href={`/arac/${item.routeId}`}
+                  className="group overflow-hidden rounded-xl border border-border bg-card transition hover:border-accent/40"
+                >
+                  <div className="relative aspect-[4/3] bg-muted">
+                    <VehicleImageFrame
+                      src={item.images[0] || null}
+                      alt={`${item.brand} ${item.model}`}
+                      sizes="(max-width: 640px) 50vw, 220px"
+                      quality={62}
+                      imageClassName="object-cover transition group-hover:scale-[1.03]"
+                      loading="lazy"
+                      placeholderClassName="[&_svg]:h-6 [&_svg]:w-6 [&_span]:sr-only"
+                    />
+                  </div>
+                  <div className="p-2.5">
+                    <p className="truncate text-sm font-semibold text-foreground">
+                      {item.brand} {item.model}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {item.year} · {formatPublicNumber(item.mileage, locale)} km
+                    </p>
+                    <p className="mt-1 text-sm font-bold text-accent">{formatPrice(item.price)}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Gallery Location */}
         <div className="mt-5 p-4 bg-muted rounded-xl">
