@@ -24,6 +24,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import { PublicLanguageSwitcher, usePublicLocale } from "@/components/shared/public-language-switcher"
 import { VehicleImageFrame } from "@/components/shared/vehicle-image-frame"
+import { FavoriteButton } from "@/components/shared/favorite-button"
+import { FavoritesTray } from "@/components/shared/favorites-tray"
 import type { PublicVehicle, PublicVehicleDetail } from "@/lib/public-catalog-types"
 import { buildVehicleBreadcrumbJsonLd, buildVehicleFaqItems, buildVehicleFaqJsonLd, buildVehicleJsonLd } from "@/lib/public-vehicle-jsonld"
 import { IMAGE_PRESETS } from "@/lib/image-presets"
@@ -438,6 +440,23 @@ export function PublicVehiclePageClient({ routeId, vehicle, otherVehicles = [] }
               label={t("language")}
               tone="dark"
               className="h-9 max-w-[120px] px-2"
+            />
+            <FavoriteButton
+              locale={locale}
+              variant="ghost"
+              className="text-primary-foreground"
+              record={{
+                id: vehicle.routeId,
+                title: vehicleTitle,
+                href: `/arac/${vehicle.routeId}`,
+                image: vehicle.images[0] ?? null,
+                priceLabel: formatPrice(vehicle.price),
+                yearLabel: String(vehicle.year),
+                mileageLabel: `${formatPublicNumber(vehicle.mileage, locale)} km`,
+                fuelLabel: vehicle.fuel,
+                transmissionLabel: vehicle.transmission,
+                bodyType: vehicle.bodyType,
+              }}
             />
             <Button
               variant="ghost"
@@ -937,6 +956,8 @@ export function PublicVehiclePageClient({ routeId, vehicle, otherVehicles = [] }
           )}
         </div>
       )}
+
+      <FavoritesTray locale={locale} />
     </div>
   )
 }

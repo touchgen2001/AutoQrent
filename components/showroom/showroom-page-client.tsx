@@ -54,6 +54,8 @@ import { StickyContactBar } from '@/components/shared/contact-bar'
 import { EmptySearch } from '@/components/shared/empty-state'
 import { PublicLanguageSwitcher, usePublicLocale } from '@/components/shared/public-language-switcher'
 import { VehicleImageFrame } from '@/components/shared/vehicle-image-frame'
+import { FavoriteButton } from '@/components/shared/favorite-button'
+import { FavoritesTray } from '@/components/shared/favorites-tray'
 import { IMAGE_PRESETS } from '@/lib/image-presets'
 import {
   formatPublicNumber,
@@ -1332,6 +1334,8 @@ export function ShowroomPageClient({ dealer, vehicles }: ShowroomPageClientProps
           onMapClick={() => recordShowroomEvent('location_click', 'mobile_sticky_location')}
         />
       ) : null}
+
+      <FavoritesTray locale={locale} />
     </div>
   )
 }
@@ -1393,6 +1397,23 @@ function VehicleCard({
             {t('live')}
           </Badge>
         </div>
+        <FavoriteButton
+          locale={locale}
+          variant="overlay"
+          className="absolute right-3 top-3"
+          record={{
+            id: vehicle.routeId || vehicle.id,
+            title: vehicle.title,
+            href: `/arac/${vehicle.routeId || vehicle.id}?ref=${dealerSlug}&src=showroom`,
+            image: vehicle.images[0] ?? null,
+            priceLabel: formatPublicPrice(vehicle.price, locale),
+            yearLabel: String(vehicle.year),
+            mileageLabel: `${formatPublicNumber(vehicle.mileage, locale)} km`,
+            fuelLabel: localizedFuelLabels[locale][vehicle.fuelType],
+            transmissionLabel: localizedTransmissionLabels[locale][vehicle.transmission],
+            bodyType: vehicle.bodyType,
+          }}
+        />
       </div>
 
       <div className="flex flex-1 flex-col gap-4 p-4">
