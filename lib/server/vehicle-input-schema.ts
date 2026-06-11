@@ -39,7 +39,7 @@ const baseVehicleSchema = z.object({
   photos: z.array(z.string().trim().url().max(1500)).max(30).optional(),
 })
 
-export const createVehicleSchema = baseVehicleSchema.extend({
+const extendedVehicleFields = {
   bodyType: z.string().trim().max(80).optional(),
   engineSize: z.string().trim().max(80).optional(),
   horsePower: z.string().trim().max(80).optional(),
@@ -49,6 +49,11 @@ export const createVehicleSchema = baseVehicleSchema.extend({
   previousOwners: z.string().trim().max(20).optional(),
   serviceHistory: z.enum(['yes', 'partial', 'no']).optional(),
   warrantyStatus: z.enum(['yes', 'no']).optional(),
-})
+}
 
-export const updateVehicleSchema = baseVehicleSchema
+export const createVehicleSchema = baseVehicleSchema.extend(extendedVehicleFields)
+
+// Edit (PATCH) now accepts the same extended fields so dealers can update body
+// type, engine, damage/service/warranty etc. after creation (stored as
+// vehicle_features; see replaceVehicleFeatures in panel-repository).
+export const updateVehicleSchema = baseVehicleSchema.extend(extendedVehicleFields)

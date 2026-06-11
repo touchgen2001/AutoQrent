@@ -22,6 +22,15 @@ export type PanelVehicle = {
   createdAt?: string
   priceDroppedAt?: string | null
   previousPrice?: number | null
+  bodyType?: string
+  engineSize?: string
+  horsePower?: string
+  plateNumber?: string
+  hasDamage?: 'yes' | 'no'
+  damageDetails?: string
+  previousOwners?: string
+  serviceHistory?: 'yes' | 'partial' | 'no'
+  warrantyStatus?: 'yes' | 'no'
 }
 
 // One row of the "en çok indirilen araç görselleri" panel card. `downloads` is the

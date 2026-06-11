@@ -72,6 +72,7 @@ type ImageQuotaApiResponse = PanelVehicleImageQuotaResponse | {
 const fuelTypes = ['Benzin', 'Dizel', 'Hibrit', 'Elektrik', 'LPG']
 const transmissionTypes = ['Otomatik', 'Manuel', 'Yarı Otomatik']
 const colors = ['Siyah', 'Beyaz', 'Gri', 'Gümüş', 'Lacivert', 'Kırmızı', 'Mavi', 'Yeşil', 'Kahverengi', 'Bej']
+const bodyTypes = ['Sedan', 'Hatchback', 'SUV', 'Station Wagon', 'Coupe', 'Cabrio', 'Pickup', 'Panelvan']
 const MAX_TOTAL_IMAGES = 30
 
 type VehicleFormState = {
@@ -84,6 +85,15 @@ type VehicleFormState = {
   fuel: string
   transmission: string
   color: string
+  bodyType: string
+  engineSize: string
+  horsePower: string
+  plateNumber: string
+  hasDamage: string
+  damageDetails: string
+  previousOwners: string
+  serviceHistory: string
+  warrantyStatus: string
   description: string
   photos: string[]
 }
@@ -98,6 +108,15 @@ const emptyForm: VehicleFormState = {
   fuel: '',
   transmission: '',
   color: '',
+  bodyType: '',
+  engineSize: '',
+  horsePower: '',
+  plateNumber: '',
+  hasDamage: 'no',
+  damageDetails: '',
+  previousOwners: '1',
+  serviceHistory: 'no',
+  warrantyStatus: 'no',
   description: '',
   photos: [],
 }
@@ -113,6 +132,15 @@ function toFormState(vehicle: PanelVehicle): VehicleFormState {
     fuel: vehicle.fuel,
     transmission: vehicle.transmission,
     color: vehicle.color || '',
+    bodyType: vehicle.bodyType || '',
+    engineSize: vehicle.engineSize || '',
+    horsePower: vehicle.horsePower || '',
+    plateNumber: vehicle.plateNumber || '',
+    hasDamage: vehicle.hasDamage || 'no',
+    damageDetails: vehicle.damageDetails || '',
+    previousOwners: vehicle.previousOwners || '1',
+    serviceHistory: vehicle.serviceHistory || 'no',
+    warrantyStatus: vehicle.warrantyStatus || 'no',
     description: vehicle.description || '',
     photos: vehicle.photos,
   }
@@ -299,6 +327,15 @@ export default function EditVehiclePage() {
           fuel: formData.fuel,
           transmission: formData.transmission,
           color: formData.color,
+          bodyType: formData.bodyType,
+          engineSize: formData.engineSize,
+          horsePower: formData.horsePower,
+          plateNumber: formData.plateNumber,
+          hasDamage: formData.hasDamage,
+          damageDetails: formData.damageDetails,
+          previousOwners: formData.previousOwners,
+          serviceHistory: formData.serviceHistory,
+          warrantyStatus: formData.warrantyStatus,
           description: formData.description,
           photos: formData.photos,
         }),
@@ -472,6 +509,9 @@ export default function EditVehiclePage() {
     { label: 'Kilometre', value: previewKm ? `${Number(previewKm).toLocaleString('tr-TR')} km` : '' },
     { label: 'Yakıt', value: formData.fuel },
     { label: 'Vites', value: formData.transmission },
+    { label: 'Kasa Tipi', value: formData.bodyType },
+    { label: 'Motor Hacmi', value: formData.engineSize },
+    { label: 'Motor Gücü', value: formData.horsePower },
     { label: 'Renk', value: formData.color },
   ].filter((row) => row.value.trim().length > 0)
   const coverImage = formData.photos[0]
@@ -692,6 +732,117 @@ export default function EditVehiclePage() {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="bodyType">Kasa Tipi</Label>
+                <Select value={formData.bodyType} onValueChange={(value) => setFormData((prev) => ({ ...prev, bodyType: value }))}>
+                  <SelectTrigger id="bodyType">
+                    <SelectValue placeholder="Seçin" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {bodyTypes.map((bodyType) => (
+                      <SelectItem key={bodyType} value={bodyType}>
+                        {bodyType}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="engineSize">Motor Hacmi (cc)</Label>
+                <Input
+                  id="engineSize"
+                  placeholder="Örn: 1600"
+                  value={formData.engineSize}
+                  onChange={(event) => setFormData((prev) => ({ ...prev, engineSize: event.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="horsePower">Beygir Gücü (HP)</Label>
+                <Input
+                  id="horsePower"
+                  placeholder="Örn: 184"
+                  value={formData.horsePower}
+                  onChange={(event) => setFormData((prev) => ({ ...prev, horsePower: event.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="plateNumber">Plaka (Opsiyonel)</Label>
+                <Input
+                  id="plateNumber"
+                  placeholder="Örn: 34 ABC 123"
+                  value={formData.plateNumber}
+                  onChange={(event) => setFormData((prev) => ({ ...prev, plateNumber: event.target.value }))}
+                />
+                <p className="text-xs text-muted-foreground">Plaka bilgisi sadece yönetim panelinde görünür</p>
+              </div>
+
+              <div className="pt-2 md:col-span-2">
+                <h3 className="text-sm font-semibold text-foreground">Ekspertiz Bilgileri</h3>
+                <p className="text-xs text-muted-foreground">Araç geçmişi ve durum bilgileri</p>
+              </div>
+              <div className="space-y-2">
+                <Label>Hasar Kaydı</Label>
+                <Select value={formData.hasDamage} onValueChange={(value) => setFormData((prev) => ({ ...prev, hasDamage: value }))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="no">Hasar kaydı yok</SelectItem>
+                    <SelectItem value="yes">Hasar kaydı var</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Önceki Sahip Sayısı</Label>
+                <Select value={formData.previousOwners} onValueChange={(value) => setFormData((prev) => ({ ...prev, previousOwners: value }))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1 (İlk sahibinden)</SelectItem>
+                    <SelectItem value="2">2</SelectItem>
+                    <SelectItem value="3">3</SelectItem>
+                    <SelectItem value="4+">4+</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Servis Bakım Geçmişi</Label>
+                <Select value={formData.serviceHistory} onValueChange={(value) => setFormData((prev) => ({ ...prev, serviceHistory: value }))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="yes">Yetkili servis bakımlı</SelectItem>
+                    <SelectItem value="partial">Kısmi kayıtlı</SelectItem>
+                    <SelectItem value="no">Kayıt yok</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Garanti Durumu</Label>
+                <Select value={formData.warrantyStatus} onValueChange={(value) => setFormData((prev) => ({ ...prev, warrantyStatus: value }))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="yes">Garanti kapsamında</SelectItem>
+                    <SelectItem value="no">Garanti dışı</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {formData.hasDamage === 'yes' && (
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="damageDetails">Hasar Detayları</Label>
+                  <Textarea
+                    id="damageDetails"
+                    rows={3}
+                    placeholder="Hasar detaylarını açıklayın..."
+                    value={formData.damageDetails}
+                    onChange={(event) => setFormData((prev) => ({ ...prev, damageDetails: event.target.value }))}
+                  />
+                </div>
+              )}
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="description">Açıklama</Label>
                 <Textarea

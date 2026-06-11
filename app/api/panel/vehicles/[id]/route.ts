@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { insertAuditLog } from '@/lib/security/audit'
-import { deletePanelVehicle, listPanelVehicles } from '@/lib/server/panel-repository'
+import {
+  deletePanelVehicle,
+  getVehicleFeatureFields,
+  listPanelVehicles,
+  replaceVehicleFeatures,
+} from '@/lib/server/panel-repository'
 import { findPlaceholderTextField } from '@/lib/server/panel-input-guard'
 import { requireSupabaseAdminConfig, supabaseAdminFetch } from '@/lib/server/supabase-admin'
 import { getClientIp } from '@/lib/security/request-guards'
@@ -59,10 +64,14 @@ export async function GET(_request: Request, context: { params: Promise<unknown>
       )
     }
 
+    // Pull the structured feature fields (body type, engine, damage/service/
+    // warranty…) so the edit form can pre-fill them.
+    const featureFields = await getVehicleFeatureFields(item.id).catch(() => ({}))
+
     return NextResponse.json({
       ok: true,
       source: result.source,
-      item,
+      item: { ...item, ...featureFields },
     })
   } catch (error) {
     const authErrorResponse = panelAuthErrorResponse(error)
@@ -190,6 +199,10 @@ export async function PATCH(request: Request, context: { params: Promise<unknown
         ...(parsedBody.data.photos ? { photos: nextPhotos } : {}),
       },
     })
+
+    // Persist the structured feature fields (edit parity with create): body
+    // type, engine, plate, damage/service/warranty. Rewrites only those keys.
+    await replaceVehicleFeatures(parsedParams.data.id, parsedBody.data)
 
     if (parsedBody.data.photos && session.galleryId) {
       await markUploadedAssetsAttached({

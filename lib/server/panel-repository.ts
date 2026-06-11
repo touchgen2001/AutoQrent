@@ -128,7 +128,32 @@ function buildVehicleTitle(row: {
   return `${row.year} ${row.brand} ${row.model}${variantPart}`.trim()
 }
 
-function buildVehicleFeatureRows(vehicleId: string, input: VehicleCreateInput) {
+type VehicleFeatureInput = Pick<
+  VehicleCreateInput,
+  | 'bodyType'
+  | 'engineSize'
+  | 'horsePower'
+  | 'plateNumber'
+  | 'hasDamage'
+  | 'damageDetails'
+  | 'previousOwners'
+  | 'serviceHistory'
+  | 'warrantyStatus'
+>
+
+const VEHICLE_FEATURE_KEYS = [
+  'body_type',
+  'engine_size',
+  'horsepower',
+  'plate_number',
+  'has_damage',
+  'damage_details',
+  'previous_owners',
+  'service_history',
+  'warranty',
+] as const
+
+function buildVehicleFeatureRows(vehicleId: string, input: VehicleFeatureInput) {
   const rawFeatures: Array<{ feature_key: string; feature_value?: string | null }> = [
     { feature_key: 'body_type', feature_value: input.bodyType },
     { feature_key: 'engine_size', feature_value: input.engineSize },
@@ -148,6 +173,66 @@ function buildVehicleFeatureRows(vehicleId: string, input: VehicleCreateInput) {
       feature_value: feature.feature_value?.trim() || '',
     }))
     .filter((feature) => feature.feature_value)
+}
+
+// Reads the structured feature rows for ONE vehicle back into panel vehicle
+// fields (the inverse of buildVehicleFeatureRows) — used by the edit detail GET
+// so the form can pre-fill body type, engine, damage/service/warranty etc.
+export async function getVehicleFeatureFields(vehicleId: string): Promise<Partial<PanelVehicle>> {
+  const rows = await supabaseAdminFetch<Array<{ feature_key: string; feature_value: string | null }>>({
+    path: '/rest/v1/vehicle_features',
+    query: {
+      select: 'feature_key,feature_value',
+      vehicle_id: `eq.${vehicleId}`,
+      feature_key: `in.(${VEHICLE_FEATURE_KEYS.join(',')})`,
+      limit: 50,
+    },
+  }).catch(() => [])
+
+  const map: Record<string, string> = {}
+  for (const row of rows) {
+    if (row.feature_key) map[row.feature_key] = (row.feature_value || '').trim()
+  }
+
+  const boolToYesNo = (value: string | undefined): 'yes' | 'no' | undefined =>
+    value === 'true' ? 'yes' : value === 'false' ? 'no' : undefined
+  const service = map['service_history']
+
+  return {
+    bodyType: map['body_type'] || undefined,
+    engineSize: map['engine_size'] || undefined,
+    horsePower: map['horsepower'] || undefined,
+    plateNumber: map['plate_number'] || undefined,
+    hasDamage: boolToYesNo(map['has_damage']),
+    damageDetails: map['damage_details'] || undefined,
+    previousOwners: map['previous_owners'] || undefined,
+    serviceHistory: service === 'yes' || service === 'partial' || service === 'no' ? service : undefined,
+    warrantyStatus: boolToYesNo(map['warranty']),
+  }
+}
+
+// Rewrites ONLY the structured feature keys for a vehicle (delete + re-insert).
+// Other feature rows (e.g. equipment chips) are intentionally left untouched.
+export async function replaceVehicleFeatures(vehicleId: string, input: VehicleFeatureInput): Promise<void> {
+  await supabaseAdminFetch<unknown>({
+    method: 'DELETE',
+    path: '/rest/v1/vehicle_features',
+    query: {
+      vehicle_id: `eq.${vehicleId}`,
+      feature_key: `in.(${VEHICLE_FEATURE_KEYS.join(',')})`,
+    },
+    prefer: 'return=minimal',
+  })
+
+  const rows = buildVehicleFeatureRows(vehicleId, input)
+  if (rows.length > 0) {
+    await supabaseAdminFetch<unknown>({
+      method: 'POST',
+      path: '/rest/v1/vehicle_features',
+      prefer: 'return=minimal',
+      body: rows,
+    })
+  }
 }
 
 function buildSecureVehicleSlug(input: VehicleCreateInput) {
