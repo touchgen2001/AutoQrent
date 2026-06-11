@@ -20,7 +20,7 @@ const bodySchema = z.object({
     .refine(hasSecurePublicRouteToken, 'Geçersiz araç linki.'),
   source: z.enum(['qr', 'showroom', 'direct']).default('direct'),
   eventType: z
-    .enum(['view', 'whatsapp_click', 'call_click', 'location_click', 'share_click', 'form_open'])
+    .enum(['view', 'whatsapp_click', 'call_click', 'location_click', 'share_click', 'form_open', 'favorite'])
     .default('view'),
 })
 

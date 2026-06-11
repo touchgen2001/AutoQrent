@@ -8,6 +8,10 @@ export const FAVORITES_STORAGE_KEY = 'cebindegaleri.favorites.v1'
 // Custom event name used to keep every mounted hook in sync within one tab
 // (the native `storage` event only fires in *other* tabs).
 export const FAVORITES_EVENT = 'cebindegaleri:favorites'
+// Custom event that asks the (single) FavoritesTray to open. Lets other
+// entry points (e.g. a "Karşılaştır (N)" button in the showroom header) open
+// the same sheet without lifting its state. detail: { mode?: 'list'|'compare' }.
+export const FAVORITES_OPEN_EVENT = 'cebindegaleri:favorites:open'
 // Hard cap so a runaway loop or odd usage can never bloat localStorage.
 export const FAVORITES_MAX = 50
 
@@ -55,6 +59,8 @@ export type FavoritesLabels = {
   compare: string
   clear: string
   detail: string
+  share: string
+  shareIntro: string
   price: string
   year: string
   mileage: string
@@ -74,6 +80,8 @@ export const FAVORITES_I18N: Record<PublicLocale, FavoritesLabels> = {
     compare: 'Karşılaştır',
     clear: 'Tümünü temizle',
     detail: 'İncele',
+    share: 'Paylaş',
+    shareIntro: 'Beğendiğim araçlar',
     price: 'Fiyat',
     year: 'Yıl',
     mileage: 'KM',
@@ -91,6 +99,8 @@ export const FAVORITES_I18N: Record<PublicLocale, FavoritesLabels> = {
     compare: 'Compare',
     clear: 'Clear all',
     detail: 'View',
+    share: 'Share',
+    shareIntro: 'Vehicles I like',
     price: 'Price',
     year: 'Year',
     mileage: 'Mileage',
@@ -108,6 +118,8 @@ export const FAVORITES_I18N: Record<PublicLocale, FavoritesLabels> = {
     compare: 'Vergleichen',
     clear: 'Alle löschen',
     detail: 'Ansehen',
+    share: 'Teilen',
+    shareIntro: 'Fahrzeuge, die mir gefallen',
     price: 'Preis',
     year: 'Jahr',
     mileage: 'KM',
@@ -125,6 +137,8 @@ export const FAVORITES_I18N: Record<PublicLocale, FavoritesLabels> = {
     compare: 'Сравнить',
     clear: 'Очистить всё',
     detail: 'Открыть',
+    share: 'Поделиться',
+    shareIntro: 'Понравившиеся авто',
     price: 'Цена',
     year: 'Год',
     mileage: 'Пробег',
@@ -142,6 +156,8 @@ export const FAVORITES_I18N: Record<PublicLocale, FavoritesLabels> = {
     compare: 'قارن',
     clear: 'مسح الكل',
     detail: 'عرض',
+    share: 'مشاركة',
+    shareIntro: 'سيارات أعجبتني',
     price: 'السعر',
     year: 'السنة',
     mileage: 'كم',

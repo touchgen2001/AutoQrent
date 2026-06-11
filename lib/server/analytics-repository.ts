@@ -1,5 +1,8 @@
 import type {
   PanelLandingCtaAnalyticsResponse,
+  PanelLandingCtaAction,
+  PanelLandingCtaActionStat,
+  PanelLandingCtaPageStat,
   PanelLandingCtaSnapshot,
   PanelLandingCtaSurface,
   PanelLandingCtaSurfaceStat,
@@ -8,6 +11,9 @@ import type {
   PanelLeadFunnelSnapshot,
   PanelLeadFunnelStage,
   PanelLeadFunnelStageKey,
+  PanelRegistrationFunnelAnalyticsResponse,
+  PanelRegistrationFunnelSnapshot,
+  PanelRegistrationFunnelStageKey,
   PanelShowroomCtaAnalyticsResponse,
   PanelShowroomCtaEventStat,
   PanelShowroomCtaEventType,
@@ -30,6 +36,8 @@ type LandingCtaRow = {
   metadata: Record<string, unknown> | null
   created_at: string
 }
+
+type RegistrationFunnelRow = LandingCtaRow
 
 type ShowroomCtaRow = {
   action: string
@@ -75,6 +83,7 @@ const LANDING_SURFACES: PanelLandingCtaSurface[] = [
   'cta_section',
   'mobile_sticky',
   'pricing',
+  'contact',
 ]
 
 const LANDING_SURFACE_LABELS: Record<PanelLandingCtaSurface, string> = {
@@ -83,13 +92,48 @@ const LANDING_SURFACE_LABELS: Record<PanelLandingCtaSurface, string> = {
   'cta_section': 'CTA Bölümü',
   'mobile_sticky': 'Mobil Alt CTA',
   'pricing': 'Fiyatlandırma',
+  'contact': 'İletişim',
 }
 
 const LANDING_VARIANTS: Array<'A' | 'B'> = ['A', 'B']
+const LANDING_ACTIONS: PanelLandingCtaAction[] = [
+  'primary',
+  'secondary',
+  'call',
+  'whatsapp',
+  'demo',
+  'plan_start',
+  'contact_submit',
+  'billing_toggle',
+]
+const LANDING_ACTION_LABELS: Record<PanelLandingCtaAction, string> = {
+  primary: 'Ana kayıt CTA',
+  secondary: 'İkincil demo CTA',
+  call: 'Telefon',
+  whatsapp: 'WhatsApp demo',
+  demo: 'Canlı demo',
+  plan_start: 'Plan kaydı',
+  contact_submit: 'İletişim formu',
+  billing_toggle: 'Faturalama seçimi',
+}
 const MIN_VARIANT_IMPRESSIONS = 150
 const MIN_VARIANT_CLICKS = 20
 const MIN_ROLLOUT_DURATION_DAYS = 14
 const MIN_ROLLOUT_UNIQUE_SESSIONS = 300
+
+const REGISTRATION_FUNNEL_STAGES: Array<{
+  key: PanelRegistrationFunnelStageKey
+  label: string
+}> = [
+  { key: 'registration_view', label: 'Kayıt sayfasını gördü' },
+  { key: 'registration_submit', label: 'Kayıt formunu gönderdi' },
+  { key: 'registration_success', label: 'Hesap oluşturuldu' },
+  { key: 'onboarding_view', label: 'Kuruluma başladı' },
+  { key: 'onboarding_step_2', label: 'İletişim adımına geçti' },
+  { key: 'onboarding_step_3', label: 'Konum adımına geçti' },
+  { key: 'onboarding_step_4', label: 'Çalışma saatlerine geçti' },
+  { key: 'onboarding_complete', label: 'Kurulumu tamamladı' },
+]
 
 const SHOWROOM_CTA_EVENTS: PanelShowroomCtaEventType[] = [
   'whatsapp_click',
@@ -106,6 +150,7 @@ const SHOWROOM_CTA_EVENTS: PanelShowroomCtaEventType[] = [
   'vehicle_location_click',
   'vehicle_share_click',
   'vehicle_form_open',
+  'vehicle_favorite',
 ]
 
 const SHOWROOM_CTA_LABELS: Record<PanelShowroomCtaEventType, string> = {
@@ -123,6 +168,7 @@ const SHOWROOM_CTA_LABELS: Record<PanelShowroomCtaEventType, string> = {
   'vehicle_location_click': 'Araç Konum',
   'vehicle_share_click': 'Araç Paylaşım',
   'vehicle_form_open': 'Araç Lead Formu',
+  'vehicle_favorite': 'Araç Favori',
 }
 
 const DIRECT_SHOWROOM_EVENTS = new Set<PanelShowroomCtaEventType>([
@@ -157,6 +203,20 @@ function toVariant(variant: unknown): 'A' | 'B' | null {
   return variant
 }
 
+function toLandingAction(action: unknown): PanelLandingCtaAction | null {
+  if (typeof action !== 'string') return null
+  return LANDING_ACTIONS.includes(action as PanelLandingCtaAction)
+    ? (action as PanelLandingCtaAction)
+    : null
+}
+
+function toLandingPagePath(value: unknown) {
+  if (typeof value !== 'string') return '/'
+  const trimmed = value.trim()
+  if (!trimmed.startsWith('/')) return '/'
+  return trimmed.slice(0, 240) || '/'
+}
+
 function readMetadataValue(
   metadata: Record<string, unknown> | null,
   key: string,
@@ -172,8 +232,10 @@ function toShowroomCtaEventType(row: ShowroomCtaRow): PanelShowroomCtaEventType 
   if (!eventType) return null
 
   if (row.action === 'public_vehicle_cta_click') {
-    if (readMetadataValue(row.metadata, 'source') !== 'showroom') return null
     const vehicleEvent = `vehicle_${eventType}` as PanelShowroomCtaEventType
+    // Favourites are an interest signal — count them from any source (QR / direct /
+    // showroom). Other vehicle CTAs stay scoped to showroom-originated traffic.
+    if (vehicleEvent !== 'vehicle_favorite' && readMetadataValue(row.metadata, 'source') !== 'showroom') return null
     return SHOWROOM_CTA_EVENTS.includes(vehicleEvent) ? vehicleEvent : null
   }
 
@@ -543,6 +605,8 @@ function buildLandingCtaSnapshot(
   )
   const uniqueSessions = new Set<string>()
   const uniqueDays = new Set<string>()
+  const pageMetrics = new Map<string, { impressions: number; clicks: number }>()
+  const actionMetrics = new Map<PanelLandingCtaAction, number>()
 
   let impressions = 0
   let clicks = 0
@@ -559,9 +623,13 @@ function buildLandingCtaSnapshot(
 
     const surface = toLandingSurface(readMetadataValue(row.metadata, 'surface'))
     const variant = toVariant(readMetadataValue(row.metadata, 'variant'))
+    const pagePath = toLandingPagePath(readMetadataValue(row.metadata, 'pagePath'))
+    const pageMetric = pageMetrics.get(pagePath) || { impressions: 0, clicks: 0 }
+    pageMetrics.set(pagePath, pageMetric)
 
     if (row.action === 'landing_cta_impression') {
       impressions += 1
+      pageMetric.impressions += 1
 
       if (surface) {
         const metric = surfaceMetrics.get(surface)
@@ -576,6 +644,11 @@ function buildLandingCtaSnapshot(
 
     if (row.action === 'landing_cta_click') {
       clicks += 1
+      pageMetric.clicks += 1
+      const action = toLandingAction(readMetadataValue(row.metadata, 'action'))
+      if (action) {
+        actionMetrics.set(action, (actionMetrics.get(action) || 0) + 1)
+      }
 
       if (surface) {
         const metric = surfaceMetrics.get(surface)
@@ -609,6 +682,29 @@ function buildLandingCtaSnapshot(
     }
   })
 
+  const pageStats: PanelLandingCtaPageStat[] = [...pageMetrics.entries()]
+    .map(([pagePath, metric]) => ({
+      pagePath,
+      impressions: metric.impressions,
+      clicks: metric.clicks,
+      ctr: metric.impressions > 0 ? roundToOne((metric.clicks / metric.impressions) * 100) : 0,
+    }))
+    .sort((left, right) => right.clicks - left.clicks || right.impressions - left.impressions)
+    .slice(0, 12)
+
+  const actionStats: PanelLandingCtaActionStat[] = LANDING_ACTIONS
+    .map((action) => {
+      const actionClicks = actionMetrics.get(action) || 0
+      return {
+        action,
+        label: LANDING_ACTION_LABELS[action],
+        clicks: actionClicks,
+        share: clicks > 0 ? roundToOne((actionClicks / clicks) * 100) : 0,
+      }
+    })
+    .filter((item) => item.clicks > 0)
+    .sort((left, right) => right.clicks - left.clicks)
+
   return {
     periodLabel,
     impressions,
@@ -618,7 +714,152 @@ function buildLandingCtaSnapshot(
     observedDays: uniqueDays.size,
     surfaceStats,
     variantStats,
+    pageStats,
+    actionStats,
   }
+}
+
+function toRegistrationStageKey(row: RegistrationFunnelRow): PanelRegistrationFunnelStageKey | null {
+  const eventType = readMetadataValue(row.metadata, 'eventType')
+  if (eventType === 'onboarding_step') {
+    const step = Number(row.metadata?.step)
+    if (step === 2 || step === 3 || step === 4) return `onboarding_step_${step}`
+    return null
+  }
+
+  const found = REGISTRATION_FUNNEL_STAGES.find((stage) => stage.key === eventType)
+  return found?.key || null
+}
+
+function buildRegistrationFunnelSnapshot(
+  periodLabel: string,
+  rows: RegistrationFunnelRow[],
+): PanelRegistrationFunnelSnapshot {
+  const stageSessions = new Map<PanelRegistrationFunnelStageKey, Set<string>>(
+    REGISTRATION_FUNNEL_STAGES.map((stage) => [stage.key, new Set<string>()]),
+  )
+  const skippedSessions = new Set<string>()
+
+  for (const row of rows) {
+    const sessionId = readMetadataValue(row.metadata, 'sessionId')
+    if (!sessionId) continue
+
+    const eventType = readMetadataValue(row.metadata, 'eventType')
+    if (eventType === 'onboarding_skip') {
+      skippedSessions.add(sessionId)
+      continue
+    }
+
+    const stageKey = toRegistrationStageKey(row)
+    if (stageKey) stageSessions.get(stageKey)?.add(sessionId)
+  }
+
+  const orderedStageSessions = new Map<PanelRegistrationFunnelStageKey, Set<string>>()
+  let qualifiedSessions = new Set(stageSessions.get('registration_view') || [])
+
+  for (const [index, stage] of REGISTRATION_FUNNEL_STAGES.entries()) {
+    if (index === 0) {
+      orderedStageSessions.set(stage.key, qualifiedSessions)
+      continue
+    }
+
+    const stageSet = stageSessions.get(stage.key) || new Set<string>()
+    qualifiedSessions = new Set([...stageSet].filter((sessionId) => qualifiedSessions.has(sessionId)))
+    orderedStageSessions.set(stage.key, qualifiedSessions)
+  }
+
+  const startedSessionSet = orderedStageSessions.get('registration_view') || new Set<string>()
+  const startedSessions = startedSessionSet.size
+  const completedSessions = orderedStageSessions.get('onboarding_complete')?.size || 0
+  let previousSessions = startedSessions
+
+  const stages = REGISTRATION_FUNNEL_STAGES.map((stage, index) => {
+    const sessions = orderedStageSessions.get(stage.key)?.size || 0
+    const rateFromStart = startedSessions > 0 ? roundToOne((sessions / startedSessions) * 100) : 0
+    const rateFromPrevious = index === 0
+      ? 100
+      : previousSessions > 0
+        ? roundToOne((sessions / previousSessions) * 100)
+        : 0
+    const dropoffFromPrevious = index === 0
+      ? 0
+      : previousSessions > 0
+        ? roundToOne(Math.max(0, ((previousSessions - sessions) / previousSessions) * 100))
+        : 0
+
+    previousSessions = sessions
+
+    return {
+      key: stage.key,
+      label: stage.label,
+      sessions,
+      rateFromStart,
+      rateFromPrevious,
+      dropoffFromPrevious,
+    }
+  })
+
+  return {
+    periodLabel,
+    startedSessions,
+    completedSessions,
+    completionRate: startedSessions > 0 ? roundToOne((completedSessions / startedSessions) * 100) : 0,
+    skippedSessions: [...skippedSessions].filter((sessionId) => startedSessionSet.has(sessionId)).length,
+    stages,
+  }
+}
+
+function buildRegistrationFunnelRecommendations(
+  current: PanelRegistrationFunnelSnapshot,
+): PanelRegistrationFunnelAnalyticsResponse['recommendations'] {
+  if (current.startedSessions === 0) {
+    return [{
+      level: 'info',
+      title: 'Kayıt hunisi verisi bekleniyor',
+      detail: 'Yeni kayıt sayfası ziyaretleri geldikçe adım bazlı terk oranları burada görünecek.',
+    }]
+  }
+
+  const dropoffStages = current.stages
+    .slice(1)
+    .filter((stage) => stage.dropoffFromPrevious > 0)
+    .sort((left, right) => right.dropoffFromPrevious - left.dropoffFromPrevious)
+  const biggestDropoff = dropoffStages[0]
+  const recommendations: PanelRegistrationFunnelAnalyticsResponse['recommendations'] = []
+
+  if (biggestDropoff && biggestDropoff.dropoffFromPrevious >= 25) {
+    recommendations.push({
+      level: 'warning',
+      title: `En büyük terk: ${biggestDropoff.label}`,
+      detail: `Bir önceki adıma göre oturumların %${biggestDropoff.dropoffFromPrevious} kadarı bu aşamaya geçmedi.`,
+    })
+  }
+
+  if (current.skippedSessions > 0) {
+    recommendations.push({
+      level: 'info',
+      title: 'Kurulumu daha sonra tamamlayanlar var',
+      detail: `${current.skippedSessions} oturum onboarding sırasında panele geçmeyi seçti.`,
+    })
+  }
+
+  if (current.completionRate >= 50) {
+    recommendations.push({
+      level: 'success',
+      title: 'Kayıt sonrası kurulum oranı güçlü',
+      detail: `Kayıt sayfasını gören oturumların %${current.completionRate} kadarı kurulumu tamamladı.`,
+    })
+  }
+
+  if (recommendations.length === 0) {
+    recommendations.push({
+      level: 'info',
+      title: 'Kayıt hunisini izlemeye devam edin',
+      detail: 'Daha net bir terk sinyali için birkaç gün daha gerçek kullanım verisi toplayın.',
+    })
+  }
+
+  return recommendations
 }
 
 function buildLandingSummary(current: PanelLandingCtaSnapshot) {
@@ -763,7 +1004,7 @@ export async function getLandingCtaAnalytics(
   ownerEmail?: string,
 ): Promise<PanelLandingCtaAnalyticsResponse> {
   requireSupabaseAdminConfig()
-  const galleryId = await resolveGalleryId(ownerEmail)
+  void ownerEmail
 
   const rangeDays = RANGE_DAY_MAP[range]
   const rangeLabel = RANGE_LABEL_MAP[range]
@@ -779,7 +1020,6 @@ export async function getLandingCtaAnalytics(
     query: {
       select: 'action,metadata,created_at',
       action: 'in.(landing_cta_impression,landing_cta_click)',
-      ...(galleryId ? { 'metadata->>galleryId': `eq.${galleryId}` } : {}),
       and: `(created_at.gte.${previousStart.toISOString()},created_at.lt.${currentEnd.toISOString()})`,
       order: 'created_at.desc',
       limit: 200000,
@@ -813,5 +1053,54 @@ export async function getLandingCtaAnalytics(
     },
     summary,
     recommendations,
+  }
+}
+
+export async function getRegistrationFunnelAnalytics(
+  range: FunnelRange,
+): Promise<PanelRegistrationFunnelAnalyticsResponse> {
+  requireSupabaseAdminConfig()
+
+  const rangeDays = RANGE_DAY_MAP[range]
+  const rangeLabel = RANGE_LABEL_MAP[range]
+  const now = new Date()
+  const currentEnd = now
+  const currentStart = new Date(now.getTime() - rangeDays * 24 * 60 * 60 * 1000)
+  const previousStart = new Date(currentStart.getTime() - rangeDays * 24 * 60 * 60 * 1000)
+  const previousEnd = currentStart
+
+  const rows = await supabaseAdminFetch<RegistrationFunnelRow[]>({
+    path: '/rest/v1/audit_logs',
+    query: {
+      select: 'action,metadata,created_at',
+      action: 'eq.registration_funnel_event',
+      and: `(created_at.gte.${previousStart.toISOString()},created_at.lt.${currentEnd.toISOString()})`,
+      order: 'created_at.desc',
+      limit: 200000,
+    },
+  })
+
+  const currentRows = rows.filter((row) => {
+    const timestamp = new Date(row.created_at).getTime()
+    return timestamp >= currentStart.getTime() && timestamp < currentEnd.getTime()
+  })
+  const previousRows = rows.filter((row) => {
+    const timestamp = new Date(row.created_at).getTime()
+    return timestamp >= previousStart.getTime() && timestamp < previousEnd.getTime()
+  })
+
+  const current = buildRegistrationFunnelSnapshot(rangeLabel, currentRows)
+  const previous = buildRegistrationFunnelSnapshot(`Önceki ${rangeLabel.toLowerCase()}`, previousRows)
+
+  return {
+    source: 'supabase',
+    range,
+    current,
+    previous,
+    trend: {
+      completionRateDelta: roundToOne(current.completionRate - previous.completionRate),
+      completedSessionDelta: current.completedSessions - previous.completedSessions,
+    },
+    recommendations: buildRegistrationFunnelRecommendations(current),
   }
 }

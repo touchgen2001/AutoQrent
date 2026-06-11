@@ -123,6 +123,7 @@ export type PanelAuditAction =
   | 'landing_cta_impression'
   | 'landing_cta_click'
   | 'landing_cta_config_update'
+  | 'registration_funnel_event'
   | 'public_slug_rotation'
   | 'admin_user_delete'
   | 'admin_user_authorization_update'
@@ -199,7 +200,17 @@ export type PanelLeadFunnelResponse = {
   }
 }
 
-export type PanelLandingCtaSurface = 'header' | 'hero' | 'cta_section' | 'mobile_sticky' | 'pricing'
+export type PanelLandingCtaSurface = 'header' | 'hero' | 'cta_section' | 'mobile_sticky' | 'pricing' | 'contact'
+
+export type PanelLandingCtaAction =
+  | 'primary'
+  | 'secondary'
+  | 'call'
+  | 'whatsapp'
+  | 'demo'
+  | 'plan_start'
+  | 'contact_submit'
+  | 'billing_toggle'
 
 export type PanelLandingCtaSurfaceStat = {
   surface: PanelLandingCtaSurface
@@ -214,6 +225,20 @@ export type PanelLandingCtaVariantStat = {
   impressions: number
   clicks: number
   ctr: number
+}
+
+export type PanelLandingCtaPageStat = {
+  pagePath: string
+  impressions: number
+  clicks: number
+  ctr: number
+}
+
+export type PanelLandingCtaActionStat = {
+  action: PanelLandingCtaAction
+  label: string
+  clicks: number
+  share: number
 }
 
 export type LandingCtaMode = 'auto' | 'forced'
@@ -234,6 +259,8 @@ export type PanelLandingCtaSnapshot = {
   observedDays: number
   surfaceStats: PanelLandingCtaSurfaceStat[]
   variantStats: PanelLandingCtaVariantStat[]
+  pageStats: PanelLandingCtaPageStat[]
+  actionStats: PanelLandingCtaActionStat[]
 }
 
 export type PanelLandingCtaAnalyticsResponse = {
@@ -266,6 +293,50 @@ export type PanelLandingCtaAnalyticsResponse = {
   }>
 }
 
+export type PanelRegistrationFunnelStageKey =
+  | 'registration_view'
+  | 'registration_submit'
+  | 'registration_success'
+  | 'onboarding_view'
+  | 'onboarding_step_2'
+  | 'onboarding_step_3'
+  | 'onboarding_step_4'
+  | 'onboarding_complete'
+
+export type PanelRegistrationFunnelStage = {
+  key: PanelRegistrationFunnelStageKey
+  label: string
+  sessions: number
+  rateFromStart: number
+  rateFromPrevious: number
+  dropoffFromPrevious: number
+}
+
+export type PanelRegistrationFunnelSnapshot = {
+  periodLabel: string
+  startedSessions: number
+  completedSessions: number
+  completionRate: number
+  skippedSessions: number
+  stages: PanelRegistrationFunnelStage[]
+}
+
+export type PanelRegistrationFunnelAnalyticsResponse = {
+  source: 'supabase'
+  range: '7days' | '30days' | '90days' | 'year'
+  current: PanelRegistrationFunnelSnapshot
+  previous: PanelRegistrationFunnelSnapshot
+  trend: {
+    completionRateDelta: number
+    completedSessionDelta: number
+  }
+  recommendations: Array<{
+    level: 'info' | 'warning' | 'success'
+    title: string
+    detail: string
+  }>
+}
+
 export type PanelShowroomCtaEventType =
   | 'whatsapp_click'
   | 'call_click'
@@ -281,6 +352,7 @@ export type PanelShowroomCtaEventType =
   | 'vehicle_location_click'
   | 'vehicle_share_click'
   | 'vehicle_form_open'
+  | 'vehicle_favorite'
 
 export type PanelShowroomCtaEventStat = {
   eventType: PanelShowroomCtaEventType

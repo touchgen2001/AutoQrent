@@ -1,8 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
-import { ArrowRight, Heart, Trash2, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { ArrowRight, Heart, Share2, Trash2, X } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/sheet'
 import { VehicleImageFrame } from '@/components/shared/vehicle-image-frame'
 import { useFavorites } from '@/lib/client/use-favorites'
-import { FAVORITES_I18N, type SavedVehicle } from '@/lib/favorites'
+import { FAVORITES_I18N, FAVORITES_OPEN_EVENT, type SavedVehicle } from '@/lib/favorites'
 import type { PublicLocale } from '@/lib/public-i18n'
 import { cn } from '@/lib/utils'
 
@@ -23,6 +23,18 @@ export function FavoritesTray({ locale }: { locale: PublicLocale }) {
   const [open, setOpen] = useState(false)
   const [mode, setMode] = useState<'list' | 'compare'>('list')
   const labels = FAVORITES_I18N[locale]
+
+  // Allow other entry points (e.g. the header "Karşılaştır" button) to open
+  // this single sheet, optionally jumping straight to a mode.
+  useEffect(() => {
+    const onOpen = (event: Event) => {
+      const detail = (event as CustomEvent<{ mode?: 'list' | 'compare' }>).detail
+      if (detail?.mode === 'compare' || detail?.mode === 'list') setMode(detail.mode)
+      setOpen(true)
+    }
+    window.addEventListener(FAVORITES_OPEN_EVENT, onOpen)
+    return () => window.removeEventListener(FAVORITES_OPEN_EVENT, onOpen)
+  }, [])
 
   if (!ready || count === 0) return null
 
@@ -34,6 +46,26 @@ export function FavoritesTray({ locale }: { locale: PublicLocale }) {
     { key: 'transmission', label: labels.transmission, get: (v) => v.transmissionLabel || '—' },
     { key: 'body', label: labels.body, get: (v) => v.bodyType || '—' },
   ]
+
+  const handleShare = async () => {
+    if (typeof window === 'undefined') return
+    const origin = window.location.origin
+    const lines = items.map((vehicle) => {
+      const url = vehicle.href.startsWith('/') ? `${origin}${vehicle.href}` : ''
+      return url ? `• ${vehicle.title} — ${vehicle.priceLabel}\n${url}` : `• ${vehicle.title} — ${vehicle.priceLabel}`
+    })
+    const text = `${labels.shareIntro}:\n\n${lines.join('\n\n')}`
+    try {
+      if (typeof navigator !== 'undefined' && navigator.share) {
+        await navigator.share({ title: labels.open, text })
+        return
+      }
+    } catch {
+      // User dismissed the native share sheet — do nothing.
+      return
+    }
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer')
+  }
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -185,15 +217,20 @@ export function FavoritesTray({ locale }: { locale: PublicLocale }) {
           )}
         </div>
 
-        <div className="border-t p-3">
+        <div className="flex items-center gap-2 border-t p-3">
+          <Button type="button" onClick={handleShare} className="flex-1 bg-rose-600 text-white hover:bg-rose-700">
+            <Share2 className="mr-2 size-4" />
+            {labels.share}
+          </Button>
           <Button
             type="button"
             variant="ghost"
+            aria-label={labels.clear}
+            title={labels.clear}
             onClick={clear}
-            className="w-full text-muted-foreground hover:text-destructive"
+            className="text-muted-foreground hover:text-destructive"
           >
-            <Trash2 className="mr-2 size-4" />
-            {labels.clear}
+            <Trash2 className="size-4" />
           </Button>
         </div>
       </SheetContent>

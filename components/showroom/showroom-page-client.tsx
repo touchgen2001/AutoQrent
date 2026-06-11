@@ -56,6 +56,7 @@ import { PublicLanguageSwitcher, usePublicLocale } from '@/components/shared/pub
 import { VehicleImageFrame } from '@/components/shared/vehicle-image-frame'
 import { FavoriteButton } from '@/components/shared/favorite-button'
 import { FavoritesTray } from '@/components/shared/favorites-tray'
+import { FavoritesCompareButton } from '@/components/shared/favorites-compare-button'
 import { IMAGE_PRESETS } from '@/lib/image-presets'
 import {
   formatPublicNumber,
@@ -696,6 +697,7 @@ export function ShowroomPageClient({ dealer, vehicles }: ShowroomPageClientProps
             ))}
           </nav>
           <div className="flex items-center gap-2">
+            <FavoritesCompareButton locale={locale} />
             <PublicLanguageSwitcher
               locale={locale}
               onLocaleChange={setLocale}
@@ -1400,6 +1402,8 @@ function VehicleCard({
         <FavoriteButton
           locale={locale}
           variant="overlay"
+          trackRouteId={vehicle.routeId}
+          trackSource="showroom"
           className="absolute right-3 top-3"
           record={{
             id: vehicle.routeId || vehicle.id,

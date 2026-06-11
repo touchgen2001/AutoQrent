@@ -444,6 +444,8 @@ export function PublicVehiclePageClient({ routeId, vehicle, otherVehicles = [] }
             <FavoriteButton
               locale={locale}
               variant="ghost"
+              trackRouteId={vehicle.routeId}
+              trackSource={routeSource}
               className="text-primary-foreground"
               record={{
                 id: vehicle.routeId,
