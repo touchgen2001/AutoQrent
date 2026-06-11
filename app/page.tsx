@@ -108,6 +108,17 @@ const categoryCards = [
   },
 ]
 
+// Soft, rotating accent colors for the category-card icon tiles — adds warmth to
+// the otherwise monochrome landing without touching the global theme tokens.
+const categoryAccents = [
+  "bg-amber-500/10 text-amber-600",
+  "bg-indigo-500/10 text-indigo-600",
+  "bg-emerald-500/10 text-emerald-600",
+  "bg-rose-500/10 text-rose-600",
+  "bg-sky-500/10 text-sky-600",
+  "bg-violet-500/10 text-violet-600",
+]
+
 // Cache the public gallery list (changes slowly) so the homepage stays fast even
 // though the underlying Supabase fetch is no-store.
 const getHomeGalleries = unstable_cache(
@@ -151,14 +162,14 @@ export default async function LandingPage() {
               </p>
             </div>
             <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {categoryCards.map((card) => (
+              {categoryCards.map((card, index) => (
                 <Link
                   key={card.title}
                   href={card.href}
-                  className="group rounded-2xl border border-border/70 bg-card p-6 transition-all hover:border-accent/40 hover:shadow-sm"
+                  className="group rounded-2xl border border-border/70 bg-card p-6 transition-all hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-md"
                 >
                   <div className="flex items-center justify-between">
-                    <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10 text-accent">
+                    <div className={`inline-flex h-10 w-10 items-center justify-center rounded-lg ${categoryAccents[index % categoryAccents.length]}`}>
                       <card.icon className="h-5 w-5" />
                     </div>
                     <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-accent" />

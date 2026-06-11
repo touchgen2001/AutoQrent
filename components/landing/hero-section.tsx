@@ -7,8 +7,15 @@ import { IMAGE_PRESETS } from "@/lib/image-presets"
 export function HeroSection() {
   return (
     <section className="relative pt-24 md:pt-32 pb-16 md:pb-24 overflow-hidden">
-      {/* Background gradient */}
+      {/* Background gradient + brand-gold / indigo glows for warmth */}
       <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-muted/30" />
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundImage:
+            "radial-gradient(55% 50% at 88% -5%, rgba(217,167,79,0.22), transparent 60%), radial-gradient(45% 45% at -5% 105%, rgba(99,102,241,0.12), transparent 55%)",
+        }}
+      />
       
       {/* Subtle grid pattern */}
       <div 
@@ -22,14 +29,14 @@ export function HeroSection() {
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           {/* Left Content */}
           <div className="text-center lg:text-left">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-accent/10 text-accent rounded-full text-sm font-medium mb-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-500/10 text-amber-700 ring-1 ring-inset ring-amber-500/25 rounded-full text-sm font-medium mb-6">
               <QrCode className="w-4 h-4" />
               <span>14 gün ücretsiz deneme + QR odaklı dijital showroom</span>
             </div>
-            
+
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground leading-tight tracking-tight text-balance">
               QR Okutan Müşteriyi{" "}
-              <span className="text-accent">Araç Sayfasına</span> Taşıyın
+              <span className="bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400 bg-clip-text text-transparent">Araç Sayfasına</span> Taşıyın
             </h1>
             
             <p className="mt-6 text-lg text-muted-foreground max-w-xl mx-auto lg:mx-0 leading-relaxed">
