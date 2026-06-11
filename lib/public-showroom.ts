@@ -284,6 +284,49 @@ export async function getPublicDealerBySlug(slug: string): Promise<PublicDealer 
   return row ? mapGalleryRow(row) : null
 }
 
+export type PublicGallerySummary = {
+  slug: string
+  name: string
+  logo: string | null
+  location: string
+}
+
+// Lists active, publicly-routable galleries for the homepage "showrooms" grid.
+// Best-effort: returns [] on any error so the homepage never breaks.
+export async function listPublicGalleries(limit = 12): Promise<PublicGallerySummary[]> {
+  try {
+    requireSupabaseAdminConfig()
+    const rows = await supabaseAdminFetch<GalleryRow[]>({
+      path: '/rest/v1/galleries',
+      query: {
+        select: BASE_GALLERY_SELECT,
+        status: 'eq.active',
+        order: 'name.asc',
+        limit: 120,
+      },
+    })
+
+    const seen = new Set<string>()
+    const result: PublicGallerySummary[] = []
+    for (const row of rows) {
+      if (!row.slug || !hasSecurePublicRouteToken(row.slug)) continue
+      const dealer = mapGalleryRow(row)
+      if (!dealer.name?.trim() || seen.has(dealer.slug)) continue
+      seen.add(dealer.slug)
+      result.push({
+        slug: dealer.slug,
+        name: dealer.name,
+        logo: dealer.logo,
+        location: [dealer.district, dealer.city].filter(Boolean).join(', '),
+      })
+      if (result.length >= limit) break
+    }
+    return result
+  } catch {
+    return []
+  }
+}
+
 export async function listPublicShowroomVehicles(dealershipId: string): Promise<PublicVehicle[]> {
   if (dealershipId === DEMO_GALLERY_ID) return [DEMO_PUBLIC_VEHICLE]
 

@@ -8,11 +8,14 @@ import { HomeRichSections } from "@/components/landing/home-rich-sections"
 import { HomeDemoExperience } from "@/components/landing/home-demo-experience"
 import { HomePricingPreview } from "@/components/landing/home-pricing-preview"
 import { HomeBlogPreview } from "@/components/landing/home-blog-preview"
+import { HomeShowrooms } from "@/components/landing/home-showrooms"
 import { HomeFaqPreview, buildHomeFaqJsonLd } from "@/components/landing/home-faq-preview"
 import { HomeTrustGuarantees } from "@/components/landing/home-trust-guarantees"
 import { MobileStickyCta } from "@/components/landing/mobile-sticky-cta"
 import { LandingFooter } from "@/components/landing/footer"
 import { absoluteUrl, createPageMetadata } from "@/lib/seo"
+import { listPublicGalleries } from "@/lib/public-showroom"
+import { unstable_cache } from "next/cache"
 
 const organizationId = absoluteUrl("/#organization")
 const websiteId = absoluteUrl("/#website")
@@ -105,7 +108,16 @@ const categoryCards = [
   },
 ]
 
-export default function LandingPage() {
+// Cache the public gallery list (changes slowly) so the homepage stays fast even
+// though the underlying Supabase fetch is no-store.
+const getHomeGalleries = unstable_cache(
+  async () => listPublicGalleries(12),
+  ["home-public-galleries"],
+  { revalidate: 1800 },
+)
+
+export default async function LandingPage() {
+  const galleries = await getHomeGalleries()
   return (
     <div className="min-h-screen">
       <LandingHeader />
@@ -127,6 +139,7 @@ export default function LandingPage() {
         <HomeRichSections />
         <HomePricingPreview />
         <HomeBlogPreview />
+        <HomeShowrooms galleries={galleries} />
         <section className="border-y border-border/60 bg-muted/20 py-16 md:py-20">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="max-w-3xl">
