@@ -173,3 +173,41 @@ export const FAVORITES_I18N: Record<PublicLocale, FavoritesLabels> = {
     social: 'شخصًا أضافوها للمفضلة',
   },
 }
+
+// Labels for the vehicle-page "notify me when the price drops" opt-in.
+export const PRICE_ALERT_I18N: Record<
+  PublicLocale,
+  { cta: string; done: string; denied: string; unsupported: string }
+> = {
+  tr: {
+    cta: 'Fiyat düşünce haber ver',
+    done: 'Tamam! Fiyat düşünce bildirim göndereceğiz',
+    denied: 'Bildirim izni verilmedi',
+    unsupported: 'Tarayıcınız bildirimi desteklemiyor',
+  },
+  en: {
+    cta: 'Notify me on price drop',
+    done: "Done! We'll notify you when the price drops",
+    denied: 'Notification permission denied',
+    unsupported: 'Your browser does not support notifications',
+  },
+  de: {
+    cta: 'Bei Preissenkung benachrichtigen',
+    done: 'Erledigt! Wir benachrichtigen Sie bei einer Preissenkung',
+    denied: 'Benachrichtigung nicht erlaubt',
+    unsupported: 'Ihr Browser unterstützt keine Benachrichtigungen',
+  },
+  ru: {
+    cta: 'Сообщить о снижении цены',
+    done: 'Готово! Сообщим, когда цена снизится',
+    denied: 'Уведомления запрещены',
+    unsupported: 'Браузер не поддерживает уведомления',
+  },
+  ar: {
+    cta: 'أبلغني عند انخفاض السعر',
+    done: 'تم! سنبلغك عند انخفاض السعر',
+    denied: 'لم يُسمح بالإشعارات',
+    unsupported: 'متصفحك لا يدعم الإشعارات',
+  },
+}
+

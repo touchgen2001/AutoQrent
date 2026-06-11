@@ -64,6 +64,49 @@ export async function enablePushNotifications(): Promise<PushEnableResult> {
   }
 }
 
+// Subscribes this device to a price-drop alert for a single vehicle: registers
+// the SW, ensures a push subscription, and stores it server-side keyed to the
+// vehicle. When the dealer lowers the price, the visitor gets a notification even
+// with the tab closed. Returns a coarse status for the UI.
+export async function subscribeToVehiclePriceAlert(vehicleRouteId: string): Promise<PushEnableResult> {
+  if (!isPushSupported()) return 'unsupported'
+
+  try {
+    const permission = await Notification.requestPermission()
+    if (permission !== 'granted') return 'denied'
+
+    const registration = await navigator.serviceWorker.register('/sw.js')
+    await navigator.serviceWorker.ready
+
+    let subscription = await registration.pushManager.getSubscription()
+    if (!subscription) {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      })
+    }
+
+    const json = subscription.toJSON()
+    if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) return 'failed'
+
+    const response = await fetch('/api/public/price-alerts/subscribe', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      cache: 'no-store',
+      body: JSON.stringify({
+        vehicleRouteId,
+        endpoint: json.endpoint,
+        keys: { p256dh: json.keys.p256dh, auth: json.keys.auth },
+        userAgent: navigator.userAgent.slice(0, 400),
+      }),
+    })
+
+    return response.ok ? 'enabled' : 'failed'
+  } catch {
+    return 'failed'
+  }
+}
+
 // True if this device already has an active push subscription registered.
 export async function hasActivePushSubscription(): Promise<boolean> {
   if (!isPushSupported()) return false

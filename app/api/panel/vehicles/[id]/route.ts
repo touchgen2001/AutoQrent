@@ -17,6 +17,8 @@ import {
   markUploadedAssetsDeleted,
 } from '@/lib/server/uploaded-assets'
 import { updateVehicleSchema } from '@/lib/server/vehicle-input-schema'
+import { sendVehiclePriceDropPush } from '@/lib/server/web-push'
+import { absoluteUrl } from '@/lib/seo'
 
 export const runtime = 'nodejs'
 
@@ -26,6 +28,7 @@ const paramsSchema = z.object({
 
 type VehiclePhotoRow = {
   id: string
+  slug: string | null
   photos: string[] | null
   price: number | null
   price_dropped_at: string | null
@@ -148,7 +151,7 @@ export async function PATCH(request: Request, context: { params: Promise<unknown
     const currentRows = await supabaseAdminFetch<VehiclePhotoRow[]>({
       path: '/rest/v1/vehicles',
       query: {
-        select: 'id,photos,price,price_dropped_at',
+        select: 'id,slug,photos,price,price_dropped_at',
         id: `eq.${parsedParams.data.id}`,
         gallery_id: `eq.${session.galleryId}`,
         limit: 1,
@@ -199,6 +202,21 @@ export async function PATCH(request: Request, context: { params: Promise<unknown
         ...(parsedBody.data.photos ? { photos: nextPhotos } : {}),
       },
     })
+
+    // Notify visitors watching this vehicle's price that it dropped (best-effort,
+    // fire-and-forget — must never delay or fail the dealer's save).
+    if (typeof currentPrice === 'number' && Number.isFinite(currentPrice) && nextPrice < currentPrice) {
+      const slug = currentRows[0]?.slug
+      if (slug) {
+        const fmt = (value: number) => `${new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(value)} TL`
+        void sendVehiclePriceDropPush(parsedParams.data.id, {
+          title: `Fiyat düştü! ${parsedBody.data.brand} ${parsedBody.data.model}`.slice(0, 120),
+          body: `Favorilediğiniz araç ucuzladı: ${fmt(currentPrice)} → ${fmt(nextPrice)}`,
+          url: absoluteUrl(`/arac/${slug}`),
+          tag: 'cebindegaleri-price-drop',
+        }).catch(() => {})
+      }
+    }
 
     // Persist the structured feature fields (edit parity with create): body
     // type, engine, plate, damage/service/warranty. Rewrites only those keys.

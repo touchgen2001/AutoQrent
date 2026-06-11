@@ -18,6 +18,7 @@ import {
   QrCode,
   ClipboardCheck,
   Heart,
+  Bell,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -27,7 +28,8 @@ import { PublicLanguageSwitcher, usePublicLocale } from "@/components/shared/pub
 import { VehicleImageFrame } from "@/components/shared/vehicle-image-frame"
 import { FavoriteButton } from "@/components/shared/favorite-button"
 import { FavoritesTray } from "@/components/shared/favorites-tray"
-import { FAVORITES_I18N } from "@/lib/favorites"
+import { FAVORITES_I18N, PRICE_ALERT_I18N } from "@/lib/favorites"
+import { subscribeToVehiclePriceAlert } from "@/lib/client/push-notifications"
 import type { PublicVehicle, PublicVehicleDetail } from "@/lib/public-catalog-types"
 import { buildVehicleBreadcrumbJsonLd, buildVehicleFaqItems, buildVehicleFaqJsonLd, buildVehicleJsonLd } from "@/lib/public-vehicle-jsonld"
 import { IMAGE_PRESETS } from "@/lib/image-presets"
@@ -103,6 +105,21 @@ export function PublicVehiclePageClient({ routeId, vehicle, otherVehicles = [] }
   const [leadForm, setLeadForm] = useState<VehicleLeadFormData>(() => buildInitialLeadFormData())
   const [leadSubmitState, setLeadSubmitState] = useState<"idle" | "success" | "error">("idle")
   const [leadSubmitMessage, setLeadSubmitMessage] = useState("")
+  const [priceAlert, setPriceAlert] = useState<"idle" | "loading" | "done" | "denied" | "unsupported">("idle")
+
+  const handlePriceAlert = async () => {
+    setPriceAlert("loading")
+    const result = await subscribeToVehiclePriceAlert(vehicle.routeId)
+    setPriceAlert(
+      result === "enabled"
+        ? "done"
+        : result === "denied"
+          ? "denied"
+          : result === "unsupported"
+            ? "unsupported"
+            : "idle",
+    )
+  }
   const [leadFallbackWhatsAppUrl, setLeadFallbackWhatsAppUrl] = useState<string | null>(null)
   const [isLeadSubmitting, setIsLeadSubmitting] = useState(false)
 
@@ -597,6 +614,28 @@ export function PublicVehiclePageClient({ routeId, vehicle, otherVehicles = [] }
           <Share2 className="mr-2 h-4 w-4" />
           {t("shareWhatsapp")}
         </Button>
+
+        {priceAlert === "done" ? (
+          <p className="mt-2 flex items-center justify-center gap-2 rounded-lg bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700">
+            <Bell className="h-4 w-4" />
+            {PRICE_ALERT_I18N[locale].done}
+          </p>
+        ) : (
+          <Button
+            type="button"
+            variant="outline"
+            disabled={priceAlert === "loading"}
+            onClick={handlePriceAlert}
+            className="mt-2 w-full"
+          >
+            <Bell className="mr-2 h-4 w-4" />
+            {priceAlert === "denied"
+              ? PRICE_ALERT_I18N[locale].denied
+              : priceAlert === "unsupported"
+                ? PRICE_ALERT_I18N[locale].unsupported
+                : PRICE_ALERT_I18N[locale].cta}
+          </Button>
+        )}
 
         {routeSource === "qr" && (
           <section className="mt-5 overflow-hidden rounded-2xl border border-primary/10 bg-primary text-primary-foreground shadow-sm">
