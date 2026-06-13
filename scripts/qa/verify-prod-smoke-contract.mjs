@@ -125,7 +125,17 @@ const checks = [
   ],
   ['package exposes full prod smoke script', packageJson.includes('"smoke:prod"') && packageJson.includes('scripts/qa/prod-smoke-full.mjs')],
   ['package exposes authenticated prod smoke script', packageJson.includes('"smoke:prod:auth"') && packageJson.includes('prod-smoke-with-vercel-env.sh')],
-  ['workflow uses full prod smoke package', workflow.includes('pnpm smoke:prod')],
+  [
+    'workflow requires authenticated full prod smoke package',
+    workflow.includes('pnpm smoke:prod')
+      && workflow.includes('SMOKE_TEST_EMAIL: ${{ secrets.SMOKE_TEST_EMAIL }}')
+      && workflow.includes('SMOKE_TEST_PASSWORD: ${{ secrets.SMOKE_TEST_PASSWORD }}')
+      && workflow.includes("PROD_SMOKE_REQUIRE_AUTH: '1'"),
+  ],
+  [
+    'workflow dispatch runs authenticated post deploy smoke',
+    workflow.includes("github.event_name == 'workflow_dispatch'"),
+  ],
   ['predeploy requires prod smoke package', predeploy.includes('guard.prod_smoke_full_package')],
 ]
 

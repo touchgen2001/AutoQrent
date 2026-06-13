@@ -21,7 +21,7 @@ concurrency:
 jobs:
   post_deploy_smoke:
     name: Post Deploy Smoke
-    if: github.event_name == 'push' || (github.event_name == 'deployment_status' && github.event.deployment_status.state == 'success')
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'deployment_status' && github.event.deployment_status.state == 'success')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -59,6 +59,7 @@ jobs:
           PRODUCTION_WWW_BASE_URL: ${{ secrets.PRODUCTION_WWW_BASE_URL }}
           SMOKE_TEST_EMAIL: ${{ secrets.SMOKE_TEST_EMAIL }}
           SMOKE_TEST_PASSWORD: ${{ secrets.SMOKE_TEST_PASSWORD }}
+          PROD_SMOKE_REQUIRE_AUTH: '1'
           MONITOR_SHARED_KEY: ${{ secrets.MONITOR_SHARED_KEY }}
         run: pnpm smoke:prod
 
