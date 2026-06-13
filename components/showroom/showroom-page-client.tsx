@@ -20,11 +20,13 @@ import {
   Building2,
   Calendar,
   Car,
+  ClipboardCheck,
   Clock,
   ExternalLink,
   Facebook,
   Fuel,
   Gauge,
+  GitCompare,
   Globe2,
   Instagram,
   Mail,
@@ -67,6 +69,7 @@ import {
 import { cn } from '@/lib/utils'
 import type { PublicDealer, PublicVehicle } from '@/lib/public-catalog-types'
 import type { PublicShowroomTheme } from '@/lib/public-showroom-theme'
+import { GalleryReviews } from '@/components/showroom/gallery-reviews'
 
 type ShowroomPageClientProps = {
   dealer: PublicDealer
@@ -512,6 +515,23 @@ export function ShowroomPageClient({ dealer, vehicles }: ShowroomPageClientProps
     { icon: Building2, title: t('showroomFlowPanelTitle'), description: t('showroomFlowPanelCopy') },
     { icon: Globe2, title: t('showroomFlowLanguageTitle'), description: t('showroomFlowLanguageCopy') },
   ]
+  const showroomTrustCards = [
+    {
+      icon: GitCompare,
+      title: 'Araç karşılaştırma',
+      description: 'Müşteri beğendiği araçları favoriye alıp Favorilerim ekranında fiyat, yıl, kilometre, yakıt ve vites bilgisini yan yana görebilir.',
+    },
+    {
+      icon: ShieldCheck,
+      title: 'Güven veren vitrin',
+      description: 'Yayınlanan stok, galeri iletişim bilgileri, çalışma saatleri ve konum bilgisi tek sayfada düzenli görünür.',
+    },
+    {
+      icon: ClipboardCheck,
+      title: 'Hızlı talep akışı',
+      description: 'Telefon, WhatsApp ve form aksiyonları doğrudan panele müşteri talebi olarak düşer; satış ekibi takibi kaçırmaz.',
+    },
+  ]
 
   const recordShowroomEvent = useCallback((eventType: ShowroomCtaEventType, target?: string) => {
     if (!dealer.slug) return
@@ -910,6 +930,35 @@ export function ShowroomPageClient({ dealer, vehicles }: ShowroomPageClientProps
       </section>
 
       <main>
+        <section className="mx-auto max-w-7xl px-4 py-12 md:py-16">
+          <div className={cn('overflow-hidden rounded-[2rem] border p-6 md:p-8', palette.surface)}>
+            <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+              <div>
+                <p className={cn('text-xs font-black uppercase tracking-[0.24em]', palette.sectionEyebrow)}>
+                  Vitrin deneyimi
+                </p>
+                <h2 className={cn('mt-3 text-3xl font-black tracking-tight md:text-4xl', palette.sectionTitle)}>
+                  Müşteri kararını hızlandıran galeri sayfası
+                </h2>
+                <p className={cn('mt-4 text-sm leading-7 md:text-base', palette.sectionBody)}>
+                  Araçları sadece listelemek yerine karşılaştırma, hızlı iletişim ve güven bilgileriyle satın alma kararını kolaylaştıran bir vitrin sunar.
+                </p>
+              </div>
+              <div className="grid gap-3 md:grid-cols-3">
+                {showroomTrustCards.map((card) => (
+                  <div key={card.title} className={cn('rounded-3xl border p-4', palette.surfaceMuted)}>
+                    <span className={cn('flex size-10 items-center justify-center rounded-2xl', palette.iconBadge)}>
+                      <card.icon className="size-5" />
+                    </span>
+                    <h3 className={cn('mt-3 text-sm font-black', palette.surfaceStrongText)}>{card.title}</h3>
+                    <p className={cn('mt-2 text-xs leading-5', palette.surfaceMutedText)}>{card.description}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section id="nasil-calisir" className="mx-auto max-w-7xl px-4 py-12 md:py-16">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <SectionHeading
@@ -1297,6 +1346,8 @@ export function ShowroomPageClient({ dealer, vehicles }: ShowroomPageClientProps
           </div>
         </section>
       </main>
+
+      <GalleryReviews gallerySlug={dealer.slug} />
 
       <footer className={cn('border-t', palette.footer)}>
         <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-10 md:flex-row md:items-center md:justify-between">

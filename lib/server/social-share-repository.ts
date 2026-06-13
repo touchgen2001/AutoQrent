@@ -1,4 +1,5 @@
 import type { PanelTopSharedVehicle } from '@/lib/panel-types'
+import { resolvePanelGalleryIdByEmail } from '@/lib/server/panel-team-repository'
 import { requireSupabaseAdminConfig, supabaseAdminFetch } from '@/lib/server/supabase-admin'
 
 // Records and reads "araç sosyal görseli indirildi" events. These are real, dealer
@@ -17,8 +18,6 @@ const SHARE_SHARE_ACTION = 'vehicle_social_image_share'
 // Only look back this far when ranking; older downloads shouldn't dominate the card.
 const LOOKBACK_DAYS = 90
 
-type GalleryIdRow = { id: string }
-
 type ShareDownloadRow = {
   entity_id: string
   metadata: Record<string, unknown> | null
@@ -27,18 +26,7 @@ type ShareDownloadRow = {
 
 async function resolveGalleryId(ownerEmail?: string) {
   if (!ownerEmail) return null
-
-  const rows = await supabaseAdminFetch<GalleryIdRow[]>({
-    path: '/rest/v1/galleries',
-    query: {
-      select: 'id',
-      owner_email: `eq.${ownerEmail}`,
-      order: 'created_at.asc',
-      limit: 1,
-    },
-  })
-
-  return rows[0]?.id || null
+  return resolvePanelGalleryIdByEmail(ownerEmail)
 }
 
 export type RecordVehicleShareInput = {

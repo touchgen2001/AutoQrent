@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
-import { trustedMutationOriginResponse } from '@/lib/security/request-guards'
+import { checkRateLimit, getClientIp, trustedMutationOriginResponse } from '@/lib/security/request-guards'
 import { sendPasswordRecoveryEmail } from '@/lib/server/panel-auth'
 import { mapPanelAuthError } from '@/lib/server/panel-auth-errors'
 
@@ -14,6 +14,24 @@ const schema = z.object({
 export async function POST(request: Request) {
   const blockedOrigin = trustedMutationOriginResponse(request)
   if (blockedOrigin) return blockedOrigin
+
+  const rateLimit = await checkRateLimit({
+    key: `auth-forgot-password:${getClientIp(request)}`,
+    limit: 5,
+    windowMs: 60 * 60 * 1000,
+  })
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: 'Çok fazla şifre sıfırlama isteği gönderildi. Lütfen daha sonra tekrar deneyin.',
+      },
+      {
+        status: 429,
+        headers: { 'retry-after': String(rateLimit.retryAfterSeconds) },
+      },
+    )
+  }
 
   try {
     const body = await request.json()

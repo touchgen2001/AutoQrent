@@ -54,6 +54,7 @@ import type {
   PanelLandingCtaAnalyticsResponse,
   PanelLandingCtaConfig,
   PanelLeadFunnelResponse,
+  PanelRegistrationFunnelAnalyticsResponse,
   PanelShowroomCtaAnalyticsResponse,
 } from '@/lib/panel-types'
 
@@ -93,6 +94,10 @@ type LandingApiResponse =
 
 type ShowroomApiResponse =
   | ({ ok: true } & PanelShowroomCtaAnalyticsResponse)
+  | { ok: false; message?: string }
+
+type RegistrationApiResponse =
+  | ({ ok: true } & PanelRegistrationFunnelAnalyticsResponse)
   | { ok: false; message?: string }
 
 type LandingConfigApiResponse =
@@ -174,6 +179,7 @@ export default function AnalyticsPage() {
   const [overview, setOverview] = useState<Extract<OverviewResponse, { ok: true }> | null>(null)
   const [landing, setLanding] = useState<PanelLandingCtaAnalyticsResponse | null>(null)
   const [showroom, setShowroom] = useState<PanelShowroomCtaAnalyticsResponse | null>(null)
+  const [registration, setRegistration] = useState<PanelRegistrationFunnelAnalyticsResponse | null>(null)
   const [landingConfig, setLandingConfig] = useState<PanelLandingCtaConfig | null>(null)
   const [isConfigSaving, setIsConfigSaving] = useState(false)
   const [isRolloutSaving, setIsRolloutSaving] = useState(false)
@@ -251,6 +257,18 @@ export default function AnalyticsPage() {
         return
       }
 
+      const registrationResponse = await fetch(`/api/panel/analytics/registration?range=${range}`, {
+        cache: 'no-store',
+        signal: options.signal,
+      })
+      const registrationData = (await registrationResponse.json()) as RegistrationApiResponse
+      const registrationLocked = isSubscriptionLockedResponse(registrationResponse, registrationData)
+      if (!registrationLocked && (!registrationResponse.ok || !registrationData.ok)) {
+        const message = 'message' in registrationData ? registrationData.message : undefined
+        setErrorMessage(message ?? 'Kayıt akışı analitiği alınamadı.')
+        return
+      }
+
       const landingConfigResponse = await fetch('/api/panel/analytics/landing-config', {
         cache: 'no-store',
         signal: options.signal,
@@ -261,9 +279,18 @@ export default function AnalyticsPage() {
       setOverview(overviewData)
       setLanding(landingLocked ? null : landingData)
       setShowroom(showroomLocked ? null : showroomData)
+      setRegistration(registrationLocked ? null : registrationData)
 
-      if (showroomLocked || landingLocked || isSubscriptionLockedResponse(landingConfigResponse, landingConfigData)) {
-        const lockedPayload = (landingLocked ? landingData : showroomLocked ? showroomData : landingConfigData) as SubscriptionLockedApiResponse
+      if (showroomLocked || landingLocked || registrationLocked || isSubscriptionLockedResponse(landingConfigResponse, landingConfigData)) {
+        const lockedPayload = (
+          landingLocked
+            ? landingData
+            : showroomLocked
+              ? showroomData
+              : registrationLocked
+                ? registrationData
+                : landingConfigData
+        ) as SubscriptionLockedApiResponse
         setAdvancedAnalyticsMessage(
           lockedPayload.message ?? 'Gelişmiş analitik mevcut planınızda kapalı. Kullanmak için planınızı yükseltin.',
         )
@@ -398,6 +425,12 @@ export default function AnalyticsPage() {
   const wonLeadTrendValue = funnel?.trend.wonLeadDelta ?? 0
   const landingCtr = landing?.current.ctr ?? 0
   const landingCtrTrendValue = landing?.trend.ctrDelta ?? 0
+  const landingPageRows = landing?.current.pageStats ?? []
+  const landingActionRows = landing?.current.actionStats ?? []
+  const maxLandingPageClicks = landingPageRows.reduce(
+    (accumulator, item) => Math.max(accumulator, item.clicks),
+    0,
+  )
   const landingVariantRows = (() => {
     const previousMap = new Map(
       (landing?.previous.variantStats ?? []).map((variant) => [variant.variant, variant]),
@@ -448,6 +481,9 @@ export default function AnalyticsPage() {
     0,
   )
   const showroomHasActivity = Boolean(showroom && showroom.current.totalClicks > 0)
+  const registrationCompletionRate = registration?.current.completionRate ?? 0
+  const registrationCompletionTrend = registration?.trend.completionRateDelta ?? 0
+  const maxRegistrationSessions = registration?.current.startedSessions ?? 0
 
   const visitorsPerLead = useMemo(() => {
     const scans = overview?.metrics.totalScans ?? 0
@@ -756,11 +792,113 @@ export default function AnalyticsPage() {
       </Card>
 
       <Card className="p-6 border-border/50">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h3 className="font-semibold text-foreground">Kayıt ve Kurulum Terk Analizi</h3>
+            <p className="text-sm text-muted-foreground">
+              {registration
+                ? `${registration.current.periodLabel} anonim oturum bazlı kayıt akışı`
+                : 'Kayıt akışı verisi yükleniyor...'}
+            </p>
+          </div>
+          <Badge
+            variant="outline"
+            className={registrationCompletionTrend >= 0
+              ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700'
+              : 'border-rose-500/30 bg-rose-500/10 text-rose-700'}
+          >
+            {registrationCompletionTrend >= 0
+              ? <TrendingUp className="mr-1 h-3.5 w-3.5" />
+              : <TrendingDown className="mr-1 h-3.5 w-3.5" />}
+            Tamamlama {formatSignedValue(registrationCompletionTrend)}%
+          </Badge>
+        </div>
+
+        <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+          <div className="rounded-lg border border-border/70 bg-muted/20 p-3">
+            <p className="text-xs text-muted-foreground">Kayıt Başlangıcı</p>
+            <p className="text-lg font-semibold text-foreground">
+              {(registration?.current.startedSessions ?? 0).toLocaleString('tr-TR')}
+            </p>
+          </div>
+          <div className="rounded-lg border border-border/70 bg-muted/20 p-3">
+            <p className="text-xs text-muted-foreground">Kurulum Tamamlandı</p>
+            <p className="text-lg font-semibold text-foreground">
+              {(registration?.current.completedSessions ?? 0).toLocaleString('tr-TR')}
+            </p>
+          </div>
+          <div className="rounded-lg border border-border/70 bg-muted/20 p-3">
+            <p className="text-xs text-muted-foreground">Tamamlama Oranı</p>
+            <p className="text-lg font-semibold text-foreground">%{registrationCompletionRate}</p>
+          </div>
+          <div className="rounded-lg border border-border/70 bg-muted/20 p-3">
+            <p className="text-xs text-muted-foreground">Daha Sonra Tamamla</p>
+            <p className="text-lg font-semibold text-foreground">
+              {(registration?.current.skippedSessions ?? 0).toLocaleString('tr-TR')}
+            </p>
+          </div>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-[1.45fr_0.75fr]">
+          <div className="space-y-3">
+            {(registration?.current.stages ?? []).map((stage, index) => {
+              const width = maxRegistrationSessions > 0
+                ? Math.max((stage.sessions / maxRegistrationSessions) * 100, stage.sessions > 0 ? 5 : 0)
+                : 0
+
+              return (
+                <div key={stage.key} className="rounded-xl border border-border/60 bg-muted/10 p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-accent/10 text-xs font-semibold text-accent">
+                        {index + 1}
+                      </span>
+                      <span className="text-sm font-medium text-foreground">{stage.label}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span>{stage.sessions.toLocaleString('tr-TR')} oturum</span>
+                      {index > 0 ? <Badge variant="outline">%{stage.dropoffFromPrevious} terk</Badge> : null}
+                    </div>
+                  </div>
+                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
+                    <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${width}%` }} />
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Başlangıçtan %{stage.rateFromStart}
+                    {index > 0 ? ` • Önceki adımdan %${stage.rateFromPrevious} geçti` : ''}
+                  </p>
+                </div>
+              )
+            })}
+          </div>
+
+          <div className="space-y-2">
+            {(registration?.recommendations ?? []).map((item, index) => (
+              <div
+                key={`${item.title}-${index}`}
+                className={`rounded-lg border px-3 py-3 ${RECOMMENDATION_TONE_CLASS[item.level]}`}
+              >
+                <div className="flex items-start gap-2">
+                  {item.level === 'warning' && <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />}
+                  {item.level === 'success' && <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />}
+                  {item.level === 'info' && <Lightbulb className="mt-0.5 h-4 w-4 shrink-0" />}
+                  <div>
+                    <p className="text-sm font-semibold">{item.title}</p>
+                    <p className="mt-1 text-xs opacity-90">{item.detail}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Card>
+
+      <Card className="p-6 border-border/50">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-6">
           <div>
-            <h3 className="font-semibold text-foreground">Ana Sayfa Buton Dönüşümü</h3>
+            <h3 className="font-semibold text-foreground">Site CTA Dönüşümü</h3>
             <p className="text-sm text-muted-foreground">
-              {landing ? `${landing.current.periodLabel} buton görünüm ve tıklama performansı` : 'Ana sayfa buton verisi yükleniyor...'}
+              {landing ? `${landing.current.periodLabel} sayfa, hedef ve buton performansı` : 'Site buton verisi yükleniyor...'}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -809,6 +947,68 @@ export default function AnalyticsPage() {
               </div>
             </div>
           ))}
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1.4fr_1fr]">
+          <div className="rounded-xl border border-border/60 bg-muted/10 p-4">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div>
+                <h4 className="text-sm font-semibold text-foreground">Sayfa Bazlı Dönüşüm</h4>
+                <p className="text-xs text-muted-foreground">Hangi sayfanın kayıt, demo veya iletişim tıklaması getirdiğini gösterir.</p>
+              </div>
+              <Badge variant="outline" className="text-[11px]">{landingPageRows.length} sayfa</Badge>
+            </div>
+            {landingPageRows.length === 0 ? (
+              <p className="rounded-lg border border-dashed border-border p-3 text-sm text-muted-foreground">
+                Sayfa bazlı veri yeni takip olayları geldikçe burada görünecek.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {landingPageRows.map((page) => {
+                  const width = maxLandingPageClicks > 0
+                    ? Math.max((page.clicks / maxLandingPageClicks) * 100, page.clicks > 0 ? 8 : 0)
+                    : 0
+                  return (
+                    <div key={page.pagePath} className="rounded-lg border border-border/60 bg-background/70 p-3">
+                      <div className="flex items-center justify-between gap-3 text-sm">
+                        <span className="truncate font-medium text-foreground">{page.pagePath}</span>
+                        <Badge variant="secondary">%{page.ctr}</Badge>
+                      </div>
+                      <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
+                        <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${width}%` }} />
+                      </div>
+                      <div className="mt-2 flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                        <span>{page.impressions.toLocaleString('tr-TR')} gösterim</span>
+                        <span>{page.clicks.toLocaleString('tr-TR')} tıklama</span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-xl border border-border/60 bg-muted/10 p-4">
+            <h4 className="text-sm font-semibold text-foreground">Dönüşüm Hedefleri</h4>
+            <p className="mb-3 text-xs text-muted-foreground">Kayıt, demo, WhatsApp ve form hedeflerinin dağılımı.</p>
+            {landingActionRows.length === 0 ? (
+              <p className="rounded-lg border border-dashed border-border p-3 text-sm text-muted-foreground">
+                Henüz dönüşüm hedefi tıklaması yok.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {landingActionRows.map((action) => (
+                  <div key={action.action} className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-background/70 px-3 py-2">
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{action.label}</p>
+                      <p className="text-xs text-muted-foreground">Toplam tıklamanın %{action.share}</p>
+                    </div>
+                    <Badge variant="secondary">{action.clicks}</Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="mt-4 rounded-xl border border-border/60 bg-muted/10 p-4">

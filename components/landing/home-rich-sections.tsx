@@ -6,7 +6,7 @@ const problemSolutionItems = [
   {
     title: "Dağınık müşteri akışı",
     problem: "QR tarama, WhatsApp ve telefon temasları farklı kanallarda kalınca aynı müşterinin takibi dağınık hale geliyor.",
-    solution: "Cebindegaleri, araç sayfası temaslarını lead kaydıyla aynı operasyon paneline toplar.",
+    solution: "Cebindegaleri, araç sayfasından gelen müşteri taleplerini tek panelde toplar.",
   },
   {
     title: "Güncel olmayan vitrin bilgisi",
@@ -25,7 +25,7 @@ const qrJourney = [
   {
     title: "Detay ve iletişim",
     customer: "Müşteri araç detayını inceler, tek dokunuşla arama veya WhatsApp başlatır.",
-    team: "Lead kaydı ilgili araçla eşleşir, not ve takip tarihi eklenir.",
+    team: "Müşteri talebi ilgili araçla eşleşir, not ve takip tarihi eklenir.",
     icon: ScanLine,
   },
   {
@@ -43,8 +43,8 @@ const operations = [
     icon: Settings2,
   },
   {
-    title: "Lead Süreci Disiplini",
-    detail: "Yeni lead, arandı, görüşülüyor ve satışa döndü adımlarını standardize edin.",
+    title: "Müşteri Talebi Takibi",
+    detail: "Yeni talep, arandı, görüşülüyor ve satışa döndü adımlarını düzenli takip edin.",
     icon: PhoneCall,
   },
   {
@@ -122,7 +122,7 @@ export function HomeRichSections() {
             <div>
               <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Panelden yönetilen operasyon</h2>
               <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-                Araç vitrini, lead takibi ve müşteri iletişimi dağınık kalmadan aynı operasyon çerçevesinde yürütülür.
+                Araç vitrini, müşteri talepleri ve iletişim süreci dağınık kalmadan tek panelden yönetilir.
               </p>
               <div className="mt-6 space-y-3">
                 {operations.map((item, index) => (

@@ -1,6 +1,8 @@
 import { createHash } from 'node:crypto'
 import { NextResponse } from 'next/server'
 
+import { hasSupabaseAdmin, supabaseAdminFetch } from '@/lib/server/supabase-admin'
+
 type RateLimitEntry = {
   count: number
   resetAt: number
@@ -144,7 +146,7 @@ export function hashForStorage(value: string) {
   return createHash('sha256').update(value).digest('hex')
 }
 
-export function checkRateLimit({ key, limit, windowMs }: RateLimitOptions): RateLimitResult {
+function checkLocalRateLimit({ key, limit, windowMs }: RateLimitOptions): RateLimitResult {
   const now = Date.now()
   const store = getRateLimitStore()
   const existing = store.get(key)
@@ -179,6 +181,42 @@ export function checkRateLimit({ key, limit, windowMs }: RateLimitOptions): Rate
     remaining: Math.max(limit - existing.count, 0),
     retryAfterSeconds: Math.max(Math.ceil((existing.resetAt - now) / 1000), 1),
   }
+}
+
+type DistributedRateLimitRow = {
+  allowed: boolean
+  remaining: number
+  retry_after_seconds: number
+}
+
+export async function checkRateLimit(options: RateLimitOptions): Promise<RateLimitResult> {
+  if (hasSupabaseAdmin()) {
+    try {
+      const keyHash = hashForStorage(options.key)
+      const rows = await supabaseAdminFetch<DistributedRateLimitRow[]>({
+        method: 'POST',
+        path: '/rest/v1/rpc/consume_request_rate_limit',
+        body: {
+          p_key_hash: keyHash,
+          p_limit: options.limit,
+          p_window_seconds: Math.max(Math.ceil(options.windowMs / 1000), 1),
+        },
+      })
+      const row = rows[0]
+      if (row) {
+        return {
+          allowed: row.allowed,
+          remaining: row.remaining,
+          retryAfterSeconds: row.retry_after_seconds,
+        }
+      }
+    } catch {
+      // Keep a local fail-safe so auth and public forms remain protected during
+      // a short database outage. The shared database counter is the primary gate.
+    }
+  }
+
+  return checkLocalRateLimit(options)
 }
 
 export function estimateBotRisk(request: Request, textFields: string[] = []): BotCheckResult {

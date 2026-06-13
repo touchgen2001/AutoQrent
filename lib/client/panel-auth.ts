@@ -4,6 +4,7 @@ export type PanelClientSession = {
   fullName: string
   galleryId: string
   galleryName: string
+  role: 'owner' | 'sales' | 'viewer'
   expiresAt: string
 }
 
@@ -47,6 +48,7 @@ export async function registerPanelUser(input: {
   phone: string
   password: string
   planCode?: 'starter' | 'pro' | 'premium' | 'enterprise'
+  billingInterval?: 'monthly' | 'yearly'
 }) {
   try {
     const response = await fetch('/api/auth/register', {

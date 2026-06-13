@@ -20,6 +20,7 @@ import type {
   PanelShowroomCtaSnapshot,
   PanelShowroomTargetStat,
 } from '@/lib/panel-types'
+import { resolvePanelGalleryIdByEmail } from '@/lib/server/panel-team-repository'
 import { requireSupabaseAdminConfig, supabaseAdminFetch } from '@/lib/server/supabase-admin'
 
 type LeadStatus = PanelLeadFunnelStageKey
@@ -48,10 +49,6 @@ type ShowroomCtaRow = {
 type ShowroomLeadRow = {
   source: string
   created_at: string
-}
-
-type GalleryIdRow = {
-  id: string
 }
 
 const RANGE_DAY_MAP: Record<FunnelRange, number> = {
@@ -425,18 +422,7 @@ function buildFunnelSnapshot(
 
 async function resolveGalleryId(ownerEmail?: string) {
   if (!ownerEmail) return null
-
-  const rows = await supabaseAdminFetch<GalleryIdRow[]>({
-    path: '/rest/v1/galleries',
-    query: {
-      select: 'id',
-      owner_email: `eq.${ownerEmail}`,
-      order: 'created_at.asc',
-      limit: 1,
-    },
-  })
-
-  return rows[0]?.id || null
+  return resolvePanelGalleryIdByEmail(ownerEmail)
 }
 
 export async function getLeadFunnelAnalytics(

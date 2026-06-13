@@ -6,7 +6,16 @@ import { checkRateLimit, estimateBotRisk, getClientIp, trustedMutationOriginResp
 export const runtime = 'nodejs'
 
 const auditPayloadSchema = z.object({
-  action: z.enum(['vehicle_create', 'vehicle_delete', 'vehicle_update', 'lead_status_change', 'lead_note_add']),
+  action: z.enum([
+    'vehicle_create',
+    'vehicle_delete',
+    'vehicle_update',
+    'lead_status_change',
+    'lead_note_add',
+    'lead_follow_up_change',
+    'customer_task_create',
+    'customer_task_status_change',
+  ]),
   entityType: z.enum(['vehicle', 'lead', 'system']),
   entityId: z.string().trim().min(1).max(120),
   actorEmail: z.string().trim().email().optional(),
@@ -22,7 +31,7 @@ export async function POST(request: Request) {
     const ip = getClientIp(request)
     const userAgent = request.headers.get('user-agent') ?? 'unknown'
 
-    const rateLimit = checkRateLimit({
+    const rateLimit = await checkRateLimit({
       key: `audit:${ip}`,
       limit: 30,
       windowMs: 60 * 1000,

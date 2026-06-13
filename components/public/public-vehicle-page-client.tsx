@@ -19,6 +19,7 @@ import {
   ClipboardCheck,
   Heart,
   Bell,
+  CalendarCheck2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -101,6 +102,7 @@ export function PublicVehiclePageClient({ routeId, vehicle, otherVehicles = [] }
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [showGallery, setShowGallery] = useState(false)
   const [showContactForm, setShowContactForm] = useState(false)
+  const [showReservationForm, setShowReservationForm] = useState(false)
   const [touchStartX, setTouchStartX] = useState<number | null>(null)
   const [leadForm, setLeadForm] = useState<VehicleLeadFormData>(() => buildInitialLeadFormData())
   const [leadSubmitState, setLeadSubmitState] = useState<"idle" | "success" | "error">("idle")
@@ -122,6 +124,9 @@ export function PublicVehiclePageClient({ routeId, vehicle, otherVehicles = [] }
   }
   const [leadFallbackWhatsAppUrl, setLeadFallbackWhatsAppUrl] = useState<string | null>(null)
   const [isLeadSubmitting, setIsLeadSubmitting] = useState(false)
+  const [reservationForm, setReservationForm] = useState({ customerName: "", customerPhone: "", customerEmail: "", note: "", website: "" })
+  const [reservationMessage, setReservationMessage] = useState("")
+  const [isReservationSubmitting, setIsReservationSubmitting] = useState(false)
 
   const vehicleJsonLd = buildVehicleJsonLd(vehicle)
   const vehicleFaqJsonLd = buildVehicleFaqJsonLd(vehicle)
@@ -284,6 +289,29 @@ export function PublicVehiclePageClient({ routeId, vehicle, otherVehicles = [] }
 
   const closeContactForm = () => {
     setShowContactForm(false)
+  }
+
+  const handleReservationSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (isReservationSubmitting) return
+    setIsReservationSubmitting(true)
+    setReservationMessage("")
+    try {
+      const response = await fetch("/api/public/reservations", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ vehicleRouteId: routeId, ...reservationForm }),
+      })
+      const data = await response.json().catch(() => ({})) as { ok?: boolean; message?: string }
+      setReservationMessage(data.message || (response.ok ? "Rezervasyon talebiniz iletildi." : "Rezervasyon talebi oluşturulamadı."))
+      if (response.ok && data.ok) {
+        setReservationForm({ customerName: "", customerPhone: "", customerEmail: "", note: "", website: "" })
+      }
+    } catch {
+      setReservationMessage("Ağ hatası nedeniyle rezervasyon talebi oluşturulamadı.")
+    } finally {
+      setIsReservationSubmitting(false)
+    }
   }
 
   const handleLeadSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -888,9 +916,30 @@ export function PublicVehiclePageClient({ routeId, vehicle, otherVehicles = [] }
         </div>
       )}
 
+      {showReservationForm && (
+        <div className="fixed inset-0 z-50 flex items-end bg-black/50">
+          <div className="max-h-[92vh] w-full overflow-y-auto rounded-t-3xl bg-background p-6 pb-[calc(env(safe-area-inset-bottom)+2rem)]">
+            <div className="mb-6 flex items-center justify-between">
+              <div><h3 className="text-lg font-semibold">Online Rezervasyon</h3><p className="mt-1 text-sm text-muted-foreground">{vehicleTitle}</p></div>
+              <button onClick={() => setShowReservationForm(false)} aria-label="Kapat"><X className="h-6 w-6" /></button>
+            </div>
+            <form className="space-y-4" onSubmit={handleReservationSubmit}>
+              <input type="text" className="hidden" tabIndex={-1} value={reservationForm.website} onChange={(event) => setReservationForm((current) => ({ ...current, website: event.target.value }))} />
+              <Input placeholder="Ad soyad" value={reservationForm.customerName} onChange={(event) => setReservationForm((current) => ({ ...current, customerName: event.target.value }))} required />
+              <Input type="tel" placeholder="Telefon" value={reservationForm.customerPhone} onChange={(event) => setReservationForm((current) => ({ ...current, customerPhone: event.target.value }))} required />
+              <Input type="email" placeholder="E-posta (isteğe bağlı)" value={reservationForm.customerEmail} onChange={(event) => setReservationForm((current) => ({ ...current, customerEmail: event.target.value }))} />
+              <Textarea placeholder="Notunuz (isteğe bağlı)" value={reservationForm.note} onChange={(event) => setReservationForm((current) => ({ ...current, note: event.target.value }))} />
+              <p className="text-xs text-muted-foreground">Talebiniz galeri tarafından onaylandığında araç rezerve durumuna alınır. Kapora ve ödeme bilgisi galeri tarafından ayrıca paylaşılır.</p>
+              {reservationMessage && <p className="rounded-lg border border-border px-3 py-2 text-sm">{reservationMessage}</p>}
+              <Button type="submit" className="w-full" disabled={isReservationSubmitting}>{isReservationSubmitting ? "Gönderiliyor..." : "Rezervasyon Talebi Gönder"}</Button>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Fixed Bottom Action Bar */}
       <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-background/95 px-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 backdrop-blur">
-        <div className="flex gap-2">
+        <div className="grid grid-cols-[1fr_1fr_auto_auto_auto] gap-2">
           <Button 
             onClick={handleWhatsApp}
             disabled={!canUseWhatsApp}
@@ -926,6 +975,18 @@ export function PublicVehiclePageClient({ routeId, vehicle, otherVehicles = [] }
             aria-label={t("openInfoForm")}
           >
             <Calendar className="w-5 h-5" />
+          </Button>
+          <Button
+            variant="outline"
+            className="h-12 px-4"
+            onClick={() => {
+              setReservationMessage("")
+              setShowReservationForm(true)
+            }}
+            aria-label="Online rezervasyon"
+            title="Online rezervasyon"
+          >
+            <CalendarCheck2 className="h-5 w-5" />
           </Button>
         </div>
       </div>

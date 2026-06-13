@@ -1,7 +1,7 @@
 # CebindeGaleri — Marka Kılavuzu
 
-Logonun tutarlı kullanılması için kısa rehber. Tüm görseller tek kaynaktan
-(`scripts/brand/logo.html`) üretilir; değişiklik gerekince:
+Logonun tutarlı kullanılması için kısa rehber. Tüm görseller gönderilen ana logo
+dosyasından (`scripts/brand/cebindegaleri-master.jpg`) üretilir; değişiklik gerekince:
 
 ```bash
 node scripts/brand/generate-logo.mjs
@@ -13,9 +13,9 @@ komutu favicon'dan sosyal medya görsellerine kadar her şeyi yeniden üretir.
 
 ## Logo
 
-İç içe geçmiş **CG** monogramı: **altın C**, önde; **gümüş G**, arkada. Altında
-gold→gümüş "hız çizgisi", ardından **CEBİNDEGALERİ** yazısı ve **AXYRONIS
-TECHNOLOGIES A.Ş** alt satırı. Logo **koyu zemin** için tasarlandı.
+Otomobil siluetiyle birleşen **CG** monogramı: **altın C**, **gümüş G** ve
+merkezinde QR işareti. Altında **CEBİNDEGALERİ** yazısı ve **KAREKODLU GALERİ**
+alt satırı bulunur. Logo **koyu zemin** için tasarlandı.
 
 ## Renkler
 
@@ -50,9 +50,10 @@ TECHNOLOGIES A.Ş** alt satırı. Logo **koyu zemin** için tasarlandı.
 | Dosya | Açıklama |
 |-------|----------|
 | `cebindegaleri-logo.png` | Tam logo, koyu zemin (kare) |
-| `cebindegaleri-logo-transparent.png` | Tam logo, **şeffaf** zemin |
-| `cebindegaleri-logo-horizontal.png` | **Yatay** kilit (CG + yazı), şeffaf |
-| `cebindegaleri-mark.png` | Sadece **CG amblemi**, şeffaf |
+| `cebindegaleri-logo-transparent.png` | Tam logonun uyumluluk kopyası |
+| `cebindegaleri-logo-horizontal.png` | **Yatay** kullanım için koyu zeminli kilit |
+| `cebindegaleri-mark.png` | QR işaretli **CG amblemi**, koyu zemin |
+| `cebindegaleri-mark-transparent.png` | Site başlığı için şeffaf, yatay **CG amblemi** |
 
 ## Kullanım kuralları
 

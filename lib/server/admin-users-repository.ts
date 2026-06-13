@@ -9,6 +9,7 @@ import {
   isAdminSubscriptionStatus,
 } from '@/lib/admin-user-types'
 import { insertAuditLog } from '@/lib/security/audit'
+import { isQaAuthMetadata } from '@/lib/server/qa-account'
 import { requireSupabaseAdminConfig, supabaseAdminFetch } from '@/lib/server/supabase-admin'
 import { normalizeSubscriptionPlanCode, normalizeSubscriptionStatus } from '@/lib/subscription-plans'
 
@@ -141,6 +142,18 @@ function normalizeEmail(value: string | null | undefined) {
   return (value || '').trim().toLowerCase()
 }
 
+function isMissingAdminBroadcastsTableError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error || '')
+  return (
+    message.includes('admin_broadcasts')
+    && (
+      message.includes('does not exist')
+      || message.includes('Could not find the table')
+      || message.includes('PGRST205')
+    )
+  )
+}
+
 function normalizeText(value: string | null | undefined) {
   return (value || '').trim()
 }
@@ -260,6 +273,7 @@ async function fetchGalleries() {
     path: '/rest/v1/galleries',
     query: {
       select: 'id,name,slug,phone,email,owner_email,created_at,logo_url,city,district',
+      is_qa_account: 'eq.false',
       order: 'created_at.desc',
       limit: DATA_ROW_LIMIT,
     },
@@ -403,11 +417,16 @@ export async function listAdminManagedUsers(input: AdminUserListOptions = {}): P
     fetchLeads(),
   ])
   const galleryMaps = buildGalleryMaps(galleries)
-  const metricsByGalleryId = buildMetrics(vehicles, leads)
+  const productionGalleryIds = new Set(galleries.map((gallery) => gallery.id))
+  const productionVehicles = vehicles.filter((vehicle) => vehicle.gallery_id && productionGalleryIds.has(vehicle.gallery_id))
+  const productionLeads = leads.filter((lead) => lead.gallery_id && productionGalleryIds.has(lead.gallery_id))
+  const metricsByGalleryId = buildMetrics(productionVehicles, productionLeads)
   const users: AdminManagedUser[] = []
   const seenOwnerEmails = new Set<string>()
 
   for (const authUser of authResult.users) {
+    if (isQaAuthMetadata(authUser.app_metadata)) continue
+
     const email = normalizeEmail(authUser.email)
     if (!email) continue
 
@@ -477,8 +496,8 @@ export async function listAdminManagedUsers(input: AdminUserListOptions = {}): P
       usersWithoutGallery: users.length - usersWithGallery,
       galleriesWithoutAuth,
       totalGalleries: galleries.length,
-      totalVehicles: vehicles.length,
-      totalLeads: leads.length,
+      totalVehicles: productionVehicles.length,
+      totalLeads: productionLeads.length,
     },
     users: filteredUsers.sort((left, right) => {
       const leftTime = Date.parse(left.createdAt || '') || 0
@@ -884,6 +903,32 @@ export async function recordAdminNotificationRequest(input: {
   }
 
   if (!input.dryRun) {
+    await supabaseAdminFetch<unknown>({
+      method: 'POST',
+      path: '/rest/v1/admin_broadcasts',
+      body: [
+        {
+          target: input.targetSegment || 'ALL_TENANTS',
+          subject: input.title,
+          body: input.message,
+          channel: input.channel,
+          requested_by: input.adminUsername,
+          target_count: targets.length,
+          delivery_provider: 'not_connected',
+          delivery_status: 'audit_only',
+          metadata: {
+            scope: input.scope,
+            userId: input.userId || null,
+          },
+        },
+      ],
+      prefer: 'return=minimal',
+    }).catch((error) => {
+      if (!isMissingAdminBroadcastsTableError(error)) {
+        throw error
+      }
+    })
+
     await insertAuditLog({
       action: 'admin_notification_send',
       entityType: 'notification',

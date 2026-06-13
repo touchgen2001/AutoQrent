@@ -19,6 +19,14 @@ const ACTIONS: PanelAuditAction[] = [
   'vehicle_update',
   'lead_status_change',
   'lead_note_add',
+  'lead_follow_up_change',
+  'lead_whatsapp_open',
+  'reservation_create',
+  'reservation_update',
+  'review_moderate',
+  'vehicle_restore',
+  'customer_task_create',
+  'customer_task_status_change',
   'contact_form_submit',
   'contact_form_blocked',
   'public_vehicle_cta_click',
@@ -29,6 +37,7 @@ const ACTIONS: PanelAuditAction[] = [
   'landing_cta_impression',
   'landing_cta_click',
   'landing_cta_config_update',
+  'registration_funnel_event',
   'public_slug_rotation',
   'admin_user_delete',
   'admin_user_authorization_update',
@@ -40,10 +49,11 @@ const ACTIONS: PanelAuditAction[] = [
   'admin_notification_send',
 ]
 
-const ENTITY_TYPES: PanelAuditEntityType[] = ['vehicle', 'lead', 'contact', 'system', 'marketing', 'user', 'subscription', 'notification', 'moderation']
+const ENTITY_TYPES: PanelAuditEntityType[] = ['vehicle', 'lead', 'contact', 'system', 'marketing', 'user', 'subscription', 'notification', 'moderation', 'reservation', 'review']
 
 export type ListAuditLogsInput = {
   galleryId?: string
+  entityId?: string
   search?: string
   action?: PanelAuditAction
   entityType?: PanelAuditEntityType
@@ -99,6 +109,9 @@ export async function listAuditLogs(input: ListAuditLogsInput = {}) {
   }
   if (input.galleryId) {
     query['metadata->>galleryId'] = `eq.${input.galleryId}`
+  }
+  if (input.entityId) {
+    query.entity_id = `eq.${input.entityId}`
   }
 
   if (input.search?.trim()) {

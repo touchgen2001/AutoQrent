@@ -244,7 +244,7 @@ export function DashboardHeader({ onMobileMenuClick }: HeaderProps) {
 
   return (
     <>
-      <header className="sticky top-0 z-30 h-16 bg-background border-b border-border">
+      <header className="sticky top-0 z-30 h-16 bg-background border-b border-border print:hidden">
         <div className="flex items-center justify-between h-full px-4 md:px-6">
           {/* Left Side */}
           <div className="flex items-center gap-4">

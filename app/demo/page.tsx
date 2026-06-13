@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { ArrowRight, BarChart3, Building2, Car, ExternalLink, Play, QrCode, Smartphone, Users } from 'lucide-react'
 
 import { MarketingPageHero, MarketingPageLayout, MarketingPageSection } from '@/components/landing/marketing-page-layout'
+import { PersonalizedDemoBuilder } from '@/components/landing/personalized-demo-builder'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -65,6 +66,9 @@ export default async function DemoPage() {
       />
 
       <MarketingPageSection>
+        <PersonalizedDemoBuilder />
+
+        <div className="mt-10">
         <Card className="overflow-hidden border-border/70 bg-card/80 shadow-sm">
           <CardContent className="grid gap-0 p-0 lg:grid-cols-[1.05fr_0.95fr]">
             <div className="space-y-6 p-6 md:p-8">
@@ -164,6 +168,7 @@ export default async function DemoPage() {
             </div>
           </CardContent>
         </Card>
+        </div>
 
         <div className="mt-10 grid gap-6 md:grid-cols-2">
           <Card className="border-border/70 bg-card/80">

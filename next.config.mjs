@@ -77,7 +77,7 @@ const securityHeaders = [
   },
   {
     key: 'Permissions-Policy',
-    value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), fullscreen=(self), clipboard-write=(self)',
+    value: 'camera=(), microphone=(), geolocation=(self), payment=(), usb=(), fullscreen=(self), clipboard-write=(self)',
   },
   {
     key: 'Cross-Origin-Opener-Policy',
@@ -101,15 +101,10 @@ const nextConfig = {
   experimental: {
     cpus: 2,
   },
-  typescript: {
-    // Keep `next build` fast; types are enforced separately by `pnpm typecheck`
-    // (CI `verify` and the Vercel buildCommand both run it before `next build`).
-    ignoreBuildErrors: true,
-  },
   images: {
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 60 * 60 * 24 * 30,
-    qualities: [68, 70, 72, 75, 78, 82],
+    qualities: [55, 60, 62, 66, 68, 70, 72, 75, 76, 78, 82],
     deviceSizes: [360, 640, 768, 1024, 1280, 1536],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     remotePatterns: supabaseImageRemotePatterns,

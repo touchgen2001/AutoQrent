@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
 import { createPageMetadata } from '@/lib/seo'
-import { formatDealerNameFromSlug, getPublicShowroomData } from '@/lib/public-showroom'
+import { getPublicShowroomData } from '@/lib/public-showroom'
 import {
   getShowroomSeoDescription,
   getShowroomSeoImage,
@@ -27,15 +28,7 @@ export async function generateMetadata({ params }: ShowroomLayoutProps): Promise
     })
   }
 
-  const dealerName = formatDealerNameFromSlug(dealerSlug || 'galeri')
-
-  return createPageMetadata({
-    title: `${dealerName} Showroom Bulunamadı`,
-    description: 'Talep edilen public galeri vitrini bulunamadı.',
-    path: `/showroom/${dealerSlug}`,
-    keywords: ['showroom', dealerName.toLowerCase(), 'galeri araç listesi'],
-    noIndex: true,
-  })
+  notFound()
 }
 
 export default function ShowroomLayout({ children }: ShowroomLayoutProps) {

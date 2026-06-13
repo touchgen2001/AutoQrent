@@ -10,7 +10,7 @@ export const metadata: Metadata = createPageMetadata({
   description:
     "Cebindegaleri çalışma akışı: araç ekleme, QR üretimi, müşteri etkileşimi ve talep yönetiminin operasyon adımları; sahte yorum yerine canlı demo görüşmesinde doğrulayın.",
   path: "/nasil-calisir",
-  keywords: ["nasıl çalışır", "qr akışı", "galeri operasyonu", "lead süreci", "canlı galeri demosu"],
+  keywords: ["nasıl çalışır", "qr akışı", "galeri operasyonu", "müşteri talebi süreci", "canlı galeri demosu"],
 })
 
 export default function HowItWorksPage() {

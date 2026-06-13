@@ -26,7 +26,7 @@ export default defineConfig({
     ? undefined
     : {
         command: serverMode === 'prod'
-          ? 'pnpm start -- -p 3000 -H 127.0.0.1'
+          ? 'pnpm start -p 3000 -H 127.0.0.1'
           : 'pnpm next dev --webpack -p 3000 -H 127.0.0.1',
         url: 'http://127.0.0.1:3000',
         reuseExistingServer: !process.env.CI,

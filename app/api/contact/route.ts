@@ -12,6 +12,9 @@ const contactSchema = z.object({
   name: z.string().trim().min(2, 'Ad soyad en az 2 karakter olmalıdır.').max(100, 'Ad soyad çok uzun.'),
   email: z.string().trim().email('Geçerli bir e-posta adresi girin.'),
   phone: z.string().trim().max(30, 'Telefon bilgisi çok uzun.').optional(),
+  galleryName: z.string().trim().min(2, 'Galeri adı en az 2 karakter olmalıdır.').max(150, 'Galeri adı çok uzun.'),
+  vehicleCount: z.enum(['1-15', '16-50', '51-100', '101-200', '200+']),
+  currentManagement: z.enum(['excel-whatsapp', 'ilan-platformlari', 'baska-yazilim', 'manuel', 'sistem-yok']),
   subject: z.string().trim().min(3, 'Konu en az 3 karakter olmalıdır.').max(150, 'Konu çok uzun.'),
   message: z.string().trim().min(10, 'Mesaj en az 10 karakter olmalıdır.').max(3000, 'Mesaj çok uzun.'),
   website: z.string().trim().max(120).optional(),
@@ -50,6 +53,9 @@ function buildLeadMessage(submission: ContactSubmission) {
     `Ad Soyad: ${submission.name}`,
     `E-posta: ${submission.email}`,
     `Telefon: ${submission.phone || '-'}`,
+    `Galeri: ${submission.galleryName}`,
+    `Aktif Araç Sayısı: ${submission.vehicleCount}`,
+    `Mevcut Yönetim: ${submission.currentManagement}`,
     `Konu: ${submission.subject}`,
     `Mesaj: ${submission.message}`,
     `Tarih: ${submission.sentAt}`,
@@ -80,7 +86,7 @@ export async function POST(request: Request) {
   try {
     const clientIp = getClientIp(request)
     const userAgent = request.headers.get('user-agent') ?? 'unknown'
-    const rateLimit = checkRateLimit({
+    const rateLimit = await checkRateLimit({
       key: `contact:${clientIp}`,
       limit: limits.contact.limit,
       windowMs: limits.contact.windowMs,
@@ -184,6 +190,7 @@ export async function POST(request: Request) {
     const botRisk = estimateBotRisk(request, [
       parsed.data.name,
       parsed.data.email,
+      parsed.data.galleryName,
       parsed.data.subject,
       parsed.data.message,
     ])
@@ -245,7 +252,13 @@ export async function POST(request: Request) {
         customerPhone: submission.phone,
         customerEmail: submission.email,
         subject: submission.subject,
-        message: submission.message,
+        message: [
+          `Galeri: ${submission.galleryName}`,
+          `Aktif araç sayısı: ${submission.vehicleCount}`,
+          `Mevcut yönetim: ${submission.currentManagement}`,
+          '',
+          submission.message,
+        ].join('\n'),
         gallerySlug: parsed.data.gallerySlug,
         source: 'form',
       })
@@ -363,6 +376,9 @@ export async function POST(request: Request) {
         status: 'delivery_failed',
         leadStoredInPanel,
         gallerySlug: parsed.data.gallerySlug || null,
+        galleryName: parsed.data.galleryName,
+        vehicleCount: parsed.data.vehicleCount,
+        currentManagement: parsed.data.currentManagement,
         galleryId: panelLeadResult.galleryId,
         vehicleId: panelLeadResult.vehicleId,
       },
@@ -423,6 +439,9 @@ export async function POST(request: Request) {
         status: 'ok',
         leadStoredInPanel,
         gallerySlug: parsed.data.gallerySlug || null,
+        galleryName: parsed.data.galleryName,
+        vehicleCount: parsed.data.vehicleCount,
+        currentManagement: parsed.data.currentManagement,
         galleryId: panelLeadResult.galleryId,
         vehicleId: panelLeadResult.vehicleId,
       },

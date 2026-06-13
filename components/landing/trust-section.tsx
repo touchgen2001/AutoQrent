@@ -4,7 +4,7 @@ import { BrandLogo } from '@/components/brand/brand-logo'
 
 const trustStandards = [
   { label: 'Galeri kimliği', value: 'Logo, iletişim ve showroom bilgileri panelden yönetilir.' },
-  { label: 'QR takip akışı', value: 'Tarama, tıklama ve lead kayıtları araç bazında ayrıştırılır.' },
+  { label: 'QR takip akışı', value: 'Tarama, tıklama ve müşteri talepleri araç bazında ayrıştırılır.' },
   { label: 'Görsel güvenliği', value: 'Fotoğraf yüklemeleri sunucu tarafında imza ve boyut kontrolünden geçer.' },
   { label: 'Erişim kontrolü', value: 'Panel ve admin alanları oturum kontrolüyle korunur.' },
 ]
@@ -13,7 +13,7 @@ const platformStandards = [
   'Araç sayfası, showroom ve panel görünümü aynı marka dilinde kalır.',
   'Sabit başarı yüzdesi veya doğrulanmamış galeri yorumu gösterilmez.',
   'Kurulum kapsamı ve destek seviyesi demo görüşmesinde netleştirilir.',
-  'Public araç/showroom linkleri güvenli route token standardına bağlıdır.',
+  'Paylaşılan araç ve galeri bağlantıları güvenli bağlantı standardıyla korunur.',
 ]
 
 export function TrustSection() {
@@ -63,7 +63,7 @@ export function TrustSection() {
                 <ScanLine className="h-3.5 w-3.5" />
                 QR performans takibi altyapısı
               </p>
-              <p className="mt-1">Tarama, tıklama ve lead verileri gerçek panel kaydı oluştuğunda araç bazında izlenir.</p>
+              <p className="mt-1">Tarama, tıklama ve müşteri talepleri panelde araç bazında izlenir.</p>
             </div>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
 import { createPageMetadata } from '@/lib/seo'
 import { getPublicVehicleDetail } from '@/lib/public-vehicle-seo'
 import { getVehicleSeoDescription, getVehicleSeoImage, getVehicleSeoTitle } from '@/lib/public-vehicle-jsonld'
@@ -13,12 +14,7 @@ export async function generateMetadata({ params }: VehicleLayoutProps): Promise<
   const vehicle = await getPublicVehicleDetail(id)
 
   if (!vehicle) {
-    return createPageMetadata({
-      title: 'Araç Bulunamadı',
-      description: 'Talep edilen araç kaydı bulunamadı.',
-      path: `/arac/${id}`,
-      keywords: ['arac', 'galeri', 'qr'],
-    })
+    notFound()
   }
 
   return createPageMetadata({

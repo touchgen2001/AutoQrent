@@ -8,7 +8,7 @@ const feedbackTopics = [
     description: 'Demo sırasında QR okutulduğunda müşteri hangi bilgileri görür, hangi aksiyonları alır birlikte test edilir.',
   },
   {
-    title: 'Satış ekibi lead takibi',
+    title: 'Satış ekibi müşteri talebi takibi',
     description: 'Telefon, WhatsApp ve form taleplerinin panelde nasıl ayrıştığı gerçek akış üzerinden gösterilir.',
   },
   {

@@ -1,7 +1,9 @@
-import type { PanelAlert, PanelAlertCenterResponse, PanelAlertSeverity, PanelLead } from '@/lib/panel-types'
+import type { PanelAlert, PanelAlertCenterResponse, PanelAlertSeverity, PanelLead, PanelVehicle } from '@/lib/panel-types'
 import { getLeadFunnelAnalytics } from '@/lib/server/analytics-repository'
-import { listPanelLeads } from '@/lib/server/panel-repository'
+import { listPanelLeads, listPanelVehicles } from '@/lib/server/panel-repository'
 import { supabaseAdminFetch } from '@/lib/server/supabase-admin'
+import { buildSalesGoalSnapshot, getPriceDropRecommendation } from '@/lib/sales-intelligence'
+import { resolvePanelGalleryIdByEmail } from '@/lib/server/panel-team-repository'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 const HOUR_MS = 60 * 60 * 1000
@@ -120,6 +122,31 @@ function buildUnansweredLeadAlert(unansweredCount: number, nowIso: string): Pane
   }
 }
 
+function buildFollowUpAlert(leads: PanelLead[], todayKey: string, nowIso: string, overdue: boolean): PanelAlert | null {
+  const openStatuses = new Set<PanelLead['status']>(['yeni', 'arandi', 'gorusuluyor', 'test-surusu'])
+  const count = leads.filter((lead) => {
+    if (!lead.followUpDate || !openStatuses.has(lead.status)) return false
+    return overdue ? lead.followUpDate < todayKey : lead.followUpDate === todayKey
+  }).length
+
+  if (count === 0) return null
+
+  return {
+    id: overdue ? 'follow-up-overdue-alert' : 'follow-up-due-alert',
+    type: overdue ? 'follow_up_overdue' : 'follow_up_due',
+    severity: overdue ? (count >= 5 ? 'critical' : 'high') : 'medium',
+    title: overdue ? 'Gecikmiş Müşteri Takipleri' : 'Bugün Aranacak Müşteriler',
+    description: overdue
+      ? 'Planlanan takip tarihi geçmiş açık müşteri talepleri işlem bekliyor.'
+      : 'Takip tarihi bugün olan müşteri talepleri hazır.',
+    metricValue: `${count} müşteri talebi`,
+    threshold: overdue ? 'Takip tarihi geçmiş' : 'Takip tarihi bugün',
+    actionLabel: overdue ? 'Gecikmişleri Aç' : 'Bugünkü Listeyi Aç',
+    actionHref: `/panel/leadler?view=${overdue ? 'overdue' : 'today'}`,
+    createdAt: nowIso,
+  }
+}
+
 function buildConversionAlert(conversionRate: number, totalLeads: number, nowIso: string): PanelAlert | null {
   if (totalLeads < 5) {
     return null
@@ -147,6 +174,57 @@ function buildConversionAlert(conversionRate: number, totalLeads: number, nowIso
     actionLabel: 'Huniyi Analiz Et',
     actionHref: '/panel/analitik',
     createdAt: nowIso,
+  }
+}
+
+function buildPriceDropRecommendationAlert(vehicles: PanelVehicle[], now: number, nowIso: string): PanelAlert | null {
+  const candidates = vehicles
+    .filter((vehicle) => vehicle.status === 'active')
+    .map((vehicle) => ({
+      vehicle,
+      recommendation: getPriceDropRecommendation(vehicle, now),
+    }))
+    .filter((item) => item.recommendation.shouldDrop)
+
+  if (candidates.length === 0) return null
+
+  const topCandidate = candidates.sort((left, right) =>
+    right.recommendation.suggestedDiscountRate - left.recommendation.suggestedDiscountRate,
+  )[0]
+
+  return {
+    id: 'price-drop-recommendation-alert',
+    type: 'price_drop_recommendation',
+    severity: candidates.length >= 5 ? 'high' : 'medium',
+    title: 'Fiyat Revizyonu Önerilen Araçlar',
+    description: 'Stok yaşı, QR tarama ve lead sinyallerine göre fiyatı yeniden gözden geçirilecek araçlar var.',
+    metricValue: `${candidates.length} araç · Öne çıkan: ${topCandidate.vehicle.brand} ${topCandidate.vehicle.model}`,
+    threshold: 'Eşik: yaşlı stok veya yüksek tarama/düşük lead',
+    actionLabel: 'Raporu Aç',
+    actionHref: '/panel/raporlar#fiyat-onerileri',
+    createdAt: nowIso,
+  }
+}
+
+function buildSalesGoalBehindAlert(vehicles: PanelVehicle[], leads: PanelLead[], now: Date): PanelAlert | null {
+  const goal = buildSalesGoalSnapshot(vehicles, leads, now)
+  if (goal.monthlyTarget <= 0 || goal.remaining <= 0) return null
+
+  const dayOfMonth = Number(new Intl.DateTimeFormat('en', { day: 'numeric', timeZone: 'Europe/Istanbul' }).format(now))
+  const expectedProgress = Math.min(100, Math.round((dayOfMonth / 30) * 100))
+  if (goal.progressRate >= expectedProgress - 15) return null
+
+  return {
+    id: 'sales-goal-behind-alert',
+    type: 'sales_goal_behind',
+    severity: goal.progressRate < expectedProgress - 35 ? 'high' : 'medium',
+    title: 'Aylık Satış Hedefi Geride',
+    description: 'Bu ayki satış hedefi beklenen ilerlemenin altında. Sıcak pipeline ve takip listesi önceliklendirilmeli.',
+    metricValue: `${goal.wonThisMonth}/${goal.monthlyTarget} satış · ${goal.pipeline} sıcak pipeline`,
+    threshold: `Beklenen ilerleme: %${expectedProgress}`,
+    actionLabel: 'Satış Hedeflerini Aç',
+    actionHref: '/panel/raporlar',
+    createdAt: now.toISOString(),
   }
 }
 
@@ -252,14 +330,84 @@ function buildSummary(alerts: PanelAlert[]): PanelAlertCenterResponse['summary']
   )
 }
 
+async function listOperationsAlerts(ownerEmail: string | undefined, nowIso: string): Promise<PanelAlert[]> {
+  if (!ownerEmail) return []
+  const galleryId = await resolvePanelGalleryIdByEmail(ownerEmail)
+  if (!galleryId) return []
+
+  const [reservations, reviews, deletedVehicles] = await Promise.all([
+    supabaseAdminFetch<Array<{ id: string }>>({
+      path: '/rest/v1/vehicle_reservations',
+      query: { select: 'id', gallery_id: `eq.${galleryId}`, status: 'eq.pending', limit: 1000 },
+    }).catch(() => []),
+    supabaseAdminFetch<Array<{ id: string }>>({
+      path: '/rest/v1/gallery_reviews',
+      query: { select: 'id', gallery_id: `eq.${galleryId}`, status: 'eq.pending', limit: 1000 },
+    }).catch(() => []),
+    supabaseAdminFetch<Array<{ id: string }>>({
+      path: '/rest/v1/vehicles',
+      query: { select: 'id', gallery_id: `eq.${galleryId}`, deleted_at: 'not.is.null', limit: 1000 },
+    }).catch(() => []),
+  ])
+
+  const alerts: PanelAlert[] = []
+  if (reservations.length > 0) {
+    alerts.push({
+      id: 'pending-reservations-alert',
+      type: 'pending_reservations',
+      severity: reservations.length >= 5 ? 'high' : 'medium',
+      title: 'Onay Bekleyen Rezervasyonlar',
+      description: 'Müşteriler araçlarınız için online rezervasyon talebi gönderdi.',
+      metricValue: `${reservations.length} rezervasyon talebi`,
+      threshold: 'Durum: Onay bekliyor',
+      actionLabel: 'Rezervasyonları Aç',
+      actionHref: '/panel/rezervasyonlar',
+      createdAt: nowIso,
+    })
+  }
+  if (reviews.length > 0) {
+    alerts.push({
+      id: 'pending-reviews-alert',
+      type: 'pending_reviews',
+      severity: 'low',
+      title: 'İncelenecek Müşteri Yorumları',
+      description: 'Yayınlanmadan önce kontrol edilmesi gereken yeni galeri yorumları var.',
+      metricValue: `${reviews.length} yorum`,
+      threshold: 'Durum: İncelemede',
+      actionLabel: 'Yorumları Aç',
+      actionHref: '/panel/yorumlar',
+      createdAt: nowIso,
+    })
+  }
+  if (deletedVehicles.length > 0) {
+    alerts.push({
+      id: 'recycle-bin-alert',
+      type: 'recycle_bin',
+      severity: 'low',
+      title: 'Geri Alınabilir Araçlar',
+      description: 'Silinen araçlar ve görselleri çöp kutusunda korunuyor.',
+      metricValue: `${deletedVehicles.length} araç`,
+      threshold: 'Kalıcı silme yapılmadı',
+      actionLabel: 'Çöp Kutusunu Aç',
+      actionHref: '/panel/arsiv',
+      createdAt: nowIso,
+    })
+  }
+
+  return alerts
+}
+
 export async function getPanelAlerts(ownerEmail?: string, userId?: string): Promise<PanelAlertCenterResponse> {
   const now = Date.now()
   const nowIso = new Date(now).toISOString()
+  const todayKey = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Istanbul' }).format(new Date(now))
 
-  const [leadsResult, funnelResult, adminNotifications] = await Promise.all([
+  const [leadsResult, vehiclesResult, funnelResult, adminNotifications, operationsAlerts] = await Promise.all([
     listPanelLeads(ownerEmail),
+    listPanelVehicles(ownerEmail),
     getLeadFunnelAnalytics('7days', ownerEmail),
     listAdminNotificationAlerts(userId),
+    listOperationsAlerts(ownerEmail, nowIso),
   ])
 
   const periodCounts = countPeriodLeads(leadsResult.items, now)
@@ -269,7 +417,12 @@ export async function getPanelAlerts(ownerEmail?: string, userId?: string): Prom
     buildNewLeadAlert(leadsResult.items, now),
     buildLeadDropAlert(periodCounts.current, periodCounts.previous, nowIso),
     buildUnansweredLeadAlert(unansweredLeadCount, nowIso),
+    buildFollowUpAlert(leadsResult.items, todayKey, nowIso, true),
+    buildFollowUpAlert(leadsResult.items, todayKey, nowIso, false),
     buildConversionAlert(funnelResult.current.conversionRate, funnelResult.current.totalLeads, nowIso),
+    buildPriceDropRecommendationAlert(vehiclesResult.items, now, nowIso),
+    buildSalesGoalBehindAlert(vehiclesResult.items, leadsResult.items, new Date(now)),
+    ...operationsAlerts,
     ...adminNotifications,
   ]
     .filter((item): item is PanelAlert => Boolean(item))

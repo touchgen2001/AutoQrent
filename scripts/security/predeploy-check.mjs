@@ -93,6 +93,8 @@ const migrationLeads = path.join(projectRoot, 'supabase/migrations/2026060100150
 const migrationUploadedAssets = path.join(projectRoot, 'supabase/migrations/20260602022205_uploaded_assets_metadata.sql')
 const migrationAdminAccounts = path.join(projectRoot, 'supabase/migrations/20260603095234_admin_accounts_system.sql')
 const migrationPublicShowroomTheme = path.join(projectRoot, 'supabase/migrations/20260605083000_gallery_public_showroom_theme.sql')
+const migrationDistributedLimits = path.join(projectRoot, 'supabase/migrations/20260613005307_distributed_rate_limits_and_analytics_overview.sql')
+const migrationSingleUser = path.join(projectRoot, 'supabase/migrations/20260613005526_enforce_single_gallery_user.sql')
 const wafRulesFile = path.join(projectRoot, 'security/cloudflare-waf-rules.json')
 const monthlyBackupWorkflow = path.join(projectRoot, '.github/workflows/monthly-supabase-backup.yml')
 const vercelConfig = path.join(projectRoot, 'vercel.json')
@@ -104,6 +106,41 @@ checks.push(createCheck('migration.leads.exists', fs.existsSync(migrationLeads),
 checks.push(createCheck('migration.uploaded_assets.exists', fs.existsSync(migrationUploadedAssets), path.relative(projectRoot, migrationUploadedAssets)))
 checks.push(createCheck('migration.admin_accounts.exists', fs.existsSync(migrationAdminAccounts), path.relative(projectRoot, migrationAdminAccounts)))
 checks.push(createCheck('migration.public_showroom_theme.exists', fs.existsSync(migrationPublicShowroomTheme), path.relative(projectRoot, migrationPublicShowroomTheme)))
+checks.push(createCheck('migration.distributed_limits.exists', fs.existsSync(migrationDistributedLimits), path.relative(projectRoot, migrationDistributedLimits)))
+checks.push(createCheck('migration.single_user.exists', fs.existsSync(migrationSingleUser), path.relative(projectRoot, migrationSingleUser)))
+checks.push(
+  createCheck(
+    'guard.distributed_rate_limit_service_role_only',
+    fileContains(migrationDistributedLimits, 'revoke execute on function public.consume_request_rate_limit')
+      && fileContains(migrationDistributedLimits, 'grant execute on function public.consume_request_rate_limit')
+      && fileContains(migrationDistributedLimits, 'to service_role'),
+    'distributed rate limit RPC must only be executable by service_role',
+  ),
+)
+checks.push(
+  createCheck(
+    'guard.analytics_rpc_service_role_only',
+    fileContains(migrationDistributedLimits, 'revoke execute on function public.get_gallery_analytics_overview')
+      && fileContains(migrationDistributedLimits, 'grant execute on function public.get_gallery_analytics_overview'),
+    'analytics overview RPC must only be executable by service_role',
+  ),
+)
+checks.push(
+  createCheck(
+    'guard.single_user_database_trigger',
+    fileContains(migrationSingleUser, 'trg_enforce_single_gallery_user')
+      && fileContains(migrationSingleUser, "new.role <> 'owner'"),
+    'database must reject active non-owner gallery memberships',
+  ),
+)
+checks.push(
+  createCheck(
+    'guard.public_routes_verify_database_existence',
+    fileContains(path.join(projectRoot, 'proxy.ts'), 'publicRouteExists')
+      && fileContains(path.join(projectRoot, 'proxy.ts'), 'notFoundResponse'),
+    'secure-looking public routes must still exist in the database',
+  ),
+)
 
 checks.push(
   createCheck(
@@ -740,8 +777,11 @@ checks.push(
       && fileContains(path.join(projectRoot, 'app/api/admin/operations/moderation/route.ts'), 'recordAdminModerationAction')
       && fileContains(path.join(projectRoot, 'lib/server/admin-operations-repository.ts'), '/rest/v1/audit_logs')
       && fileContains(path.join(projectRoot, 'lib/server/admin-operations-repository.ts'), '/rest/v1/galleries')
+      && fileContains(path.join(projectRoot, 'lib/server/admin-operations-repository.ts'), '/rest/v1/support_tickets')
+      && fileContains(path.join(projectRoot, 'lib/server/admin-operations-repository.ts'), '/rest/v1/moderation_reports')
+      && fileContains(path.join(projectRoot, 'lib/server/admin-operations-repository.ts'), '/rest/v1/admin_broadcasts')
       && fileContains(path.join(projectRoot, 'lib/server/admin-operations-repository.ts'), 'Destek talebi tablosu bağlı değil')
-      && fileContains(path.join(projectRoot, 'lib/server/admin-operations-repository.ts'), 'tickets: []')
+      && fileContains(path.join(projectRoot, 'lib/server/admin-operations-repository.ts'), 'buildSupportTickets')
       && fileContains(path.join(projectRoot, 'lib/server/admin-operations-repository.ts'), 'admin_moderation_action')
       && fileContains(path.join(projectRoot, 'apps/super-admin/src/pages/support-operations-page.tsx'), 'platformApi.getOperationsSnapshot')
       && fileContains(path.join(projectRoot, 'apps/super-admin/src/pages/support-operations-page.tsx'), 'platformApi.recordModerationAction')
@@ -751,7 +791,7 @@ checks.push(
       && fileContains(path.join(projectRoot, 'scripts/qa/prod-smoke-full.mjs'), '/api/admin/operations')
       && fileContains(path.join(projectRoot, 'scripts/qa/prod-smoke-full.mjs'), '/api/admin/operations/moderation')
       && !fileContains(path.join(projectRoot, 'apps/super-admin/src/lib/platform-api.ts'), 'SUPABASE_SERVICE_ROLE_KEY'),
-    'super admin operations module must use protected live audit/notification APIs without mock data or service-role exposure',
+    'super admin operations module must use protected live operations/audit/notification APIs without mock data or service-role exposure',
   ),
 )
 checks.push(
@@ -1201,16 +1241,20 @@ checks.push(
 )
 checks.push(
   createCheck(
-    'guard.vehicle_delete_cleans_storage',
-    fileContains(path.join(projectRoot, 'lib/server/panel-repository.ts'), 'deleteVehicleImageObjectsForGallery'),
-    'vehicle deletion must delete owned image objects from Supabase Storage',
+    'guard.vehicle_delete_is_recoverable',
+    fileContains(path.join(projectRoot, 'lib/server/panel-repository.ts'), 'deleted_at: new Date().toISOString()')
+      && fileContains(path.join(projectRoot, 'lib/server/panel-repository.ts'), 'listDeletedPanelVehicles')
+      && fileContains(path.join(projectRoot, 'lib/server/panel-repository.ts'), 'restorePanelVehicle'),
+    'vehicle deletion must be recoverable and keep owned image objects until an explicit permanent cleanup flow',
   ),
 )
 checks.push(
   createCheck(
-    'guard.vehicle_delete_marks_asset_metadata',
-    fileContains(path.join(projectRoot, 'lib/server/panel-repository.ts'), 'markUploadedAssetsDeleted'),
-    'vehicle deletion must mark uploaded_assets rows as deleted',
+    'guard.vehicle_delete_restore_endpoint',
+    fileContains(path.join(projectRoot, 'app/api/panel/vehicles/trash/route.ts'), 'requirePanelPermissionOrThrow')
+      && fileContains(path.join(projectRoot, 'app/api/panel/vehicles/trash/route.ts'), 'restorePanelVehicle')
+      && fileContains(path.join(projectRoot, 'app/api/panel/vehicles/trash/route.ts'), 'vehicle_restore'),
+    'recoverable vehicle deletion must expose a permission-protected restore endpoint with audit logging',
   ),
 )
 checks.push(

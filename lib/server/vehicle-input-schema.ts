@@ -49,6 +49,9 @@ const extendedVehicleFields = {
   previousOwners: z.string().trim().max(20).optional(),
   serviceHistory: z.enum(['yes', 'partial', 'no']).optional(),
   warrantyStatus: z.enum(['yes', 'no']).optional(),
+  purchasePrice: vehicleIntegerSchema('price').optional(),
+  expenseTotal: vehicleIntegerSchema('price').optional(),
+  targetProfit: vehicleIntegerSchema('price').optional(),
 }
 
 export const createVehicleSchema = baseVehicleSchema.extend(extendedVehicleFields)

@@ -43,6 +43,7 @@ export async function GET(request: Request) {
           fullName: refreshed.fullName,
           galleryId: refreshed.galleryId,
           galleryName: refreshed.galleryName,
+          role: refreshed.role,
           expiresAt: refreshed.expiresAt,
         },
       })
@@ -59,6 +60,7 @@ export async function GET(request: Request) {
         fullName: session.fullName,
         galleryId: session.galleryId,
         galleryName: session.galleryName,
+        role: session.role,
         expiresAt: session.expiresAt,
       },
     })

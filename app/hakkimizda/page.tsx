@@ -46,7 +46,7 @@ const principles = [
   'Sade arayüz, hızlı onboarding ve minimum eğitim ihtiyacı',
   'Mobil öncelikli araç sayfaları ve kolay iletişim kanalları',
   'Veriye dayalı satış kararları için anlık analitik görünürlük',
-  'Tek kullanıcı hesabıyla sade, kontrollü ve izlenebilir yönetim altyapısı',
+  'Tek galeri hesabında kontrollü ve izlenebilir yönetim altyapısı',
 ]
 
 const brandStandards = [

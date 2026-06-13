@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { LiveAlertCenter } from "@/components/dashboard/live-alert-center"
 import { ShareLinkButtons } from "@/components/panel/share-link-buttons"
+import { InstallAppCard } from "@/components/panel/install-app-card"
 import type { PanelTopSharedVehicle } from "@/lib/panel-types"
 import { getLeadFunnelAnalytics } from "@/lib/server/analytics-repository"
 import { readPanelSessionFromCookieHeader } from "@/lib/server/panel-auth"
@@ -151,7 +152,7 @@ export default async function DashboardPage() {
       title: "Bugün aranacak müşteri",
       description: "Takip günü bugün olan müşteriler",
       value: followUpTodayCount,
-      href: "/panel/leadler",
+      href: "/panel/leadler?view=today",
       icon: PhoneCall,
       critical: false,
     },
@@ -159,7 +160,7 @@ export default async function DashboardPage() {
       title: "Gecikmiş dönüşler",
       description: "Takip tarihi geçmiş açık müşteri talepleri",
       value: overdueFollowUpCount,
-      href: "/panel/leadler",
+      href: "/panel/leadler?view=overdue",
       icon: AlertTriangle,
       critical: true,
     },
@@ -170,6 +171,29 @@ export default async function DashboardPage() {
       href: "/panel/qr-kodlar",
       icon: Timer,
       critical: false,
+    },
+  ]
+
+  const dailySummary = [
+    {
+      label: "Bugünkü QR taraması",
+      value: scansToday,
+      detail: scansToday > 0 ? "Vitrin bugün trafik alıyor" : "Bugün henüz QR taraması yok",
+    },
+    {
+      label: "Yeni müşteri talebi",
+      value: freshLeadCount,
+      detail: freshLeadCount > 0 ? "Hızlı ilk temas önerilir" : "Yeni bekleyen talep yok",
+    },
+    {
+      label: "Bugün aranacak",
+      value: followUpTodayCount,
+      detail: "Takip günü bugün olan müşteriler",
+    },
+    {
+      label: "Gecikmiş takip",
+      value: overdueFollowUpCount,
+      detail: overdueFollowUpCount > 0 ? "Öncelik verilmeli" : "Gecikmiş açık takip yok",
     },
   ]
 
@@ -283,6 +307,31 @@ export default async function DashboardPage() {
       </div>
 
       <LiveAlertCenter />
+
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <CardTitle>Otomatik Günlük Özet</CardTitle>
+              <CardDescription>Bugünün QR, lead ve takip sinyalleri tek bakışta</CardDescription>
+            </div>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/panel/raporlar">Yönetici Raporu</Link>
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {dailySummary.map((item) => (
+              <div key={item.label} className="rounded-xl border border-border bg-muted/20 p-4">
+                <p className="text-xs text-muted-foreground">{item.label}</p>
+                <p className="mt-2 text-2xl font-bold text-foreground">{item.value}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{item.detail}</p>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid xl:grid-cols-3 gap-4">
         <Card className="xl:col-span-2">
@@ -577,7 +626,7 @@ export default async function DashboardPage() {
         </CardContent>
       </Card>
 
-      <div className="grid sm:grid-cols-3 gap-4">
+      <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <Link href="/panel/araclar/ekle">
           <Card className="hover:border-accent/30 hover:shadow-md transition-all cursor-pointer h-full">
             <CardContent className="p-6 flex items-center gap-4">
@@ -617,6 +666,7 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
         </Link>
+        <InstallAppCard compact />
       </div>
     </div>
   )

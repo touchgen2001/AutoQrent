@@ -1,4 +1,5 @@
 import { getOpsSnapshot } from '@/lib/security/ops-monitor'
+import { isQaAuthMetadata } from '@/lib/server/qa-account'
 import { requireSupabaseAdminConfig, supabaseAdminFetch } from '@/lib/server/supabase-admin'
 import { normalizeSubscriptionStatus } from '@/lib/subscription-plans'
 
@@ -195,6 +196,7 @@ function fetchGalleries() {
     path: '/rest/v1/galleries',
     query: {
       select: 'id,name,owner_email,created_at',
+      is_qa_account: 'eq.false',
       order: 'created_at.desc',
       limit: DATA_ROW_LIMIT,
     },
@@ -489,13 +491,21 @@ export async function getAdminDashboardSnapshot(): Promise<PlatformDashboardSnap
   const auditLogs = await timed('audit logs', fetchAuditLogs)
   const ops = getOpsSnapshot()
 
-  const authUsers = auth.value
+  const authUsers = auth.value.filter((user) => !isQaAuthMetadata(user.app_metadata))
   const galleryRows = galleries.value
-  const vehicleRows = vehicles.value
-  const qrScanRows = qrScans.value
-  const recentLeadRows = recentLeads.value
-  const allLeadRows = allLeads.value
-  const auditRows = auditLogs.value
+  const productionGalleryIds = new Set(galleryRows.map((gallery) => gallery.id))
+  const vehicleRows = vehicles.value.filter((vehicle) => vehicle.gallery_id && productionGalleryIds.has(vehicle.gallery_id))
+  const productionVehicleIds = new Set(vehicleRows.map((vehicle) => vehicle.id))
+  const qrScanRows = qrScans.value.filter((scan) => scan.vehicle_id && productionVehicleIds.has(scan.vehicle_id))
+  const recentLeadRows = recentLeads.value.filter((lead) => lead.gallery_id && productionGalleryIds.has(lead.gallery_id))
+  const allLeadRows = allLeads.value.filter((lead) => lead.gallery_id && productionGalleryIds.has(lead.gallery_id))
+  const qaEmails = new Set(
+    auth.value
+      .filter((user) => isQaAuthMetadata(user.app_metadata))
+      .map((user) => normalizeEmail(user.email))
+      .filter(Boolean),
+  )
+  const auditRows = auditLogs.value.filter((row) => !qaEmails.has(normalizeEmail(row.actor_email)))
   const ownerEmails = new Set(galleryRows.map((gallery) => normalizeEmail(gallery.owner_email)).filter(Boolean))
   const activeUsers = authUsers.filter((user) => ownerEmails.has(normalizeEmail(user.email)) && isActiveSubscription(user))
   const trialUsers = authUsers.filter((user) => ownerEmails.has(normalizeEmail(user.email)) && isTrialSubscription(user))

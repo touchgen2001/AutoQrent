@@ -4,7 +4,7 @@ import { insertAuditLog } from '@/lib/security/audit'
 import { getClientIp } from '@/lib/security/request-guards'
 import { containsPlaceholderText } from '@/lib/server/panel-input-guard'
 import { updatePanelLead } from '@/lib/server/panel-repository'
-import { panelAuthErrorResponse, requirePanelSessionOrThrow } from '@/lib/server/panel-auth-guard'
+import { panelAuthErrorResponse, requirePanelPermissionOrThrow, requirePanelSessionOrThrow } from '@/lib/server/panel-auth-guard'
 import { assertFeatureAccess } from '@/lib/server/subscription-repository'
 import { subscriptionGateErrorResponse } from '@/lib/server/subscription-response'
 
@@ -27,6 +27,7 @@ const updateLeadSchema = z
 export async function PATCH(request: Request, context: { params: Promise<unknown> }) {
   try {
     const session = await requirePanelSessionOrThrow(request)
+    await requirePanelPermissionOrThrow(session, 'leads.manage')
 
     const resolved = await context.params
     const parsedParams = paramsSchema.safeParse(resolved)
@@ -77,7 +78,8 @@ export async function PATCH(request: Request, context: { params: Promise<unknown
         action: 'lead_status_change',
         entityType: 'lead',
         entityId: parsedParams.data.id,
-        actorRole: 'owner',
+        actorEmail: session.email,
+        actorRole: session.role,
         source: 'panel_api',
         ip,
         userAgent,
@@ -93,13 +95,31 @@ export async function PATCH(request: Request, context: { params: Promise<unknown
         action: 'lead_note_add',
         entityType: 'lead',
         entityId: parsedParams.data.id,
-        actorRole: 'owner',
+        actorEmail: session.email,
+        actorRole: session.role,
         source: 'panel_api',
         ip,
         userAgent,
         metadata: {
           galleryId: session.galleryId,
           noteLength: parsedBody.data.addNote.length,
+        },
+      })
+    }
+
+    if (parsedBody.data.followUpDate !== undefined) {
+      await insertAuditLog({
+        action: 'lead_follow_up_change',
+        entityType: 'lead',
+        entityId: parsedParams.data.id,
+        actorEmail: session.email,
+        actorRole: session.role,
+        source: 'panel_api',
+        ip,
+        userAgent,
+        metadata: {
+          galleryId: session.galleryId,
+          followUpDate: parsedBody.data.followUpDate,
         },
       })
     }

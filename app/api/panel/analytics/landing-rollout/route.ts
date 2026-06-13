@@ -44,12 +44,12 @@ function mapConfigRow(row: LandingConfigRow) {
   }
 }
 
-async function fetchLandingConfig(ownerEmail: string) {
+async function fetchLandingConfig(galleryId: string) {
   const rows = await supabaseAdminFetch<LandingConfigRow[]>({
     path: '/rest/v1/galleries',
     query: {
       select: 'id,landing_cta_mode,landing_cta_forced_variant,landing_cta_updated_at',
-      owner_email: `eq.${ownerEmail}`,
+      id: `eq.${galleryId}`,
       limit: 1,
     },
   })
@@ -108,7 +108,7 @@ export async function POST(request: Request) {
       )
     }
 
-    const existingConfig = await fetchLandingConfig(session.email)
+    const existingConfig = await fetchLandingConfig(session.galleryId)
     if (!existingConfig) {
       return NextResponse.json(
         {
@@ -126,7 +126,7 @@ export async function POST(request: Request) {
         forcedVariant: null,
       })
 
-      const config = await fetchLandingConfig(session.email)
+      const config = await fetchLandingConfig(session.galleryId)
 
       void insertAuditLog({
         action: 'landing_cta_config_update',
@@ -184,7 +184,7 @@ export async function POST(request: Request) {
       forcedVariant: summary.winnerVariant,
     })
 
-    const config = await fetchLandingConfig(session.email)
+    const config = await fetchLandingConfig(session.galleryId)
 
     void insertAuditLog({
       action: 'landing_cta_config_update',

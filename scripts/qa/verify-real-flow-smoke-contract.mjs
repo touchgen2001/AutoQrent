@@ -18,6 +18,8 @@ function assert(condition, message) {
 const realFlowSmoke = read('scripts/qa/real-user-flow-smoke.mjs')
 const qaCleanupHelper = read('lib/server/qa-test-data-cleanup.ts')
 const qaCleanupRoute = read('app/api/cron/cleanup-qa-test-data/route.ts')
+const persistentQaMarker = read('scripts/qa/mark-persistent-qa-account.mjs')
+const persistentQaWrapper = read('scripts/qa/prod-real-flow-with-vercel-env.sh')
 const packageJson = read('package.json')
 const predeploy = read('scripts/security/predeploy-check.mjs')
 
@@ -67,7 +69,7 @@ const checks = [
     'real user smoke cleans vehicle and uploaded image by default',
     realFlowSmoke.includes("REAL_FLOW_CLEANUP_VEHICLE !== '0'")
       && realFlowSmoke.includes("method: 'DELETE'")
-      && realFlowSmoke.includes('publicUrls: [photoUrl]'),
+      && realFlowSmoke.includes('publicUrls: photoUrls'),
   ],
   [
     'real user smoke loads local env without printing secrets',
@@ -86,6 +88,35 @@ const checks = [
       && realFlowSmoke.includes('should_soft_delete: false')
       && realFlowSmoke.includes('remainingGalleryCount')
       && realFlowSmoke.includes('remainingAuthUserCount'),
+  ],
+  [
+    'real user smoke supports isolated persistent QA account',
+    realFlowSmoke.includes("REAL_FLOW_USE_EXISTING_ACCOUNT === '1'")
+      && realFlowSmoke.includes('loginExistingAccount')
+      && realFlowSmoke.includes('assertPersistentQaGallery')
+      && realFlowSmoke.includes('gallery.is_qa_account === true')
+      && realFlowSmoke.includes('hardDeletePersistentQaArtifacts'),
+  ],
+  [
+    'persistent QA flow removes all uploaded duplicate images',
+    realFlowSmoke.includes('photoUrls')
+      && realFlowSmoke.includes('publicUrls: photoUrls')
+      && realFlowSmoke.includes('response.data.items.map'),
+  ],
+  [
+    'persistent QA marker protects account identity and metadata',
+    persistentQaMarker.includes('SMOKE_TEST_EMAIL')
+      && persistentQaMarker.includes('is_qa_account: true')
+      && persistentQaMarker.includes('isQaAccount: true')
+      && !persistentQaMarker.includes('console.log(email)'),
+  ],
+  [
+    'persistent QA wrapper uses temporary Vercel env and sequential scripts',
+    persistentQaWrapper.includes('vercel env pull')
+      && persistentQaWrapper.includes('${TMPDIR:-/tmp}')
+      && persistentQaWrapper.includes('trap cleanup EXIT')
+      && persistentQaWrapper.includes('REAL_FLOW_USE_EXISTING_ACCOUNT=1')
+      && persistentQaWrapper.indexOf('mark-persistent-qa-account.mjs') < persistentQaWrapper.indexOf('real-user-flow-smoke.mjs'),
   ],
   [
     'real user smoke cleanup is finally guarded and sequential',

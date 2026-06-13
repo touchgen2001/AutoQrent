@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 
 import { trustedMutationOriginResponse } from '@/lib/security/request-guards'
 import { readPanelSessionFromRequest, verifyPanelSessionUser, type PanelSession } from '@/lib/server/panel-auth'
+import type { PanelPermission } from '@/lib/panel-permissions'
+import { fetchPanelTeamMemberByEmail } from '@/lib/server/panel-team-repository'
 
 export class PanelAuthError extends Error {
   constructor(message = 'Panel oturumu geçersiz veya süresi dolmuş.') {
@@ -33,7 +35,24 @@ export async function requirePanelSessionOrThrow(request: Request): Promise<Pane
     throw new PanelAuthError(error instanceof Error ? error.message : undefined)
   }
 
+  if (session.role === 'viewer' && !['GET', 'HEAD', 'OPTIONS'].includes(request.method.toUpperCase())) {
+    throw new PanelForbiddenError('Sadece görüntüleyen rolü panel verilerini değiştiremez.')
+  }
+
   return session
+}
+
+export async function requirePanelPermissionOrThrow(session: PanelSession, permission: PanelPermission) {
+  if (session.role === 'owner') return
+
+  const member = await fetchPanelTeamMemberByEmail({
+    galleryId: session.galleryId,
+    email: session.email,
+  })
+
+  if (!member || member.status !== 'active' || !member.permissions?.includes(permission)) {
+    throw new PanelForbiddenError('Bu işlem için personel hesabınıza yetki verilmemiş.')
+  }
 }
 
 export function panelAuthErrorResponse(error: unknown) {

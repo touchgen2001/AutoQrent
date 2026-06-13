@@ -27,9 +27,21 @@
       "notes": "Apply WAF rate limiting: 20 requests / 10 minutes per IP."
     },
     {
+      "id": "rule_public_reservations_rate_limit",
+      "action": "managed_challenge",
+      "expression": "(http.request.uri.path eq \"/api/public/reservations\" and http.request.method eq \"POST\")",
+      "notes": "Apply WAF rate limiting: 5 requests / 10 minutes per IP."
+    },
+    {
+      "id": "rule_public_reviews_rate_limit",
+      "action": "managed_challenge",
+      "expression": "(http.request.uri.path eq \"/api/public/reviews\" and http.request.method eq \"POST\")",
+      "notes": "Apply WAF rate limiting: 3 requests / day per IP."
+    },
+    {
       "id": "rule_block_known_bots_on_public_forms",
       "action": "block",
-      "expression": "(http.request.uri.path in {\"/api/contact\" \"/api/public/vehicle-events\" \"/api/public/showroom-events\" \"/api/auth/login\"} and cf.client.bot)",
+      "expression": "(http.request.uri.path in {\"/api/contact\" \"/api/public/vehicle-events\" \"/api/public/showroom-events\" \"/api/public/reservations\" \"/api/public/reviews\" \"/api/auth/login\"} and cf.client.bot)",
       "notes": "Block known automated traffic on abuse-prone endpoints."
     }
   ]

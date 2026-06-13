@@ -1,6 +1,6 @@
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowRight, CarFront, MessageCircle, QrCode, ScanLine, Smartphone } from "lucide-react"
+import { ArrowRight, CarFront, MessageCircle, QrCode, ScanLine } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -21,18 +21,18 @@ const vehiclePrice = new Intl.NumberFormat("tr-TR", {
 
 const flowItems = [
   {
-    title: "QR okutulur",
-    description: "Müşteri araç başında standart QR kodu okutur.",
+    title: "Aracı ekle",
+    description: "Araç bilgilerini ve fotoğraflarını panele ekle.",
+    icon: CarFront,
+  },
+  {
+    title: "QR kodu araca yerleştir",
+    description: "Oluşan QR kodu indirip araç üzerinde kullan.",
     icon: QrCode,
   },
   {
-    title: "Araç sayfası açılır",
-    description: "Fotoğraf, fiyat, teknik bilgi ve iletişim butonları mobilde görünür.",
-    icon: Smartphone,
-  },
-  {
-    title: "Talep panele düşer",
-    description: "Arama, WhatsApp ve form temasları araçla eşleşerek takip edilir.",
+    title: "Müşteri taleplerini takip et",
+    description: "Arama, WhatsApp ve form taleplerini tek yerden yönet.",
     icon: MessageCircle,
   },
 ]
@@ -50,11 +50,11 @@ export function HomeDemoExperience() {
             Canlı demo QR deneyimi
           </div>
           <h2 className="mt-5 text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl">
-            Galerici ve müşteri deneyimini aynı ekranda görün
+            Üç adımda dijital vitrininizi kullanmaya başlayın
           </h2>
           <p className="mt-4 max-w-2xl text-base leading-relaxed text-white/70">
-            Demo galeri, logo, public showroom, araç detay sayfası ve QR yönlendirmesiyle hazırdır.
-            Müşteri tarafında ne açıldığını, galeri sahibinin hangi bilgileri yayınlayacağını anasayfadan deneyebilirsiniz.
+            Aracı ekleyin, QR kodunu yerleştirin ve gelen müşteri taleplerini panelden takip edin.
+            Hazır demo üzerinden hem galeri sitesini hem araç sayfasını deneyebilirsiniz.
           </p>
 
           <div className="mt-8 grid gap-3 sm:grid-cols-3">

@@ -2,9 +2,20 @@ import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, 
 import { NextResponse } from 'next/server'
 
 import { buildSecurePublicSlug } from '@/lib/security/public-route-token'
+import type { PanelStaffRole } from '@/lib/lead-assignment'
 import { requireSupabaseAdminConfig, supabaseAdminFetch } from '@/lib/server/supabase-admin'
+import {
+  ensureOwnerTeamMember,
+  findPanelGalleryAccessByEmail,
+  isPanelStaffRole,
+} from '@/lib/server/panel-team-repository'
 import { ensureTrialSubscriptionForGallery } from '@/lib/server/subscription-repository'
-import { isSubscriptionPlanCode, type SubscriptionPlanCode } from '@/lib/subscription-plans'
+import {
+  isBillingInterval,
+  isSubscriptionPlanCode,
+  type BillingInterval,
+  type SubscriptionPlanCode,
+} from '@/lib/subscription-plans'
 
 export const PANEL_SESSION_COOKIE_NAME = 'autoqrent_panel_session'
 
@@ -67,6 +78,7 @@ type PanelSessionCookiePayload = {
   fullName: string
   galleryId: string
   galleryName: string
+  role?: PanelStaffRole
   accessToken: string
   refreshToken: string
   expiresAt: string
@@ -78,6 +90,7 @@ export type PanelSession = {
   fullName: string
   galleryId: string
   galleryName: string
+  role: PanelStaffRole
   accessToken: string
   refreshToken: string
   expiresAt: string
@@ -90,6 +103,7 @@ type RegisterInput = {
   phone: string
   password: string
   planCode?: SubscriptionPlanCode
+  billingInterval?: BillingInterval
 }
 
 type LoginInput = {
@@ -251,6 +265,10 @@ function isUserAlreadyRegisteredError(error: unknown) {
   )
 }
 
+export function isSupabaseUserAlreadyRegisteredError(error: unknown) {
+  return isUserAlreadyRegisteredError(error)
+}
+
 function computeExpiresAtIso(session: SupabaseAuthSession) {
   if (typeof session.expires_at === 'number' && Number.isFinite(session.expires_at)) {
     return new Date(session.expires_at * 1000).toISOString()
@@ -358,6 +376,17 @@ export async function verifyPanelSessionUser(session: PanelSession) {
   }
 
   assertAuthUserCanUsePanel(user)
+  const access = await findPanelGalleryAccessByEmail(session.email)
+  if (!access || access.gallery.id !== session.galleryId) {
+    throw new Error('Panel oturumu galeri yetkisiyle eşleşmiyor.')
+  }
+  if (access.membership.status !== 'active') {
+    throw new Error('Bu personel hesabının panel erişimi aktif değil.')
+  }
+  if (access.membership.role !== session.role) {
+    throw new Error('Panel rolünüz değişti. Lütfen tekrar giriş yapın.')
+  }
+
   return user
 }
 
@@ -469,6 +498,57 @@ async function createConfirmedUserWithSupabaseAdmin(input: {
   }
 }
 
+export async function createConfirmedPanelStaffUser(input: {
+  email: string
+  password: string
+  fullName: string
+  galleryId: string
+  galleryName: string
+  role: Exclude<PanelStaffRole, 'owner'>
+  invitedByEmail: string
+}): Promise<SupabaseAuthUser> {
+  requireSupabaseAdminConfig()
+
+  const created = await supabaseAdminFetch<SupabaseAdminCreateUserResponse>({
+    method: 'POST',
+    path: '/auth/v1/admin/users',
+    body: {
+      email: normalizeEmail(input.email),
+      password: input.password,
+      email_confirm: true,
+      user_metadata: {
+        fullName: input.fullName,
+        galleryName: input.galleryName,
+      },
+      app_metadata: {
+        accountRole: input.role,
+        accessStatus: 'active',
+        galleryId: input.galleryId,
+        invitedByEmail: normalizeEmail(input.invitedByEmail),
+        invitedAt: new Date().toISOString(),
+      },
+    },
+  })
+
+  const user = created?.user || {
+    id: created?.id,
+    email: created?.email,
+    user_metadata: created?.user_metadata || null,
+    app_metadata: created?.app_metadata || null,
+  }
+
+  if (!user?.id) {
+    throw new Error('Personel kullanıcısı oluşturuldu ancak kimlik bilgisi alınamadı.')
+  }
+
+  return {
+    id: user.id,
+    email: user.email,
+    user_metadata: user.user_metadata || null,
+    app_metadata: user.app_metadata || null,
+  }
+}
+
 function resolveFullName(input: {
   preferredFullName?: string
   user?: SupabaseAuthUser
@@ -484,11 +564,90 @@ function resolveFullName(input: {
   return 'Galeri Sahibi'
 }
 
+function getSessionRole(value: unknown): PanelStaffRole {
+  return isPanelStaffRole(value) ? value : 'owner'
+}
+
+async function resolvePanelAccessForUser(input: {
+  email: string
+  user: SupabaseAuthUser
+  fullName: string
+  fallbackGalleryName: string
+  phone?: string
+  createOwnerIfMissing: boolean
+}) {
+  const email = normalizeEmail(input.email)
+  const access = await findPanelGalleryAccessByEmail(email)
+
+  if (access) {
+    if (access.membership.status === 'suspended') {
+      throw new Error('Bu personel hesabı askıya alınmış. Panel erişimi için hesap sahibiyle iletişime geçin.')
+    }
+
+    const ownerEmail = normalizeEmail(access.gallery.owner_email || '')
+    if (!ownerEmail) {
+      throw new Error('Galeri sahibi e-posta bilgisi eksik.')
+    }
+
+    let membership = access.membership
+    if (membership.role === 'owner') {
+      membership = await ensureOwnerTeamMember({
+        galleryId: access.gallery.id,
+        ownerEmail,
+        fullName: input.fullName,
+        userId: input.user.id,
+      })
+    } else {
+      throw new Error('Cebindegaleri tek kullanıcı hesabı ile çalışır. Bu hesap panel erişimine kapalıdır.')
+    }
+
+    await ensureTrialSubscriptionForGallery({
+      galleryId: access.gallery.id,
+      ownerEmail,
+    })
+
+    return {
+      gallery: access.gallery,
+      role: membership.role,
+      fullName: membership.role === 'owner' ? input.fullName : membership.name,
+    }
+  }
+
+  if (!input.createOwnerIfMissing) {
+    throw new Error('Bu kullanıcı için panel yetkisi bulunamadı.')
+  }
+
+  const gallery = await ensureOwnerGallery({
+    ownerEmail: email,
+    galleryName: input.fallbackGalleryName || 'Galeri',
+    phone: input.phone || '',
+  })
+
+  await ensureOwnerTeamMember({
+    galleryId: gallery.id,
+    ownerEmail: email,
+    fullName: input.fullName,
+    userId: input.user.id,
+  })
+
+  await ensureTrialSubscriptionForGallery({
+    galleryId: gallery.id,
+    ownerEmail: email,
+  })
+
+  return {
+    gallery,
+    role: 'owner' as const,
+    fullName: input.fullName,
+  }
+}
+
 function buildSessionPayload(input: {
   authSession: SupabaseAuthSession
   user: SupabaseAuthUser
   fullName: string
   gallery: GalleryRow
+  role: PanelStaffRole
 }) {
   const email = normalizeEmail(input.user.email || '')
   if (!email) {
@@ -502,6 +661,7 @@ function buildSessionPayload(input: {
     fullName: input.fullName,
     galleryId: input.gallery.id,
     galleryName: input.gallery.name,
+    role: input.role,
     accessToken: input.authSession.access_token,
     refreshToken: input.authSession.refresh_token,
     expiresAt: computeExpiresAtIso(input.authSession),
@@ -516,6 +676,7 @@ export function setPanelSessionCookie(response: NextResponse, payload: PanelSess
     fullName: payload.fullName,
     galleryId: payload.galleryId,
     galleryName: payload.galleryName,
+    role: payload.role,
     accessToken: payload.accessToken,
     refreshToken: payload.refreshToken,
     expiresAt: payload.expiresAt,
@@ -547,6 +708,7 @@ function toPublicSession(payload: PanelSessionCookiePayload): PanelSession {
     fullName: payload.fullName,
     galleryId: payload.galleryId,
     galleryName: payload.galleryName,
+    role: getSessionRole(payload.role),
     accessToken: payload.accessToken,
     refreshToken: payload.refreshToken,
     expiresAt: payload.expiresAt,
@@ -578,14 +740,21 @@ export async function refreshPanelSession(input: {
   const user = refreshed.user
   assertAuthUserCanUsePanel(user)
   const email = normalizeEmail(user?.email || input.previous.email)
-  const gallery = await ensureOwnerGallery({
-    ownerEmail: email,
-    galleryName: input.previous.galleryName,
-    phone: '',
+  const fullName = resolveFullName({
+    preferredFullName: input.previous.fullName,
+    user,
   })
-  await ensureTrialSubscriptionForGallery({
-    galleryId: gallery.id,
-    ownerEmail: email,
+  const access = await resolvePanelAccessForUser({
+    email,
+    user: {
+      id: user?.id || input.previous.userId,
+      email,
+      user_metadata: user?.user_metadata || null,
+      app_metadata: user?.app_metadata || null,
+    },
+    fullName,
+    fallbackGalleryName: input.previous.galleryName,
+    createOwnerIfMissing: false,
   })
 
   const payload = buildSessionPayload({
@@ -596,11 +765,9 @@ export async function refreshPanelSession(input: {
       user_metadata: user?.user_metadata || null,
       app_metadata: user?.app_metadata || null,
     },
-    fullName: resolveFullName({
-      preferredFullName: input.previous.fullName,
-      user,
-    }),
-    gallery,
+    fullName: access.fullName,
+    gallery: access.gallery,
+    role: access.role,
   })
 
   return toPublicSession(payload)
@@ -625,14 +792,17 @@ export async function loginWithSupabase(input: LoginInput) {
   }
   assertAuthUserCanUsePanel(auth.user)
 
-  const gallery = await ensureOwnerGallery({
-    ownerEmail: email,
-    galleryName: auth.user.user_metadata?.galleryName as string || 'Galeri',
-    phone: '',
-  })
-  await ensureTrialSubscriptionForGallery({
-    galleryId: gallery.id,
-    ownerEmail: email,
+  const access = await resolvePanelAccessForUser({
+    email,
+    user: {
+      id: auth.user.id,
+      email,
+      user_metadata: auth.user.user_metadata || null,
+      app_metadata: auth.user.app_metadata || null,
+    },
+    fullName: resolveFullName({ user: auth.user }),
+    fallbackGalleryName: auth.user.user_metadata?.galleryName as string || 'Galeri',
+    createOwnerIfMissing: true,
   })
 
   const payload = buildSessionPayload({
@@ -643,8 +813,9 @@ export async function loginWithSupabase(input: LoginInput) {
       user_metadata: auth.user.user_metadata || null,
       app_metadata: auth.user.app_metadata || null,
     },
-    fullName: resolveFullName({ user: auth.user }),
-    gallery,
+    fullName: access.fullName,
+    gallery: access.gallery,
+    role: access.role,
   })
 
   return toPublicSession(payload)
@@ -658,6 +829,9 @@ export async function registerWithSupabase(input: RegisterInput) {
   const planCode = input.planCode && isSubscriptionPlanCode(input.planCode) && input.planCode !== 'enterprise'
     ? input.planCode
     : 'starter'
+  const billingInterval = input.billingInterval && isBillingInterval(input.billingInterval)
+    ? input.billingInterval
+    : 'monthly'
 
   let createdUser: SupabaseAuthUser | null = null
   try {
@@ -695,11 +869,18 @@ export async function registerWithSupabase(input: RegisterInput) {
     galleryName: input.galleryName,
     phone,
   })
+  await ensureOwnerTeamMember({
+    galleryId: gallery.id,
+    ownerEmail: email,
+    fullName: input.fullName,
+    userId: user.id,
+  })
   await ensureTrialSubscriptionForGallery({
     galleryId: gallery.id,
     ownerEmail: email,
     startDate: new Date(),
     planCode,
+    billingInterval,
   })
 
   const payload = buildSessionPayload({
@@ -712,6 +893,7 @@ export async function registerWithSupabase(input: RegisterInput) {
     },
     fullName: resolveFullName({ preferredFullName: input.fullName, user }),
     gallery,
+    role: 'owner',
   })
 
   return toPublicSession(payload)

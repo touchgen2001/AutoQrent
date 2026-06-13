@@ -172,9 +172,13 @@ function preloadRoute(path: string) {
 
 function AppRoutes() {
   const { path, navigate } = useBrowserNavigation()
-  const { session } = useAuth()
+  const { session, isLoading } = useAuth()
   const route = useMemo(() => protectedRoutes.find((item) => item.path === path) || protectedRoutes[0], [path])
   const RouteComponent = route.Component
+
+  if (isLoading) {
+    return <RouteLoadingState />
+  }
 
   if (path === '/login') {
     return <LoginPage onNavigate={navigate} />

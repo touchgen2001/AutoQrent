@@ -132,7 +132,7 @@ export async function POST(request: Request) {
   try {
     const clientIp = getClientIp(request)
     const userAgent = request.headers.get('user-agent') ?? 'unknown'
-    const rateLimit = checkRateLimit({
+    const rateLimit = await checkRateLimit({
       key: `vehicle-lead:${clientIp}`,
       limit: 8,
       windowMs: 10 * 60 * 1000,

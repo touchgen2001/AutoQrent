@@ -24,6 +24,9 @@ const contactRoute = read('app/api/contact/route.ts')
 const prodMonitor = read('scripts/monitor/prod-uptime-check.mjs')
 const prodSmoke = read('scripts/qa/prod-smoke-full.mjs')
 const prodWorkflow = read('.github/workflows/prod-smoke-monitor.yml')
+const vercelCronMonitor = read('app/api/cron/production-monitor/route.ts')
+const vercelConfig = read('vercel.json')
+const criticalReporter = read('lib/server/critical-error-reporter.ts')
 const packageJson = read('package.json')
 const predeploy = read('scripts/security/predeploy-check.mjs')
 
@@ -48,6 +51,9 @@ const checks = [
   ['prod smoke checks public guard and upload auth', prodSmoke.includes('/arac/demo') && prodSmoke.includes('/api/panel/uploads/vehicle-images')],
   ['workflow runs full prod smoke', prodWorkflow.includes('pnpm smoke:prod')],
   ['workflow checks node leaks', prodWorkflow.includes('check-node-leaks.sh prod-monitor-after')],
+  ['Vercel cron provides runner-independent authenticated monitor', vercelConfig.includes('/api/cron/production-monitor') && vercelCronMonitor.includes('SMOKE_TEST_EMAIL') && vercelCronMonitor.includes('/api/panel/qr-codes')],
+  ['Vercel cron is CRON_SECRET protected', vercelCronMonitor.includes('CRON_SECRET') && vercelCronMonitor.includes('authorization')],
+  ['critical failures reach Sentry and optional webhook', criticalReporter.includes('Sentry.capture') && criticalReporter.includes('MONITOR_ALERT_WEBHOOK_URL')],
   ['package exposes node leak monitor', packageJson.includes('monitor:node-leaks')],
   ['predeploy checks ops monitoring', predeploy.includes('guard.ops_monitoring_upload_errors')],
 ]

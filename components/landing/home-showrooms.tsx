@@ -16,14 +16,14 @@ export function HomeShowrooms({ galleries }: { galleries: PublicGallerySummary[]
         <div className="max-w-3xl">
           <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1 text-sm font-medium text-emerald-700 ring-1 ring-inset ring-emerald-500/20">
             <Store className="h-4 w-4" />
-            Galeriler
+            {galleries.length} canlı galeri
           </div>
           <h2 className="mt-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-            Cebindegaleri&apos;deki dijital showroom&apos;lar
+            Canlı ve doğrulanabilir galeri örnekleri
           </h2>
           <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-            QR ile vitrinini yayınlayan galerilerin araçlarını keşfedin; beğendiğiniz aracın sayfasını
-            telefonunuzdan saniyeler içinde açın.
+            Bu liste doğrudan yayındaki galeri sayfalarından oluşur. Her kartı açarak gerçek showroom
+            deneyimini ve araç sayfalarını inceleyebilirsiniz.
           </p>
         </div>
 

@@ -71,7 +71,15 @@ describe('plan definitions and pricing', () => {
   it('exposes starter limits', () => {
     const starter = getSubscriptionPlanDefinition('starter')
     expect(starter.vehicleLimit).toBe(15)
+    expect(starter.userLimit).toBe(1)
     expect(starter.monthlyPrice).toBe(999)
+  })
+
+  it('enforces a single user account for every plan', () => {
+    expect(getSubscriptionPlanDefinition('pro').userLimit).toBe(1)
+    expect(getSubscriptionPlanDefinition('premium').userLimit).toBe(1)
+    expect(getSubscriptionPlanDefinition('enterprise').userLimit).toBe(1)
+    expect(getSubscriptionPlanDefinition('pro').features['team.manage']).toBe(false)
   })
 
   it('formats quote-only and numeric prices', () => {

@@ -10,7 +10,7 @@ import {
 import { findPlaceholderTextField } from '@/lib/server/panel-input-guard'
 import { requireSupabaseAdminConfig, supabaseAdminFetch } from '@/lib/server/supabase-admin'
 import { getClientIp } from '@/lib/security/request-guards'
-import { panelAuthErrorResponse, requirePanelSessionOrThrow } from '@/lib/server/panel-auth-guard'
+import { panelAuthErrorResponse, requirePanelPermissionOrThrow, requirePanelSessionOrThrow } from '@/lib/server/panel-auth-guard'
 import { deleteVehicleImageObjectsForGallery } from '@/lib/server/storage-images'
 import {
   markUploadedAssetsAttached,
@@ -93,6 +93,7 @@ export async function GET(_request: Request, context: { params: Promise<unknown>
 export async function PATCH(request: Request, context: { params: Promise<unknown> }) {
   try {
     const session = await requirePanelSessionOrThrow(request)
+    await requirePanelPermissionOrThrow(session, 'vehicles.update')
     if (!session.galleryId) {
       return NextResponse.json(
         {
@@ -154,6 +155,7 @@ export async function PATCH(request: Request, context: { params: Promise<unknown
         select: 'id,slug,photos,price,price_dropped_at',
         id: `eq.${parsedParams.data.id}`,
         gallery_id: `eq.${session.galleryId}`,
+        deleted_at: 'is.null',
         limit: 1,
       },
     })
@@ -185,6 +187,7 @@ export async function PATCH(request: Request, context: { params: Promise<unknown
       query: {
         id: `eq.${parsedParams.data.id}`,
         gallery_id: `eq.${session.galleryId}`,
+        deleted_at: 'is.null',
       },
       prefer: 'return=minimal',
       body: {
@@ -263,7 +266,8 @@ export async function PATCH(request: Request, context: { params: Promise<unknown
       action: 'vehicle_update',
       entityType: 'vehicle',
       entityId: parsedParams.data.id,
-      actorRole: 'owner',
+      actorEmail: session.email,
+      actorRole: session.role,
       source: 'panel_api',
       ip,
       userAgent,
@@ -297,6 +301,7 @@ export async function PATCH(request: Request, context: { params: Promise<unknown
 export async function DELETE(request: Request, context: { params: Promise<unknown> }) {
   try {
     const session = await requirePanelSessionOrThrow(request)
+    await requirePanelPermissionOrThrow(session, 'vehicles.delete')
 
     const parsed = await parseVehicleId(context)
     if (!parsed.success) {
@@ -317,7 +322,8 @@ export async function DELETE(request: Request, context: { params: Promise<unknow
       action: 'vehicle_delete',
       entityType: 'vehicle',
       entityId: parsed.data.id,
-      actorRole: 'owner',
+      actorEmail: session.email,
+      actorRole: session.role,
       source: 'panel_api',
       ip,
       userAgent,

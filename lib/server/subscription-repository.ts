@@ -15,6 +15,7 @@ import {
   type SubscriptionStatus,
 } from '@/lib/subscription-plans'
 import { requireSupabaseAdminConfig, supabaseAdminFetch } from '@/lib/server/supabase-admin'
+import { countBillablePanelTeamMembers } from '@/lib/server/panel-team-repository'
 
 type GalleryOwnerRow = {
   id: string
@@ -158,6 +159,28 @@ async function assertGalleryOwner(input: { galleryId: string; ownerEmail: string
   return gallery
 }
 
+async function fetchGalleryOwner(input: { galleryId: string }) {
+  const rows = await supabaseAdminFetch<GalleryOwnerRow[]>({
+    path: '/rest/v1/galleries',
+    query: {
+      select: 'id,owner_email,created_at',
+      id: `eq.${input.galleryId}`,
+      limit: 1,
+    },
+  })
+
+  const gallery = rows[0]
+  if (!gallery) {
+    throw new Error('Galeri bulunamadı.')
+  }
+
+  if (!gallery.owner_email) {
+    throw new Error('Galeri sahibi e-posta bilgisi eksik.')
+  }
+
+  return gallery
+}
+
 async function fetchSubscriptionByGallery(galleryId: string) {
   const rows = await supabaseAdminFetch<GallerySubscriptionRow[]>({
     path: '/rest/v1/gallery_subscriptions',
@@ -195,6 +218,7 @@ async function countGalleryVehicles(galleryId: string) {
     query: {
       select: 'id',
       gallery_id: `eq.${galleryId}`,
+      deleted_at: 'is.null',
       limit: 10000,
     },
   })
@@ -202,9 +226,9 @@ async function countGalleryVehicles(galleryId: string) {
   return rows.length
 }
 
-async function countGalleryUsers() {
-  // Cebindegaleri paketleri tek kullanıcı hesabı modelinde çalışır.
-  return 1
+async function countGalleryUsers(galleryId: string) {
+  const count = await countBillablePanelTeamMembers(galleryId).catch(() => 1)
+  return Math.max(1, count)
 }
 
 function calculateRemaining(used: number, limit: number | null) {
@@ -298,6 +322,7 @@ export async function ensureTrialSubscriptionForGallery(input: {
   ownerEmail: string
   startDate?: Date
   planCode?: SubscriptionPlanCode
+  billingInterval?: BillingInterval
 }) {
   requireSupabaseAdminConfig()
 
@@ -309,6 +334,9 @@ export async function ensureTrialSubscriptionForGallery(input: {
   const now = input.startDate || new Date()
   const trialEndsAt = addDays(now, TRIAL_DAYS)
   const planCode = input.planCode && isSubscriptionPlanCode(input.planCode) ? input.planCode : 'starter'
+  const billingInterval = input.billingInterval && isBillingInterval(input.billingInterval)
+    ? input.billingInterval
+    : 'monthly'
   const rows = await supabaseAdminFetch<GallerySubscriptionRow[]>({
     method: 'POST',
     path: '/rest/v1/gallery_subscriptions',
@@ -319,7 +347,7 @@ export async function ensureTrialSubscriptionForGallery(input: {
         owner_email: normalizeEmail(input.ownerEmail),
         plan_code: planCode,
         status: 'trialing',
-        billing_interval: 'monthly',
+        billing_interval: billingInterval,
         trial_started_at: toIso(now),
         trial_ends_at: toIso(trialEndsAt),
         current_period_start: toIso(now),
@@ -330,6 +358,7 @@ export async function ensureTrialSubscriptionForGallery(input: {
           source: 'self_service_registration',
           trialDays: TRIAL_DAYS,
           selectedPlanCode: planCode,
+          selectedBillingInterval: billingInterval,
         },
       },
     ],
@@ -349,20 +378,21 @@ export async function getSubscriptionContextForGallery(input: {
 }) {
   requireSupabaseAdminConfig()
 
-  await assertGalleryOwner(input)
+  const gallery = await fetchGalleryOwner({ galleryId: input.galleryId })
+  const ownerEmail = normalizeEmail(gallery.owner_email || input.ownerEmail)
   const row = await ensureTrialSubscriptionForGallery({
     galleryId: input.galleryId,
-    ownerEmail: input.ownerEmail,
+    ownerEmail,
   })
 
   const [vehicleCount, userCount] = await Promise.all([
     countGalleryVehicles(input.galleryId),
-    countGalleryUsers(),
+    countGalleryUsers(input.galleryId),
   ])
 
   return buildContext({
     galleryId: input.galleryId,
-    ownerEmail: input.ownerEmail,
+    ownerEmail,
     row,
     vehicleCount,
     userCount,
@@ -427,9 +457,10 @@ export async function assertUserInviteAllowed(input: {
 }) {
   void input
   throw new SubscriptionGateError({
-    code: 'single_user_account',
+    code: 'user_limit_reached',
     statusCode: 403,
-    message: 'Cebindegaleri paketleri tek kullanıcı hesabı olarak çalışır. Ek kullanıcı daveti kapalıdır.',
+    feature: 'team.manage',
+    message: 'Cebindegaleri tek kullanıcı hesabı ile çalışır. Personel hesabı eklenemez.',
   })
 }
 

@@ -13,6 +13,7 @@ import {
   Image as ImageIcon,
   FileText,
   X,
+  Sparkles,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -30,6 +31,7 @@ import {
 import type { PanelVehicleImageQuotaResponse, PanelVehicleImageQuotaSnapshot } from "@/lib/panel-types"
 import { parseVehicleIntegerFields, VEHICLE_INTEGER_LIMITS } from "@/lib/vehicle-limits"
 import { ensureShareSafePhoto } from "@/lib/client/image-convert"
+import { generateVehicleDescription } from "@/lib/sales-intelligence"
 
 const brandSuggestions = [
   "Audi",
@@ -123,6 +125,9 @@ export default function AddVehiclePage() {
     previousOwners: "1",
     serviceHistory: "yes",
     warrantyStatus: "no",
+    purchasePrice: "",
+    expenseTotal: "",
+    targetProfit: "",
     description: "",
   })
 
@@ -181,6 +186,9 @@ export default function AddVehiclePage() {
           previousOwners: formData.previousOwners,
           serviceHistory: formData.serviceHistory,
           warrantyStatus: formData.warrantyStatus,
+          purchasePrice: formData.purchasePrice ? Number(formData.purchasePrice) : undefined,
+          expenseTotal: formData.expenseTotal ? Number(formData.expenseTotal) : undefined,
+          targetProfit: formData.targetProfit ? Number(formData.targetProfit) : undefined,
           description: formData.description,
           photos: uploadedImages.map((image) => image.publicUrl),
         }),
@@ -203,6 +211,30 @@ export default function AddVehiclePage() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleGenerateDescription = () => {
+    setFormData((current) => ({
+      ...current,
+      description: generateVehicleDescription({
+        brand: current.brand,
+        model: current.model,
+        variant: current.variant,
+        year: current.year ? Number(current.year) : undefined,
+        price: current.price ? Number(current.price) : undefined,
+        mileage: current.mileage ? Number(current.mileage) : undefined,
+        fuel: current.fuel,
+        transmission: current.transmission,
+        color: current.color,
+        bodyType: current.bodyType,
+        engineSize: current.engineSize,
+        horsePower: current.horsePower,
+        hasDamage: current.hasDamage as 'yes' | 'no',
+        previousOwners: current.previousOwners,
+        serviceHistory: current.serviceHistory as 'yes' | 'partial' | 'no',
+        warrantyStatus: current.warrantyStatus as 'yes' | 'no',
+      }),
+    }))
   }
 
   const openImagePicker = () => {
@@ -680,6 +712,43 @@ export default function AddVehiclePage() {
         </CardContent>
       </Card>
 
+      {/* Maliyet ve Kâr */}
+      <Card>
+        <CardContent className="p-6 md:p-8 space-y-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+              <FileText className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-foreground">Maliyet ve Kâr Takibi</h2>
+              <p className="text-sm text-muted-foreground">Bu bilgiler yalnızca yönetim panelinde görünür.</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="purchasePrice">Alış Fiyatı (TL)</Label>
+              <Input id="purchasePrice" type="number" min="0" value={formData.purchasePrice} onChange={(event) => setFormData({ ...formData, purchasePrice: event.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="expenseTotal">Toplam Masraf (TL)</Label>
+              <Input id="expenseTotal" type="number" min="0" value={formData.expenseTotal} onChange={(event) => setFormData({ ...formData, expenseTotal: event.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="targetProfit">Hedef Kâr (TL)</Label>
+              <Input id="targetProfit" type="number" min="0" value={formData.targetProfit} onChange={(event) => setFormData({ ...formData, targetProfit: event.target.value })} />
+            </div>
+          </div>
+          {(formData.purchasePrice || formData.expenseTotal) && (
+            <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4">
+              <p className="text-xs text-muted-foreground">İlan fiyatına göre beklenen kâr</p>
+              <p className="mt-1 text-xl font-bold text-emerald-600">
+                {(Number(formData.price || 0) - Number(formData.purchasePrice || 0) - Number(formData.expenseTotal || 0)).toLocaleString("tr-TR")} TL
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Fotoğraflar */}
       <Card>
         <CardContent className="p-6 md:p-8 space-y-6">
@@ -892,7 +961,13 @@ export default function AddVehiclePage() {
             )}
 
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="description">Araç Açıklaması</Label>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <Label htmlFor="description">Araç Açıklaması</Label>
+                <Button type="button" variant="outline" size="sm" onClick={handleGenerateDescription}>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  AI Açıklama Oluştur
+                </Button>
+              </div>
               <Textarea
                 id="description"
                 placeholder="Araç hakkında ek bilgiler, özellikler, notlar..."

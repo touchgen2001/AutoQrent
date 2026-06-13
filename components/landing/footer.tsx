@@ -9,9 +9,13 @@ const footerLinks = {
     { name: "Fiyatlandırma", href: "/fiyatlar" },
     { name: "SSS", href: "/sss" },
     { name: "Canlı Demo", href: "/demo" },
+    { name: "Karşılaştırmalar", href: "/karsilastir/galeri-yazilimi-mi-excel-mi" },
   ],
   company: [
     { name: "Hakkımızda", href: "/hakkimizda" },
+    { name: "Güvenlik", href: "/guvenlik" },
+    { name: "Canlı Kullanım Örnekleri", href: "/basari-hikayeleri" },
+    { name: "Şehir Rehberleri", href: "/galeri-yazilimi/istanbul" },
     { name: "Kariyer", href: "/kariyer" },
     { name: "Blog", href: "/blog" },
     { name: "İletişim", href: "/iletisim" },
@@ -55,7 +59,7 @@ export function LandingFooter() {
                 href="/demo"
                 className="inline-flex items-center rounded-lg border border-primary-foreground/20 px-4 py-2.5 text-sm font-medium text-primary-foreground/90 transition-colors hover:bg-primary-foreground/10"
               >
-                Demo Planla
+                Canlı Demoyu İncele
               </Link>
             </div>
           </div>
@@ -65,7 +69,7 @@ export function LandingFooter() {
           <div className="md:col-span-1">
             <BrandLogo href="/" tone="dark" className="mb-4" />
             <p className="text-primary-foreground/70 text-sm leading-relaxed">
-              Araç galerileri için QR kodlu dijital showroom, stok yönetimi, lead takibi ve satış analitiği.
+              Araç galerileri için QR kodlu dijital showroom, stok yönetimi, müşteri talebi takibi ve satış analitiği.
             </p>
 
             <div className="mt-5 space-y-2 text-sm text-primary-foreground/80">

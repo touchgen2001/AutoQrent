@@ -9,11 +9,13 @@ import type {
 import { absoluteUrl } from '@/lib/seo'
 import { buildSecurePublicSlug, hasSecurePublicRouteToken } from '@/lib/security/public-route-token'
 import { requireSupabaseAdminConfig, supabaseAdminFetch } from '@/lib/server/supabase-admin'
+import {
+  findPanelGalleryAccessByEmail,
+  resolvePanelGalleryIdByEmail,
+} from '@/lib/server/panel-team-repository'
 import { fetchVehicleFavoriteCountsByIds } from '@/lib/server/favorite-stats'
-import { deleteVehicleImageObjectsForGallery } from '@/lib/server/storage-images'
 import {
   markUploadedAssetsAttached,
-  markUploadedAssetsDeleted,
 } from '@/lib/server/uploaded-assets'
 
 type VehicleRow = {
@@ -140,6 +142,9 @@ type VehicleFeatureInput = Pick<
   | 'previousOwners'
   | 'serviceHistory'
   | 'warrantyStatus'
+  | 'purchasePrice'
+  | 'expenseTotal'
+  | 'targetProfit'
 >
 
 const VEHICLE_FEATURE_KEYS = [
@@ -152,10 +157,13 @@ const VEHICLE_FEATURE_KEYS = [
   'previous_owners',
   'service_history',
   'warranty',
+  'purchase_price',
+  'expense_total',
+  'target_profit',
 ] as const
 
 function buildVehicleFeatureRows(vehicleId: string, input: VehicleFeatureInput) {
-  const rawFeatures: Array<{ feature_key: string; feature_value?: string | null }> = [
+  const rawFeatures: Array<{ feature_key: string; feature_value?: string | number | null }> = [
     { feature_key: 'body_type', feature_value: input.bodyType },
     { feature_key: 'engine_size', feature_value: input.engineSize },
     { feature_key: 'horsepower', feature_value: input.horsePower },
@@ -165,13 +173,18 @@ function buildVehicleFeatureRows(vehicleId: string, input: VehicleFeatureInput) 
     { feature_key: 'previous_owners', feature_value: input.previousOwners },
     { feature_key: 'service_history', feature_value: input.serviceHistory },
     { feature_key: 'warranty', feature_value: input.warrantyStatus === 'yes' ? 'true' : input.warrantyStatus === 'no' ? 'false' : null },
+    { feature_key: 'purchase_price', feature_value: input.purchasePrice },
+    { feature_key: 'expense_total', feature_value: input.expenseTotal },
+    { feature_key: 'target_profit', feature_value: input.targetProfit },
   ]
 
   return rawFeatures
     .map((feature) => ({
       vehicle_id: vehicleId,
       feature_key: feature.feature_key,
-      feature_value: feature.feature_value?.trim() || '',
+      feature_value: feature.feature_value === null || feature.feature_value === undefined
+        ? ''
+        : String(feature.feature_value).trim(),
     }))
     .filter((feature) => feature.feature_value)
 }
@@ -209,7 +222,38 @@ export async function getVehicleFeatureFields(vehicleId: string): Promise<Partia
     previousOwners: map['previous_owners'] || undefined,
     serviceHistory: service === 'yes' || service === 'partial' || service === 'no' ? service : undefined,
     warrantyStatus: boolToYesNo(map['warranty']),
+    purchasePrice: map['purchase_price'] ? Number(map['purchase_price']) : undefined,
+    expenseTotal: map['expense_total'] ? Number(map['expense_total']) : undefined,
+    targetProfit: map['target_profit'] ? Number(map['target_profit']) : undefined,
   }
+}
+
+async function fetchVehicleCostFields(vehicleIds: string[]) {
+  if (vehicleIds.length === 0) return new Map<string, Pick<PanelVehicle, 'purchasePrice' | 'expenseTotal' | 'targetProfit'>>()
+
+  const result = new Map<string, Pick<PanelVehicle, 'purchasePrice' | 'expenseTotal' | 'targetProfit'>>()
+  for (const idChunk of chunkArray(vehicleIds, VEHICLE_FILTER_CHUNK_SIZE)) {
+    const rows = await supabaseAdminFetch<Array<{ vehicle_id: string; feature_key: string; feature_value: string | null }>>({
+      path: '/rest/v1/vehicle_features',
+      query: {
+        select: 'vehicle_id,feature_key,feature_value',
+        vehicle_id: `in.(${idChunk.join(',')})`,
+        feature_key: 'in.(purchase_price,expense_total,target_profit)',
+        limit: 10000,
+      },
+    }).catch(() => [])
+
+    for (const row of rows) {
+      const current = result.get(row.vehicle_id) || {}
+      const value = Number(row.feature_value)
+      if (!Number.isFinite(value)) continue
+      if (row.feature_key === 'purchase_price') current.purchasePrice = value
+      if (row.feature_key === 'expense_total') current.expenseTotal = value
+      if (row.feature_key === 'target_profit') current.targetProfit = value
+      result.set(row.vehicle_id, current)
+    }
+  }
+  return result
 }
 
 // Rewrites ONLY the structured feature keys for a vehicle (delete + re-insert).
@@ -250,23 +294,9 @@ function toTimestamp(value: string) {
   return Number.isFinite(timestamp) ? timestamp : 0
 }
 
-async function getGalleryIdByOwnerEmail(ownerEmail: string) {
-  const rows = await supabaseAdminFetch<Array<{ id: string }>>({
-    path: '/rest/v1/galleries',
-    query: {
-      select: 'id',
-      owner_email: `eq.${ownerEmail}`,
-      order: 'created_at.asc',
-      limit: 1,
-    },
-  })
-
-  return rows[0]?.id || null
-}
-
 async function resolveGalleryId(ownerEmail?: string) {
   if (!ownerEmail) return null
-  return getGalleryIdByOwnerEmail(ownerEmail)
+  return resolvePanelGalleryIdByEmail(ownerEmail)
 }
 
 async function ensureGallerySecureSlug(input: {
@@ -303,6 +333,7 @@ async function resolveLeadTargetFromVehicle(vehicleIdOrSlug: string) {
     query: {
       select: 'id,gallery_id',
       slug: `eq.${normalized}`,
+      deleted_at: 'is.null',
       limit: 1,
     },
   })
@@ -340,6 +371,7 @@ async function fetchVehicleRows(limit: number, galleryId?: string | null) {
     query: {
       select: 'id,slug,brand,model,variant,year,price,km,description,fuel,transmission,color,status,photos,created_at,price_dropped_at,previous_price',
       ...(galleryId ? { gallery_id: `eq.${galleryId}` } : {}),
+      deleted_at: 'is.null',
       order: 'created_at.desc',
       limit,
     },
@@ -413,13 +445,14 @@ export async function listPanelVehicles(ownerEmail?: string) {
   const vehicles = await fetchVehicleRows(500, galleryId)
   const vehicleIds = vehicles.map((vehicle) => vehicle.id)
 
-  const [scanRows, leadRows, favoriteCounts] = await Promise.all([
+  const [scanRows, leadRows, favoriteCounts, costFields] = await Promise.all([
     fetchQrScanRowsByVehicleIds(vehicleIds, {
       perChunkLimit: 50000,
       overallLimit: 500000,
     }).catch(() => []),
     fetchLeadVehicleCounts(100000, galleryId).catch(() => []),
     fetchVehicleFavoriteCountsByIds(vehicleIds).catch(() => new Map<string, number>()),
+    fetchVehicleCostFields(vehicleIds).catch(() => new Map()),
   ])
 
   const scanCounts = new Map<string, number>()
@@ -460,6 +493,7 @@ export async function listPanelVehicles(ownerEmail?: string) {
       createdAt: vehicle.created_at,
       priceDroppedAt: vehicle.price_dropped_at ?? null,
       previousPrice: vehicle.previous_price ?? null,
+      ...costFields.get(vehicle.id),
     }
   })
 
@@ -538,6 +572,8 @@ export async function getPanelGalleryShowroomSummary(ownerEmail?: string) {
   requireSupabaseAdminConfig()
 
   if (!ownerEmail) return null
+  const access = await findPanelGalleryAccessByEmail(ownerEmail)
+  if (!access) return null
 
   const galleries = await supabaseAdminFetch<Array<{
     id: string
@@ -552,8 +588,7 @@ export async function getPanelGalleryShowroomSummary(ownerEmail?: string) {
     path: '/rest/v1/galleries',
     query: {
       select: 'id,name,slug,logo_url,phone,city,district,public_hero_tagline',
-      owner_email: `eq.${ownerEmail}`,
-      order: 'created_at.asc',
+      id: `eq.${access.gallery.id}`,
       limit: 1,
     },
   })
@@ -572,6 +607,7 @@ export async function getPanelGalleryShowroomSummary(ownerEmail?: string) {
     query: {
       select: 'id,status',
       gallery_id: `eq.${gallery.id}`,
+      deleted_at: 'is.null',
       limit: 10000,
     },
   }).catch(() => [])
@@ -715,6 +751,9 @@ export async function createPanelVehicle(input: VehicleCreateInput, ownerEmail?:
     createdAt: vehicle.created_at,
     priceDroppedAt: vehicle.price_dropped_at ?? null,
     previousPrice: vehicle.previous_price ?? null,
+    purchasePrice: input.purchasePrice,
+    expenseTotal: input.expenseTotal,
+    targetProfit: input.targetProfit,
   } satisfies PanelVehicle
 }
 
@@ -732,6 +771,7 @@ export async function deletePanelVehicle(vehicleId: string, ownerEmail?: string)
       select: 'id,slug,brand,model,variant,year,price,km,description,fuel,transmission,color,status,photos,created_at,price_dropped_at,previous_price',
       id: `eq.${vehicleId}`,
       gallery_id: `eq.${galleryId}`,
+      deleted_at: 'is.null',
       limit: 1,
     },
   })
@@ -741,30 +781,90 @@ export async function deletePanelVehicle(vehicleId: string, ownerEmail?: string)
     throw new Error('Araç bulunamadı.')
   }
 
-  const imageDeleteResult = await deleteVehicleImageObjectsForGallery({
-    galleryId,
-    publicUrls: vehicle.photos || [],
-    allowOwnedLegacyPanelPaths: true,
-  })
-  const metadataDeleteResult = await markUploadedAssetsDeleted({
-    galleryId,
-    publicUrls: vehicle.photos || [],
-    allowOwnedLegacyPanelPaths: true,
-  })
-
   await supabaseAdminFetch<unknown>({
-    method: 'DELETE',
+    method: 'PATCH',
     path: '/rest/v1/vehicles',
     query: {
       id: `eq.${vehicleId}`,
       gallery_id: `eq.${galleryId}`,
+      deleted_at: 'is.null',
     },
+    body: {
+      deleted_at: new Date().toISOString(),
+      deleted_by_email: ownerEmail?.trim().toLowerCase() || null,
+    },
+    prefer: 'return=minimal',
   })
 
   return {
-    deletedImages: imageDeleteResult.deleted,
-    deletedAssetRows: metadataDeleteResult.updated,
+    deletedImages: 0,
+    deletedAssetRows: 0,
   }
+}
+
+export type DeletedPanelVehicle = {
+  id: string
+  title: string
+  image: string | null
+  deletedAt: string
+  deletedByEmail: string | null
+}
+
+export async function listDeletedPanelVehicles(ownerEmail?: string) {
+  requireSupabaseAdminConfig()
+  const galleryId = await resolveGalleryId(ownerEmail)
+  if (!galleryId) return []
+
+  const rows = await supabaseAdminFetch<Array<{
+    id: string
+    brand: string
+    model: string
+    variant: string | null
+    year: number
+    photos: string[] | null
+    deleted_at: string
+    deleted_by_email: string | null
+  }>>({
+    path: '/rest/v1/vehicles',
+    query: {
+      select: 'id,brand,model,variant,year,photos,deleted_at,deleted_by_email',
+      gallery_id: `eq.${galleryId}`,
+      deleted_at: 'not.is.null',
+      order: 'deleted_at.desc',
+      limit: 500,
+    },
+  })
+
+  return rows.map((row): DeletedPanelVehicle => ({
+    id: row.id,
+    title: buildVehicleTitle(row),
+    image: row.photos?.[0] || null,
+    deletedAt: row.deleted_at,
+    deletedByEmail: row.deleted_by_email,
+  }))
+}
+
+export async function restorePanelVehicle(vehicleId: string, ownerEmail?: string) {
+  requireSupabaseAdminConfig()
+  const galleryId = await resolveGalleryId(ownerEmail)
+  if (!galleryId) throw new Error('Galeri bulunamadı.')
+
+  const rows = await supabaseAdminFetch<Array<{ id: string }>>({
+    method: 'PATCH',
+    path: '/rest/v1/vehicles',
+    query: {
+      id: `eq.${vehicleId}`,
+      gallery_id: `eq.${galleryId}`,
+      deleted_at: 'not.is.null',
+    },
+    body: {
+      deleted_at: null,
+      deleted_by_email: null,
+    },
+    prefer: 'return=representation',
+  })
+  if (!rows[0]) throw new Error('Geri alınacak araç bulunamadı.')
+  return rows[0]
 }
 
 export async function listPanelLeads(ownerEmail?: string) {
@@ -793,6 +893,7 @@ export async function listPanelLeads(ownerEmail?: string) {
       query: {
         select: 'id,brand,model,variant,year',
         gallery_id: `eq.${galleryId}`,
+        deleted_at: 'is.null',
         limit: 2000,
       },
     }).catch(() => []),

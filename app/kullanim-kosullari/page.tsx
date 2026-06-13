@@ -7,7 +7,7 @@ const sections = [
     title: '1. Hizmet Tanımı',
     paragraphs: [
       'Cebindegaleri; araç galerileri için QR kod destekli dijital showroom, stok yönetimi, lead takibi ve satış analitiği sunan bir SaaS platformudur.',
-      'Platform; araç kartı oluşturma, QR etiket üretimi, müşteri etkileşim takibi ve tek kullanıcı hesabıyla panel yönetimi gibi modüllerden oluşur.',
+      'Platform; araç kartı oluşturma, QR etiket üretimi, müşteri etkileşim takibi ve paket limitine bağlı personel hesaplarıyla panel yönetimi gibi modüllerden oluşur.',
     ],
   },
   {
@@ -15,7 +15,7 @@ const sections = [
     bullets: [
       'Hesap giriş bilgilerinin korunmasından kullanıcı sorumludur.',
       'Şüpheli erişim tespit edildiğinde destek ekibine gecikmeden bildirim yapılmalıdır.',
-      'Paketler tek kullanıcı hesabı modelindedir; hesap bilgilerinin üçüncü kişilerle paylaşılmaması gerekir.',
+      'Her kullanıcı kendi hesabıyla giriş yapmalıdır; hesap bilgilerinin üçüncü kişilerle paylaşılmaması gerekir.',
     ],
   },
   {

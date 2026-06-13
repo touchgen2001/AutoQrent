@@ -26,6 +26,12 @@ const checks = [
   ['prod smoke avoids parallel promise fanout', !prodSmoke.includes('Promise.all')],
   ['prod smoke checks root and www health', prodSmoke.includes('root health') && prodSmoke.includes('www health')],
   [
+    'prod smoke verifies protected health when sensitive monitor key cannot be pulled',
+    prodSmoke.includes('protectedMonitorPayloadOk')
+      && prodSmoke.includes('monitorSharedKey ? [200] : [401]')
+      && prodSmoke.includes('Monitor erişimi yetkisiz.'),
+  ],
+  [
     'prod smoke checks security headers',
     prodSmoke.includes('security headers present')
       && prodSmoke.includes('securityHeadersOk')

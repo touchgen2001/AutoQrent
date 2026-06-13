@@ -179,6 +179,10 @@ function healthPayloadOk(result) {
   return result.data?.ok === true
 }
 
+function protectedMonitorPayloadOk(result) {
+  return result.data?.ok === false && result.data?.message === 'Monitor erişimi yetkisiz.'
+}
+
 function jsonOk(expected) {
   return (result) => result.data?.ok === expected
 }
@@ -266,13 +270,15 @@ async function runPublicChecks(results, failures) {
     {
       label: 'root health',
       path: '/api/health',
-      validate: healthPayloadOk,
+      expected: monitorSharedKey ? [200] : [401],
+      validate: monitorSharedKey ? healthPayloadOk : protectedMonitorPayloadOk,
     },
     {
       label: 'www health',
       baseUrl: wwwBaseUrl,
       path: '/api/health',
-      validate: healthPayloadOk,
+      expected: monitorSharedKey ? [200] : [401],
+      validate: monitorSharedKey ? healthPayloadOk : protectedMonitorPayloadOk,
     },
     {
       label: 'home page',
@@ -536,6 +542,16 @@ async function runPublicChecks(results, failures) {
     {
       label: 'legacy showroom route blocked',
       path: '/showroom/demo',
+      expected: [404],
+    },
+    {
+      label: 'nonexistent secure vehicle route blocked',
+      path: '/arac/smoke-yok-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      expected: [404],
+    },
+    {
+      label: 'nonexistent secure showroom route blocked',
+      path: '/showroom/smoke-yok-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
       expected: [404],
     },
     {

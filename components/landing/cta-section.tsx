@@ -16,8 +16,8 @@ export function CtaSection() {
             <span className="bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400 bg-clip-text text-transparent">Dijitale Taşıyın</span>
           </h2>
           <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-            14 günlük ücretsiz deneme ile galeri hesabınız, paneliniz ve QR vitrin altyapınız hazır başlar.
-            Demo isterseniz ikinci adımda birlikte akışı inceleyebiliriz.
+            Kredi kartı gerekmeden 2 dakikada hesabınızı açın ve 14 gün ücretsiz deneyin.
+            Önce görmek isterseniz canlı demo akışını hemen inceleyin.
           </p>
           <SectionCtaActions />
         </div>

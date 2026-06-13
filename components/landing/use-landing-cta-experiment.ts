@@ -1,11 +1,20 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { usePathname } from 'next/navigation'
 
 export type LandingCtaVariant = 'A' | 'B'
-export type LandingCtaSurface = 'header' | 'hero' | 'cta_section' | 'mobile_sticky' | 'pricing'
+export type LandingCtaSurface = 'header' | 'hero' | 'cta_section' | 'mobile_sticky' | 'pricing' | 'contact'
 
-export type LandingCtaAction = 'primary' | 'secondary' | 'call' | 'whatsapp' | 'demo' | 'plan_start'
+export type LandingCtaAction =
+  | 'primary'
+  | 'secondary'
+  | 'call'
+  | 'whatsapp'
+  | 'demo'
+  | 'plan_start'
+  | 'contact_submit'
+  | 'billing_toggle'
 
 type VariantConfig = {
   primaryLabel: string
@@ -24,6 +33,7 @@ type TrackEventPayload = {
   action?: LandingCtaAction
   href?: string
   label?: string
+  pagePath: string
 }
 
 type LandingCtaConfigResponse =
@@ -47,17 +57,17 @@ const VARIANT_CONFIGS: Record<LandingCtaVariant, VariantConfig> = {
   A: {
     primaryLabel: '14 Gün Ücretsiz Başla',
     primaryHref: '/kayit',
-    heroSecondaryLabel: 'Demo Planla',
+    heroSecondaryLabel: 'Canlı Demoyu İncele',
     heroSecondaryHref: '/demo',
-    sectionSecondaryLabel: 'Demo Planla',
+    sectionSecondaryLabel: 'Canlı Demoyu İncele',
     sectionSecondaryHref: '/demo',
   },
   B: {
     primaryLabel: '14 Gün Ücretsiz Başla',
     primaryHref: '/kayit',
-    heroSecondaryLabel: 'Demo Planla',
+    heroSecondaryLabel: 'Canlı Demoyu İncele',
     heroSecondaryHref: '/demo',
-    sectionSecondaryLabel: 'Demo Planla',
+    sectionSecondaryLabel: 'Canlı Demoyu İncele',
     sectionSecondaryHref: '/demo',
   },
 }
@@ -145,6 +155,7 @@ function sendTrackEvent(payload: TrackEventPayload) {
 }
 
 export function useLandingCtaExperiment(surface: LandingCtaSurface) {
+  const pathname = usePathname()
   const [variant, setVariant] = useState<LandingCtaVariant>('A')
   const [sessionId, setSessionId] = useState<string>('server')
   const [isReady, setIsReady] = useState(false)
@@ -178,7 +189,7 @@ export function useLandingCtaExperiment(surface: LandingCtaSurface) {
   useEffect(() => {
     if (!isReady) return
 
-    const impressionKey = `landing-cta-impression:${surface}:${variant}`
+    const impressionKey = `landing-cta-impression:${pathname}:${surface}:${variant}`
     if (window.sessionStorage.getItem(impressionKey)) {
       return
     }
@@ -189,8 +200,9 @@ export function useLandingCtaExperiment(surface: LandingCtaSurface) {
       variant,
       surface,
       sessionId,
+      pagePath: pathname,
     })
-  }, [isReady, sessionId, surface, variant])
+  }, [isReady, pathname, sessionId, surface, variant])
 
   const trackClick = useCallback(
     (action: LandingCtaAction, href: string, label: string) => {
@@ -202,9 +214,10 @@ export function useLandingCtaExperiment(surface: LandingCtaSurface) {
         action,
         href,
         label,
+        pagePath: pathname,
       })
     },
-    [sessionId, surface, variant],
+    [pathname, sessionId, surface, variant],
   )
 
   const config = useMemo(() => VARIANT_CONFIGS[variant], [variant])

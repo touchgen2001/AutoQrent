@@ -32,6 +32,9 @@ export type PanelVehicle = {
   previousOwners?: string
   serviceHistory?: 'yes' | 'partial' | 'no'
   warrantyStatus?: 'yes' | 'no'
+  purchasePrice?: number
+  expenseTotal?: number
+  targetProfit?: number
 }
 
 // One row of the "en çok indirilen araç görselleri" panel card. `downloads` is the
@@ -81,6 +84,9 @@ export type VehicleCreateInput = {
   previousOwners?: string
   serviceHistory?: 'yes' | 'partial' | 'no'
   warrantyStatus?: 'yes' | 'no'
+  purchasePrice?: number
+  expenseTotal?: number
+  targetProfit?: number
   description?: string
   photos?: string[]
 }
@@ -112,6 +118,14 @@ export type PanelAuditAction =
   | 'vehicle_update'
   | 'lead_status_change'
   | 'lead_note_add'
+  | 'lead_follow_up_change'
+  | 'lead_whatsapp_open'
+  | 'reservation_create'
+  | 'reservation_update'
+  | 'review_moderate'
+  | 'vehicle_restore'
+  | 'customer_task_create'
+  | 'customer_task_status_change'
   | 'contact_form_submit'
   | 'contact_form_blocked'
   | 'public_vehicle_cta_click'
@@ -152,6 +166,8 @@ export type PanelAuditEntityType =
   | 'notification'
   | 'moderation'
   | 'admin_account'
+  | 'reservation'
+  | 'review'
 
 export type PanelAuditLog = {
   id: number
@@ -399,7 +415,20 @@ export type PanelShowroomCtaAnalyticsResponse = {
 }
 
 export type PanelAlertSeverity = 'critical' | 'high' | 'medium' | 'low'
-export type PanelAlertType = 'new_lead' | 'lead_drop' | 'unanswered_leads' | 'low_conversion' | 'admin_notification'
+export type PanelAlertType =
+  | 'new_lead'
+  | 'lead_drop'
+  | 'unanswered_leads'
+  | 'low_conversion'
+  | 'follow_up_due'
+  | 'follow_up_overdue'
+  | 'price_drop_recommendation'
+  | 'sales_goal_behind'
+  | 'admin_notification'
+  | 'pending_reservations'
+  | 'pending_reviews'
+  | 'user_limit'
+  | 'recycle_bin'
 
 export type PanelAlert = {
   id: string
@@ -427,4 +456,111 @@ export type PanelAlertCenterResponse = {
   generatedAt: string
   alerts: PanelAlert[]
   summary: PanelAlertSummary
+}
+
+export type PanelLeadActivity = {
+  id: string
+  type: 'created' | 'status_change' | 'note_add' | 'follow_up_change' | 'whatsapp'
+  title: string
+  description: string
+  createdAt: string
+}
+
+export type PanelStockAgingBucket = {
+  key: '0-30' | '31-60' | '61-90' | '90+'
+  label: string
+  count: number
+}
+
+export type PanelStockAgingVehicle = {
+  id: string
+  title: string
+  ageDays: number
+  price: number
+  scans: number
+  leads: number
+}
+
+export type PanelManagerReport = {
+  generatedAt: string
+  currentPeriodLabel: string
+  previousPeriodLabel: string
+  metrics: {
+    newLeads: number
+    newLeadsDelta: number
+    wonLeads: number
+    wonLeadsDelta: number
+    vehiclesAdded: number
+    vehiclesAddedDelta: number
+    overdueFollowUps: number
+    followUpsDueToday: number
+  }
+  stockAging: {
+    averageAgeDays: number
+    agedStockCount: number
+    buckets: PanelStockAgingBucket[]
+    oldestVehicles: PanelStockAgingVehicle[]
+  }
+  profitability: {
+    totalCapital: number
+    potentialProfit: number
+    realizedProfit: number
+    averageMarginRate: number
+    vehiclesWithCostData: number
+    topProfitVehicles: Array<{
+      id: string
+      title: string
+      status: PanelVehicleStatus
+      profit: number
+      marginRate: number
+    }>
+  }
+  salesGoals: {
+    monthlyTarget: number
+    wonThisMonth: number
+    remaining: number
+    pipeline: number
+    progressRate: number
+    label: string
+  }
+  qrPerformance: {
+    totalScans: number
+    totalLeads: number
+    conversionRate: number
+    topVehicles: Array<{
+      id: string
+      title: string
+      scans: number
+      leads: number
+      conversionRate: number
+      signal: string
+    }>
+  }
+  priceDropRecommendations: Array<{
+    id: string
+    title: string
+    currentPrice: number
+    suggestedPrice: number
+    suggestedDiscountRate: number
+    detail: string
+  }>
+}
+
+export type PanelCustomerTaskType = 'appointment' | 'post_sale'
+export type PanelCustomerTaskStatus = 'open' | 'completed' | 'cancelled'
+
+export type PanelCustomerTask = {
+  id: string
+  type: PanelCustomerTaskType
+  status: PanelCustomerTaskStatus
+  title: string
+  scheduledAt: string
+  customerName: string
+  customerPhone: string
+  leadId?: string
+  vehicleId?: string
+  vehicleTitle?: string
+  note?: string
+  createdAt: string
+  updatedAt: string
 }

@@ -1,41 +1,23 @@
-import { CheckCircle2, QrCode, ScanLine, Settings2, Smartphone, Target, Users } from "lucide-react"
+import { CarFront, CheckCircle2, MessageCircle, QrCode } from "lucide-react"
 
 const steps = [
   {
     step: "01",
-    title: "Galeri kurulumu",
-    detail: "Galeri adı, iletişim kanalları ve temel vitrin ayarları panelde tamamlanır.",
-    icon: Settings2,
+    title: "Aracı ekle",
+    detail: "Araç bilgilerini, fiyatını ve fotoğraflarını panele ekleyin. Araç sayfası otomatik hazırlansın.",
+    icon: CarFront,
   },
   {
     step: "02",
-    title: "Araç kartı hazırlığı",
-    detail: "Araç bilgisi ve medya içeriği eklenir; vitrin sayfası satış görüşmesine hazır hale getirilir.",
-    icon: Users,
-  },
-  {
-    step: "03",
-    title: "QR üretimi ve saha yerleşimi",
-    detail: "Araç bazlı QR kodlar üretilir, vitrin ve araç camına uygun şablonlarla yazdırılır.",
+    title: "QR kodu araca yerleştir",
+    detail: "Araç için oluşan QR kodu indirin, yazdırın ve müşterinin kolayca görebileceği yere yerleştirin.",
     icon: QrCode,
   },
   {
-    step: "04",
-    title: "Müşteri etkileşimi",
-    detail: "Müşteri QR okutur, mobil araç sayfasına geçer ve doğrudan iletişim aksiyonu başlatır.",
-    icon: Smartphone,
-  },
-  {
-    step: "05",
-    title: "Lead takibi",
-    detail: "Temas kaynağı, notlar ve takip adımları tek lead akışında güncellenir.",
-    icon: ScanLine,
-  },
-  {
-    step: "06",
-    title: "Satış sonrası yönetim",
-    detail: "Durum kapanışı, görüşme notları ve bir sonraki aksiyonlar operasyon panelinde düzenlenir.",
-    icon: Target,
+    step: "03",
+    title: "Müşteri taleplerini takip et",
+    detail: "Arama, WhatsApp ve form taleplerini ilgili araçla birlikte görün; notları ve sonraki adımı kaydedin.",
+    icon: MessageCircle,
   },
 ]
 
@@ -52,8 +34,8 @@ const perspective = [
     title: "Panelde ne yönetilir?",
     points: [
       "Araç kartlarını ve QR yönlendirmesini günceller",
-      "Lead durumlarını, notları ve takip tarihlerini yönetir",
-      "Operasyon verisini ekranlardan izleyip aksiyon alır",
+      "Müşteri taleplerini, notları ve takip tarihlerini yönetir",
+      "Satış sürecini ekranlardan izleyip sonraki adımı planlar",
     ],
   },
 ]
@@ -63,9 +45,9 @@ export function HowItWorksSection() {
     <section id="nasil-calisir" className="py-20 md:py-28">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-3xl">
-          <h2 className="text-3xl sm:text-4xl font-bold text-foreground">Operasyon akışı adım adım</h2>
+          <h2 className="text-3xl sm:text-4xl font-bold text-foreground">Üç adımda kullanmaya başlayın</h2>
           <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-            Kurulumdan satış sonrası takibe kadar süreç iki tarafta netleşir: araç başındaki müşteri deneyimi ve paneldeki galeri yönetimi.
+            Aracı ekleyin, QR kodunu yerleştirin ve gelen müşteri taleplerini tek panelden takip edin.
           </p>
         </div>
 

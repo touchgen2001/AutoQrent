@@ -121,7 +121,7 @@ export function AdminPanelShell({
               isCollapsed ? 'justify-center' : 'justify-between',
             )}
           >
-            <BrandLogo href="/admin" tone="sidebar" className={cn('[&_span:first-child]:size-9', isCollapsed && 'hidden')} />
+            <BrandLogo href="/admin" tone="sidebar" className={cn(isCollapsed && 'hidden')} />
             {isCollapsed ? (
               <BrandMark tone="sidebar" className="[&_span]:size-9" />
             ) : null}

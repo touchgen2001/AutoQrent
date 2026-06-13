@@ -10,9 +10,11 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Eye, EyeOff, ArrowLeft } from "lucide-react"
 import { AuthBrandPanel } from "@/components/brand/auth-brand-panel"
 import { BrandLogo } from "@/components/brand/brand-logo"
+import { useRegistrationFunnel } from "@/components/analytics/use-registration-funnel"
 import { clearPanelAuthSession, getPanelAuthSession, registerPanelUser, type PanelClientSession } from "@/lib/client/panel-auth"
 
 type RegisterPlanCode = "starter" | "pro" | "premium"
+type RegisterBillingInterval = "monthly" | "yearly"
 
 const planLabels: Record<RegisterPlanCode, string> = {
   starter: "Başlangıç",
@@ -25,8 +27,13 @@ function normalizeRegisterPlan(value: string | null): RegisterPlanCode {
   return "starter"
 }
 
+function normalizeRegisterBilling(value: string | null): RegisterBillingInterval {
+  return value === "yearly" ? "yearly" : "monthly"
+}
+
 export default function RegisterPage() {
   const router = useRouter()
+  const { trackEvent } = useRegistrationFunnel()
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isSessionLoading, setIsSessionLoading] = useState(true)
@@ -34,6 +41,7 @@ export default function RegisterPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [activeSession, setActiveSession] = useState<PanelClientSession | null>(null)
   const [selectedPlanCode, setSelectedPlanCode] = useState<RegisterPlanCode>("starter")
+  const [selectedBillingInterval, setSelectedBillingInterval] = useState<RegisterBillingInterval>("monthly")
   const [formData, setFormData] = useState({
     galleryName: "",
     fullName: "",
@@ -46,7 +54,23 @@ export default function RegisterPage() {
     let active = true
 
     void (async () => {
-      setSelectedPlanCode(normalizeRegisterPlan(new URLSearchParams(window.location.search).get("plan")))
+      const searchParams = new URLSearchParams(window.location.search)
+      const planCode = normalizeRegisterPlan(searchParams.get("plan"))
+      const billingInterval = normalizeRegisterBilling(searchParams.get("billing"))
+      setSelectedPlanCode(planCode)
+      setSelectedBillingInterval(billingInterval)
+      const galleryName = searchParams.get("gallery")?.trim()
+      if (galleryName) {
+        setFormData((current) => ({
+          ...current,
+          galleryName: current.galleryName || galleryName.slice(0, 120),
+        }))
+      }
+      trackEvent({
+        eventType: "registration_view",
+        planCode,
+        billingInterval,
+      })
 
       const session = await getPanelAuthSession()
       if (!active) return
@@ -57,7 +81,7 @@ export default function RegisterPage() {
     return () => {
       active = false
     }
-  }, [])
+  }, [trackEvent])
 
   const handleSwitchAccount = async () => {
     setErrorMessage(null)
@@ -68,6 +92,12 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (isLoading) return
+
+    trackEvent({
+      eventType: "registration_submit",
+      planCode: selectedPlanCode,
+      billingInterval: selectedBillingInterval,
+    })
 
     setErrorMessage(null)
     if (!agreedToTerms) {
@@ -102,6 +132,7 @@ export default function RegisterPage() {
       phone,
       password,
       planCode: selectedPlanCode,
+      billingInterval: selectedBillingInterval,
     })
 
     if (!result.ok) {
@@ -110,7 +141,12 @@ export default function RegisterPage() {
       return
     }
 
-    router.push(`/onboarding?trial=1&plan=${selectedPlanCode}`)
+    trackEvent({
+      eventType: "registration_success",
+      planCode: selectedPlanCode,
+      billingInterval: selectedBillingInterval,
+    })
+    router.push(`/onboarding?trial=1&plan=${selectedPlanCode}&billing=${selectedBillingInterval}`)
   }
 
   return (
@@ -138,7 +174,7 @@ export default function RegisterPage() {
               14 Gün Ücretsiz Başla
             </h1>
             <p className="text-muted-foreground mt-2 leading-6">
-              Seçilen plan: {planLabels[selectedPlanCode]}. Kredi kartı gerektirmez.
+              Seçilen plan: {planLabels[selectedPlanCode]} • {selectedBillingInterval === "yearly" ? "Yıllık" : "Aylık"}. Kredi kartı gerektirmez.
             </p>
           </div>
 
@@ -146,7 +182,7 @@ export default function RegisterPage() {
             <p className="font-semibold text-foreground">Kayıt sonrası otomatik kurulum</p>
             <div className="mt-3 grid gap-2">
               <p>1. Galeri hesabınız ve güvenli public showroom linkiniz oluşturulur.</p>
-              <p>2. {planLabels[selectedPlanCode]} planı için 14 günlük ücretsiz deneme başlar.</p>
+              <p>2. {planLabels[selectedPlanCode]} planının {selectedBillingInterval === "yearly" ? "yıllık" : "aylık"} seçimiyle 14 günlük ücretsiz deneme başlar.</p>
               <p>3. Onboarding sonrası panelde Abonelik ekranından planınızı ve deneme bitişini görürsünüz.</p>
             </div>
           </div>

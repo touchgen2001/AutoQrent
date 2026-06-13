@@ -13,9 +13,13 @@ import {
   Trash2,
   QrCode,
   Car,
+  Download,
   Grid3X3,
   List,
   ImageIcon,
+  CalendarDays,
+  AlertTriangle,
+  Sparkles,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -49,6 +53,9 @@ import {
 } from "@/components/panel/vehicle-social-image-dialog"
 import { cn } from "@/lib/utils"
 import type { PanelVehicle } from "@/lib/panel-types"
+import { VehicleBulkImportDialog } from "@/components/panel/vehicle-bulk-import-dialog"
+import { analyzeVehiclePrice, getPriceDropRecommendation } from "@/lib/sales-intelligence"
+import { buildVehicleExportCsv } from "@/lib/vehicle-export"
 
 const statusMap = {
   active: { label: "Satılık", color: "bg-green-100 text-green-700" },
@@ -57,6 +64,7 @@ const statusMap = {
 }
 
 const FILTER_ALL = "__all__"
+const DAY_MS = 24 * 60 * 60 * 1000
 
 const priceFilterPresets = [
   { value: FILTER_ALL, label: "Tüm Fiyatlar" },
@@ -77,6 +85,20 @@ function matchesPriceFilter(price: number, selected: string) {
   return price >= min && price <= max
 }
 
+function getVehicleAgeDays(vehicle: PanelVehicle) {
+  const createdAt = vehicle.createdAt ? Date.parse(vehicle.createdAt) : Number.NaN
+  return Number.isFinite(createdAt) ? Math.max(0, Math.floor((Date.now() - createdAt) / DAY_MS)) : 0
+}
+
+function matchesAgeFilter(vehicle: PanelVehicle, selected: string) {
+  if (selected === FILTER_ALL) return true
+  const age = getVehicleAgeDays(vehicle)
+  if (selected === "0-30") return age <= 30
+  if (selected === "31-60") return age >= 31 && age <= 60
+  if (selected === "61-90") return age >= 61 && age <= 90
+  return age > 90
+}
+
 export default function VehiclesPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [searchQuery, setSearchQuery] = useState("")
@@ -85,12 +107,14 @@ export default function VehiclesPage() {
   const [yearFilter, setYearFilter] = useState(FILTER_ALL)
   const [fuelFilter, setFuelFilter] = useState(FILTER_ALL)
   const [priceFilter, setPriceFilter] = useState(FILTER_ALL)
+  const [ageFilter, setAgeFilter] = useState(FILTER_ALL)
   const [vehicles, setVehicles] = useState<PanelVehicle[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null)
   const [gallery, setGallery] = useState<SocialImageGallery>(null)
   const [socialVehicle, setSocialVehicle] = useState<PanelVehicle | null>(null)
+  const [analysisNow, setAnalysisNow] = useState(0)
 
   const brandOptions = useMemo(
     () => Array.from(new Set(vehicles.map((vehicle) => vehicle.brand).filter(Boolean))).sort((a, b) => a.localeCompare(b, "tr")),
@@ -111,6 +135,7 @@ export default function VehiclesPage() {
     || yearFilter !== FILTER_ALL
     || fuelFilter !== FILTER_ALL
     || priceFilter !== FILTER_ALL
+    || ageFilter !== FILTER_ALL
 
   const fetchVehicles = async () => {
     setIsLoading(true)
@@ -129,6 +154,7 @@ export default function VehiclesPage() {
       }
 
       setVehicles(data.items || [])
+      setAnalysisNow(Date.now())
     } catch {
       setErrorMessage("Ağ hatası nedeniyle araç listesi alınamadı.")
     } finally {
@@ -178,10 +204,35 @@ export default function VehiclesPage() {
       const matchesYear = yearFilter === FILTER_ALL || String(vehicle.year) === yearFilter
       const matchesFuel = fuelFilter === FILTER_ALL || vehicle.fuel === fuelFilter
       const matchesPrice = matchesPriceFilter(vehicle.price, priceFilter)
+      const matchesAge = matchesAgeFilter(vehicle, ageFilter)
 
-      return matchesSearch && matchesStatus && matchesBrand && matchesYear && matchesFuel && matchesPrice
+      return matchesSearch && matchesStatus && matchesBrand && matchesYear && matchesFuel && matchesPrice && matchesAge
     })
-  }, [vehicles, searchQuery, statusFilter, brandFilter, yearFilter, fuelFilter, priceFilter])
+  }, [vehicles, searchQuery, statusFilter, brandFilter, yearFilter, fuelFilter, priceFilter, ageFilter])
+
+  const ageBuckets = useMemo(() => {
+    const buckets = [
+      { value: "0-30", label: "0-30 gün", count: 0 },
+      { value: "31-60", label: "31-60 gün", count: 0 },
+      { value: "61-90", label: "61-90 gün", count: 0 },
+      { value: "90+", label: "90+ gün", count: 0 },
+    ]
+    vehicles.filter((vehicle) => vehicle.status === "active").forEach((vehicle) => {
+      const age = getVehicleAgeDays(vehicle)
+      const bucket = age <= 30 ? buckets[0] : age <= 60 ? buckets[1] : age <= 90 ? buckets[2] : buckets[3]
+      bucket.count += 1
+    })
+    return buckets
+  }, [vehicles])
+
+  const intelligenceSummary = useMemo(() => {
+    const activeVehicles = vehicles.filter((vehicle) => vehicle.status === "active")
+    return {
+      highPriced: activeVehicles.filter((vehicle) => analyzeVehiclePrice(vehicle, vehicles).tone === "high").length,
+      priceDropCandidates: activeVehicles.filter((vehicle) => getPriceDropRecommendation(vehicle, analysisNow || undefined).shouldDrop).length,
+      qrInterestNoLead: activeVehicles.filter((vehicle) => vehicle.scans >= 10 && vehicle.leads === 0).length,
+    }
+  }, [analysisNow, vehicles])
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("tr-TR", {
@@ -216,6 +267,17 @@ export default function VehiclesPage() {
     }
   }
 
+  const handleVehicleExport = () => {
+    const blob = new Blob([`\uFEFF${buildVehicleExportCsv(filteredVehicles)}`], { type: "text/csv;charset=utf-8" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Istanbul" }).format(new Date())
+    link.href = url
+    link.download = `cebindegaleri-araclar-${today}.csv`
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -225,12 +287,19 @@ export default function VehiclesPage() {
             Toplam {vehicles.length} araç kayıtlı · Görünen {filteredVehicles.length}
           </p>
         </div>
-        <Button asChild className="bg-accent hover:bg-accent/90 text-accent-foreground">
-          <Link href="/panel/araclar/ekle">
-            <Plus className="w-4 h-4 mr-2" />
-            Araç Ekle
-          </Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <VehicleBulkImportDialog onImported={() => void fetchVehicles()} />
+          <Button variant="outline" onClick={handleVehicleExport} disabled={filteredVehicles.length === 0}>
+            <Download className="w-4 h-4 mr-2" />
+            Araçları CSV İndir
+          </Button>
+          <Button asChild className="bg-accent hover:bg-accent/90 text-accent-foreground">
+            <Link href="/panel/araclar/ekle">
+              <Plus className="w-4 h-4 mr-2" />
+              Araç Ekle
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {errorMessage && (
@@ -238,6 +307,56 @@ export default function VehiclesPage() {
           {errorMessage}
         </div>
       )}
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {ageBuckets.map((bucket) => (
+          <button
+            key={bucket.value}
+            type="button"
+            onClick={() => setAgeFilter(ageFilter === bucket.value ? FILTER_ALL : bucket.value)}
+            className={cn(
+              "flex items-center justify-between rounded-xl border bg-card p-4 text-left transition-colors hover:border-accent/40",
+              ageFilter === bucket.value && "border-accent bg-accent/5",
+            )}
+          >
+            <div>
+              <p className="text-xs text-muted-foreground">Stok Yaşı</p>
+              <p className="mt-1 font-medium text-foreground">{bucket.label}</p>
+            </div>
+            <strong className="text-2xl">{bucket.count}</strong>
+          </button>
+        ))}
+      </div>
+
+      <div className="grid gap-3 lg:grid-cols-3">
+        <Card className="border-amber-500/20 bg-amber-500/5">
+          <CardContent className="flex items-center justify-between gap-3 p-4">
+            <div>
+              <p className="text-sm font-medium text-amber-700">Piyasanın Üstünde</p>
+              <p className="text-xs text-muted-foreground">Benzer araç medyanına göre</p>
+            </div>
+            <strong className="text-2xl text-amber-700">{intelligenceSummary.highPriced}</strong>
+          </CardContent>
+        </Card>
+        <Card className="border-red-500/20 bg-red-500/5">
+          <CardContent className="flex items-center justify-between gap-3 p-4">
+            <div>
+              <p className="text-sm font-medium text-red-700">Fiyat Revizyon Adayı</p>
+              <p className="text-xs text-muted-foreground">Stok yaşı ve talep sinyaline göre</p>
+            </div>
+            <strong className="text-2xl text-red-700">{intelligenceSummary.priceDropCandidates}</strong>
+          </CardContent>
+        </Card>
+        <Card className="border-sky-500/20 bg-sky-500/5">
+          <CardContent className="flex items-center justify-between gap-3 p-4">
+            <div>
+              <p className="text-sm font-medium text-sky-700">QR İlgi Var, Lead Yok</p>
+              <p className="text-xs text-muted-foreground">Açıklama/fotoğraf/fiyat kontrol edilmeli</p>
+            </div>
+            <strong className="text-2xl text-sky-700">{intelligenceSummary.qrInterestNoLead}</strong>
+          </CardContent>
+        </Card>
+      </div>
 
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
@@ -330,6 +449,20 @@ export default function VehiclesPage() {
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
 
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>Stok Yaşı</DropdownMenuSubTrigger>
+                <DropdownMenuSubContent className="w-56">
+                  <DropdownMenuRadioGroup value={ageFilter} onValueChange={setAgeFilter}>
+                    <DropdownMenuRadioItem value={FILTER_ALL}>Tümü</DropdownMenuRadioItem>
+                    {ageBuckets.map((bucket) => (
+                      <DropdownMenuRadioItem key={bucket.value} value={bucket.value}>
+                        {bucket.label} ({bucket.count})
+                      </DropdownMenuRadioItem>
+                    ))}
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onSelect={(event) => {
@@ -338,6 +471,7 @@ export default function VehiclesPage() {
                   setYearFilter(FILTER_ALL)
                   setFuelFilter(FILTER_ALL)
                   setPriceFilter(FILTER_ALL)
+                  setAgeFilter(FILTER_ALL)
                 }}
                 disabled={!hasActiveQuickFilters}
               >
@@ -384,7 +518,10 @@ export default function VehiclesPage() {
         </Card>
       ) : viewMode === "grid" ? (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredVehicles.map((vehicle) => (
+          {filteredVehicles.map((vehicle) => {
+            const priceAnalysis = analyzeVehiclePrice(vehicle, vehicles)
+            const priceDrop = getPriceDropRecommendation(vehicle, analysisNow || undefined)
+            return (
             <Card key={vehicle.id} className="overflow-hidden hover:border-accent/30 hover:shadow-md transition-all">
               <div className="relative h-44 bg-muted">
                 <VehicleImageFrame
@@ -395,6 +532,10 @@ export default function VehiclesPage() {
                 />
                 <Badge className={cn("absolute top-3 left-3", statusMap[vehicle.status].color)}>
                   {statusMap[vehicle.status].label}
+                </Badge>
+                <Badge variant="secondary" className="absolute bottom-3 left-3 bg-background/90 text-foreground">
+                  <CalendarDays className="mr-1 h-3 w-3" />
+                  {getVehicleAgeDays(vehicle)} gün
                 </Badge>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -452,6 +593,18 @@ export default function VehiclesPage() {
                 </div>
 
                 <div className="text-xl font-bold text-accent mb-3">{formatPrice(vehicle.price)}</div>
+                <div className="mb-3 flex flex-wrap gap-2">
+                  <Badge variant={priceAnalysis.tone === "high" ? "destructive" : priceAnalysis.tone === "low" ? "secondary" : "outline"} className="gap-1">
+                    <Sparkles className="h-3 w-3" />
+                    {priceAnalysis.label}
+                  </Badge>
+                  {priceDrop.shouldDrop ? (
+                    <Badge variant="destructive" className="gap-1">
+                      <AlertTriangle className="h-3 w-3" />
+                      {priceDrop.label}
+                    </Badge>
+                  ) : null}
+                </div>
 
                 <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
                   <div>{vehicle.mileage.toLocaleString("tr-TR")} km</div>
@@ -477,7 +630,8 @@ export default function VehiclesPage() {
                 </div>
               </CardContent>
             </Card>
-          ))}
+            )
+          })}
         </div>
       ) : (
         <Card>
@@ -491,11 +645,15 @@ export default function VehiclesPage() {
                   <th className="text-left p-4 font-medium text-muted-foreground hidden lg:table-cell">Km</th>
                   <th className="text-left p-4 font-medium text-muted-foreground hidden sm:table-cell">Durum</th>
                   <th className="text-left p-4 font-medium text-muted-foreground hidden lg:table-cell">Tarama</th>
+                  <th className="text-left p-4 font-medium text-muted-foreground hidden xl:table-cell">Stok Yaşı</th>
                   <th className="text-right p-4 font-medium text-muted-foreground">İşlem</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredVehicles.map((vehicle) => (
+                {filteredVehicles.map((vehicle) => {
+                  const priceAnalysis = analyzeVehiclePrice(vehicle, vehicles)
+                  const priceDrop = getPriceDropRecommendation(vehicle, analysisNow || undefined)
+                  return (
                   <tr key={vehicle.id} className="border-b border-border last:border-0 hover:bg-muted/50">
                     <td className="p-4">
                       <div className="flex items-center gap-3">
@@ -515,7 +673,13 @@ export default function VehiclesPage() {
                       </div>
                     </td>
                     <td className="p-4 hidden md:table-cell">{vehicle.year}</td>
-                    <td className="p-4 font-medium text-accent">{formatPrice(vehicle.price)}</td>
+                    <td className="p-4">
+                      <p className="font-medium text-accent">{formatPrice(vehicle.price)}</p>
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        <Badge variant={priceAnalysis.tone === "high" ? "destructive" : "outline"}>{priceAnalysis.label}</Badge>
+                        {priceDrop.shouldDrop ? <Badge variant="destructive">Revizyon</Badge> : null}
+                      </div>
+                    </td>
                     <td className="p-4 hidden lg:table-cell">{vehicle.mileage.toLocaleString("tr-TR")} km</td>
                     <td className="p-4 hidden sm:table-cell">
                       <Badge className={statusMap[vehicle.status].color}>{statusMap[vehicle.status].label}</Badge>
@@ -528,6 +692,11 @@ export default function VehiclesPage() {
                           {vehicle.favorites}
                         </span>
                       ) : null}
+                    </td>
+                    <td className="p-4 hidden xl:table-cell">
+                      <Badge variant={getVehicleAgeDays(vehicle) > 90 ? "destructive" : "outline"}>
+                        {getVehicleAgeDays(vehicle)} gün
+                      </Badge>
                     </td>
                     <td className="p-4 text-right">
                       <DropdownMenu>
@@ -577,7 +746,8 @@ export default function VehiclesPage() {
                       </DropdownMenu>
                     </td>
                   </tr>
-                ))}
+                  )
+                })}
               </tbody>
             </table>
           </div>

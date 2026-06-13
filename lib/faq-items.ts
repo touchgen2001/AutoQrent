@@ -1,4 +1,4 @@
-export type FaqCategory = "Kurulum" | "QR Kod" | "Panel" | "Lead Takibi" | "Fiyatlandırma" | "Destek"
+export type FaqCategory = "Kurulum" | "QR Kod" | "Panel" | "Müşteri Talepleri" | "Fiyatlandırma" | "Destek"
 
 export type FaqItem = {
   category: FaqCategory
@@ -35,23 +35,23 @@ export const faqItems: FaqItem[] = [
     category: "Panel",
     question: "Panelden hangi alanları yönetiyoruz?",
     answer:
-      "Araç vitrini, galeri iletişim bilgileri, çalışma saatleri, public galeri sayfası teması, lead süreçleri, QR çıktıları ve abonelik bilgileri panelden merkezi olarak yönetilir.",
+      "Araç vitrini, galeri iletişim bilgileri, çalışma saatleri, size özel galeri sitesi, müşteri talepleri, QR çıktıları ve abonelik bilgileri panelden merkezi olarak yönetilir.",
   },
   {
     category: "Panel",
-    question: "Paketler tek kullanıcı hesabı ile mi çalışıyor?",
+    question: "Paketlerde kaç kullanıcı hesabı bulunuyor?",
     answer:
-      "Evet. Paketler tek galeri hesabı ve tek kullanıcı hesabı modeliyle çalışır. Pro ve üst planlar ek kullanıcı değil, daha geniş araç limiti, analitik ve destek kapsamı sağlar.",
+      "Tüm paketler tek galeri sahibi hesabıyla çalışır. Planlar kullanıcı sayısına göre değil; araç limiti, raporlama ve operasyon özelliklerine göre ayrılır.",
   },
   {
-    category: "Lead Takibi",
+    category: "Müşteri Talepleri",
     question: "WhatsApp ve telefon talepleri nasıl toplanıyor?",
     answer:
-      "Müşteri temasları lead akışında araç kaydıyla eşleşir. Not, takip tarihi ve durum güncellemesi tek kayıtta ilerler.",
+      "Müşteri talepleri ilgili araçla eşleşir. Not, takip tarihi ve durum güncellemesi tek kayıtta ilerler.",
   },
   {
-    category: "Lead Takibi",
-    question: "Lead durumları satış sürecinde nasıl kullanılıyor?",
+    category: "Müşteri Talepleri",
+    question: "Müşteri talebi durumları satış sürecinde nasıl kullanılıyor?",
     answer:
       "Yeni, görüşülüyor ve satışa döndü gibi durum adımlarıyla her müşteri süreci tek panel kaydında takip edilir; aksiyonlar kayda bağlı kalır.",
   },

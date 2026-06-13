@@ -48,7 +48,7 @@ export async function POST(request: Request) {
 
   const limits = getSecurityLimits()
   const clientIp = getClientIp(request)
-  const rateLimit = checkRateLimit({
+  const rateLimit = await checkRateLimit({
     key: `admin-login:${clientIp}`,
     limit: Math.min(limits.authLogin.limit, 5),
     windowMs: limits.authLogin.windowMs,

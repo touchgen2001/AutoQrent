@@ -4,6 +4,9 @@ type AuditAction =
   | 'vehicle_update'
   | 'lead_status_change'
   | 'lead_note_add'
+  | 'lead_follow_up_change'
+  | 'customer_task_create'
+  | 'customer_task_status_change'
 
 type AuditEntityType = 'vehicle' | 'lead' | 'system'
 

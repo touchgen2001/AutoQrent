@@ -30,7 +30,12 @@ function getInitialPublicLocale() {
 }
 
 export function usePublicLocale() {
-  const [locale, setLocaleState] = useState<PublicLocale>(() => getInitialPublicLocale())
+  const [locale, setLocaleState] = useState<PublicLocale>('tr')
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setLocaleState(getInitialPublicLocale()), 0)
+    return () => window.clearTimeout(timer)
+  }, [])
 
   useEffect(() => {
     document.documentElement.lang = locale

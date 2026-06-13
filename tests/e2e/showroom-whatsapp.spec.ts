@@ -1,7 +1,8 @@
 import { expect, test } from '@playwright/test'
+import { getDemoShowroomHref } from '@/lib/demo-public-experience'
 
 test('showroom page exposes direct WhatsApp CTA', async ({ page }) => {
-  await page.goto('/showroom/demo')
+  await page.goto(getDemoShowroomHref())
 
   const loadError = page.getByText(/this page couldn.t load/i).first()
   const hasLoadError = await loadError.isVisible({ timeout: 1500 }).catch(() => false)

@@ -19,6 +19,7 @@ export async function resolveVehicleForPriceAlert(
       select: 'id,price',
       slug: `eq.${routeId.trim()}`,
       status: 'eq.active',
+      deleted_at: 'is.null',
       limit: 1,
     },
   })

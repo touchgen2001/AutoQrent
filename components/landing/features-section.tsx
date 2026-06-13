@@ -26,17 +26,17 @@ const modules = [
   },
   {
     icon: MessageCircle,
-    title: "Lead Yönetimi",
-    summary: "Telefon, WhatsApp ve form kaynakları aynı lead akışında toplanır.",
+    title: "Müşteri Talebi Yönetimi",
+    summary: "Telefon, WhatsApp ve form üzerinden gelen müşteri talepleri tek yerde toplanır.",
     benefit: "Tekrar arama ve takip kaybı azalır; tüm süreç aynı müşteri kaydı üzerinden ilerler.",
-    workflow: "Lead oluşur -> Durum atanır -> Not/follow-up eklenir -> Satış adımı güncellenir.",
+    workflow: "Talep gelir -> Durum seçilir -> Not ve takip tarihi eklenir -> Satış adımı güncellenir.",
   },
   {
     icon: BarChart3,
     title: "Operasyon Analitiği",
-    summary: "Araç ilgisi, lead akışı ve kanal performansı panel ekranlarında izlenir.",
+    summary: "Araç ilgisi, müşteri talepleri ve iletişim kanallarının performansı panelde izlenir.",
     benefit: "Hangi aracın ve hangi kanalın daha etkili olduğu net şekilde görülür.",
-    workflow: "Tarama/lead verisi toplanır -> Panel grafikleri güncellenir -> Karar aksiyonu alınır.",
+    workflow: "Tarama ve talep verisi toplanır -> Panel grafikleri güncellenir -> Sonraki adım belirlenir.",
   },
   {
     icon: Settings2,

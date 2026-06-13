@@ -13,6 +13,7 @@ async function seedPanelSession(page: import('@playwright/test').Page) {
           fullName: 'Test Owner',
           galleryId: 'gal_test',
           galleryName: 'Test Gallery',
+          role: 'owner',
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
         },
       }),

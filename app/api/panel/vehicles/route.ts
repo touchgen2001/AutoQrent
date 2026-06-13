@@ -3,7 +3,7 @@ import { insertAuditLog } from '@/lib/security/audit'
 import { createPanelVehicle, listPanelVehicles } from '@/lib/server/panel-repository'
 import { getClientIp } from '@/lib/security/request-guards'
 import { findPlaceholderTextField, findPlaceholderUrlField } from '@/lib/server/panel-input-guard'
-import { panelAuthErrorResponse, requirePanelSessionOrThrow } from '@/lib/server/panel-auth-guard'
+import { panelAuthErrorResponse, requirePanelPermissionOrThrow, requirePanelSessionOrThrow } from '@/lib/server/panel-auth-guard'
 import { createVehicleSchema } from '@/lib/server/vehicle-input-schema'
 import { assertVehicleCreateAllowed } from '@/lib/server/subscription-repository'
 import { subscriptionGateErrorResponse } from '@/lib/server/subscription-response'
@@ -36,6 +36,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const session = await requirePanelSessionOrThrow(request)
+    await requirePanelPermissionOrThrow(session, 'vehicles.create')
     const body = await request.json()
     const parsed = createVehicleSchema.safeParse(body)
 
@@ -101,7 +102,8 @@ export async function POST(request: Request) {
       action: 'vehicle_create',
       entityType: 'vehicle',
       entityId: vehicle.id,
-      actorRole: 'owner',
+      actorEmail: session.email,
+      actorRole: session.role,
       source: 'panel_api',
       ip,
       userAgent,

@@ -8,11 +8,21 @@ export const runtime = 'nodejs'
 const payloadSchema = z.object({
   eventType: z.enum(['impression', 'click']),
   variant: z.enum(['A', 'B']),
-  surface: z.enum(['header', 'hero', 'cta_section', 'mobile_sticky', 'pricing']),
+  surface: z.enum(['header', 'hero', 'cta_section', 'mobile_sticky', 'pricing', 'contact']),
   sessionId: z.string().trim().min(3).max(120),
-  action: z.enum(['primary', 'secondary', 'call', 'whatsapp', 'demo', 'plan_start']).optional(),
+  action: z.enum([
+    'primary',
+    'secondary',
+    'call',
+    'whatsapp',
+    'demo',
+    'plan_start',
+    'contact_submit',
+    'billing_toggle',
+  ]).optional(),
   href: z.string().trim().max(300).optional(),
   label: z.string().trim().max(120).optional(),
+  pagePath: z.string().trim().startsWith('/').max(240).default('/'),
 })
 
 export async function POST(request: Request) {
@@ -23,7 +33,7 @@ export async function POST(request: Request) {
     const ip = getClientIp(request)
     const userAgent = request.headers.get('user-agent') ?? 'unknown'
 
-    const rateLimit = checkRateLimit({
+    const rateLimit = await checkRateLimit({
       key: `landing-cta:${ip}`,
       limit: 100,
       windowMs: 60 * 1000,
@@ -61,6 +71,7 @@ export async function POST(request: Request) {
       parsed.data.action || '',
       parsed.data.href || '',
       parsed.data.label || '',
+      parsed.data.pagePath,
     ])
 
     if (botRisk.blocked) {
@@ -91,6 +102,7 @@ export async function POST(request: Request) {
         action: parsed.data.action || null,
         href: parsed.data.href || null,
         label: parsed.data.label || null,
+        pagePath: parsed.data.pagePath,
       },
     })
 

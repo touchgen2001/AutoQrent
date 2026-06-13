@@ -21,7 +21,7 @@ export async function POST(request: Request) {
 
   const limits = getSecurityLimits()
   const clientIp = getClientIp(request)
-  const rateLimit = checkRateLimit({
+  const rateLimit = await checkRateLimit({
     key: `auth-login:${clientIp}`,
     limit: limits.authLogin.limit,
     windowMs: limits.authLogin.windowMs,
@@ -82,6 +82,7 @@ export async function POST(request: Request) {
         fullName: session.fullName,
         galleryId: session.galleryId,
         galleryName: session.galleryName,
+        role: session.role,
         expiresAt: session.expiresAt,
       },
     })

@@ -6,6 +6,7 @@ import {
   isAdminSubscriptionPlan,
   isAdminSubscriptionStatus,
 } from '@/lib/admin-user-types'
+import { isQaAuthMetadata } from '@/lib/server/qa-account'
 import { requireSupabaseAdminConfig, supabaseAdminFetch } from '@/lib/server/supabase-admin'
 import { normalizeSubscriptionPlanCode, normalizeSubscriptionStatus } from '@/lib/subscription-plans'
 
@@ -232,6 +233,7 @@ function fetchGalleries() {
     path: '/rest/v1/galleries',
     query: {
       select: 'id,name,owner_email,created_at',
+      is_qa_account: 'eq.false',
       order: 'created_at.desc',
       limit: DATA_ROW_LIMIT,
     },
@@ -433,6 +435,7 @@ export async function getAdminFinanceSnapshot(): Promise<AdminFinanceSnapshot> {
   const auditRows = await fetchAuditLogs()
   const galleryByOwnerEmail = buildGalleryByOwnerEmail(galleries)
   const accounts = authUsers
+    .filter((user) => !isQaAuthMetadata(user.app_metadata))
     .map((user) => mapAccount(user, galleryByOwnerEmail))
     .filter((account): account is AdminFinanceAccount => Boolean(account))
     .sort((left, right) => {

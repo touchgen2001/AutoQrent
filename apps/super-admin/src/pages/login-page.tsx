@@ -2,12 +2,10 @@ import { FormEvent, useState } from 'react'
 import { ArrowRight, LockKeyhole, ShieldCheck } from 'lucide-react'
 
 import { SuperAdminLogo } from '@/components/brand/super-admin-logo'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { getSeededAdmins, useAuth } from '@/lib/auth'
-import { roleLabels } from '@/lib/rbac'
+import { useAuth } from '@/lib/auth'
 
 type LoginPageProps = {
   onNavigate: (path: string) => void
@@ -21,8 +19,7 @@ function getErrorMessage(error: string | null) {
 
 export function LoginPage({ onNavigate }: LoginPageProps) {
   const { login } = useAuth()
-  const admins = getSeededAdmins()
-  const [email, setEmail] = useState(admins[0]?.username || '')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -106,22 +103,6 @@ export function LoginPage({ onNavigate }: LoginPageProps) {
                 </Button>
               </form>
 
-              <div className="mt-6 rounded-2xl border border-border bg-muted/50 p-4">
-                <p className="text-sm font-semibold">Tanımlı admin hesapları</p>
-                <div className="mt-3 grid gap-2">
-                  {admins.map((admin) => (
-                    <button
-                      key={admin.id}
-                      type="button"
-                      onClick={() => setEmail(admin.username)}
-                      className="flex items-center justify-between rounded-xl border border-border bg-background px-3 py-2 text-left text-sm transition hover:bg-secondary"
-                    >
-                      <span>{admin.username}</span>
-                      <Badge variant="outline">{roleLabels[admin.role]}</Badge>
-                    </button>
-                  ))}
-                </div>
-              </div>
             </CardContent>
           </Card>
         </section>

@@ -241,6 +241,7 @@ async function findVehicleByRouteId(routeId: string) {
     query: {
       select: 'id,gallery_id,slug,brand,model,variant,year,price,km,fuel,transmission,color,description,photos',
       status: 'eq.active',
+      deleted_at: 'is.null',
       slug: `eq.${normalized}`,
       limit: 1,
     },

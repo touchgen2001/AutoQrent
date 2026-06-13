@@ -82,15 +82,15 @@ export function PanelLayoutClient({ children }: { children: React.ReactNode }) {
 
       <div
         className={cn(
-          "transition-all duration-300",
+          "transition-all duration-300 print:!ml-0",
           isCollapsed ? "lg:ml-[70px]" : "lg:ml-[260px]",
         )}
       >
         <DashboardHeader onMobileMenuClick={() => setIsMobileOpen(true)} />
 
-        <main className="p-4 md:p-6">
+        <main className="p-4 md:p-6 print:p-0">
           {subscriptionNotice && (
-            <div className="mb-4 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-800">
+            <div className="mb-4 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 print:hidden">
               {subscriptionNotice}
             </div>
           )}

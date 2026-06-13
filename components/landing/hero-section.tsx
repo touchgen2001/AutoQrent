@@ -1,6 +1,5 @@
 import Image from "next/image"
-import Link from "next/link"
-import { ArrowRight, QrCode } from "lucide-react"
+import { Check, QrCode } from "lucide-react"
 import { HeroCtaActions } from "@/components/landing/hero-cta-actions"
 import { IMAGE_PRESETS } from "@/lib/image-presets"
 
@@ -40,23 +39,24 @@ export function HeroSection() {
             </h1>
             
             <p className="mt-6 text-lg text-muted-foreground max-w-xl mx-auto lg:mx-0 leading-relaxed">
-              Cebindegaleri; public galeri sitenizi, araç detay sayfalarınızı, standart QR yönlendirmesini ve müşteri talebi takibini tek panelde toplar.
+              Cebindegaleri; size özel galeri sitenizi, araç sayfalarınızı, QR kodlarınızı ve müşteri taleplerini tek panelde toplar.
               Galerici aracı yönetir, müşteri telefondan doğru bilgiye ulaşır.
             </p>
             
             <HeroCtaActions />
 
-            <p className="mt-4 text-sm text-muted-foreground">
-              Kredi kartı gerekmeden başlayın veya{" "}
-              <Link href="/demo" className="font-medium text-accent hover:underline">
-                demo QR deneyimini açın
-                <ArrowRight className="ml-1 inline h-3.5 w-3.5" />
-              </Link>
-            </p>
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm text-muted-foreground lg:justify-start">
+              {["Kredi kartı gerekmez", "2 dakikada kurulum", "14 gün ücretsiz"].map((item) => (
+                <span key={item} className="inline-flex items-center gap-1.5">
+                  <Check className="h-4 w-4 text-emerald-600" />
+                  {item}
+                </span>
+              ))}
+            </div>
             
             <div className="mt-10 grid gap-4 border-t border-border pt-8 sm:grid-cols-3">
               <div className="rounded-xl border border-border/70 bg-card/70 p-4">
-                <div className="text-base font-semibold text-foreground">Public Galeri Sitesi</div>
+                <div className="text-base font-semibold text-foreground">Size Özel Galeri Sitesi</div>
                 <div className="mt-1 text-sm text-muted-foreground">Her galeri kendi logosu, iletişimi ve araçlarıyla yayınlanır</div>
               </div>
               <div className="rounded-xl border border-border/70 bg-card/70 p-4">
@@ -75,8 +75,8 @@ export function HeroSection() {
             <div className="relative w-full max-w-[420px]">
               <div className="relative overflow-hidden rounded-[2rem] border border-border/70 bg-card shadow-2xl">
                 <Image
-                  src="/landing-hero-qr-flow.jpg"
-                  alt="Cebindegaleri QR ziyaret, lead kaydı ve analitik akışını gösteren mobil vitrin görseli"
+                  src="/landing-hero-qr-flow-simple.png"
+                  alt="Cebindegaleri QR ziyaret, müşteri talebi ve analiz akışını gösteren mobil vitrin görseli"
                   width={1024}
                   height={1024}
                   preload

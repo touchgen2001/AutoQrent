@@ -18,6 +18,7 @@ export const SUBSCRIPTION_FEATURES = [
   'domain.custom',
   'branding.remove',
   'export.excel',
+  'team.manage',
 ] as const
 export type SubscriptionFeature = (typeof SUBSCRIPTION_FEATURES)[number]
 
@@ -46,6 +47,7 @@ const STARTER_FEATURES: SubscriptionFeatureMap = {
   'domain.custom': false,
   'branding.remove': false,
   'export.excel': false,
+  'team.manage': false,
 }
 
 const PRO_FEATURES: SubscriptionFeatureMap = {
@@ -57,6 +59,7 @@ const PRO_FEATURES: SubscriptionFeatureMap = {
   'domain.custom': true,
   'branding.remove': false,
   'export.excel': true,
+  'team.manage': false,
 }
 
 const PREMIUM_FEATURES: SubscriptionFeatureMap = {
@@ -68,6 +71,7 @@ const PREMIUM_FEATURES: SubscriptionFeatureMap = {
   'domain.custom': true,
   'branding.remove': true,
   'export.excel': true,
+  'team.manage': false,
 }
 
 export const SUBSCRIPTION_PLANS: Record<SubscriptionPlanCode, SubscriptionPlanDefinition> = {
@@ -84,6 +88,7 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlanCode, SubscriptionPlanDe
       '15 araç limiti',
       'QR kod ve herkese açık galeri sayfası',
       'Araç detay sayfası ve temel müşteri talebi toplama',
+      '1 kullanıcı hesabı',
       'Temel analitik',
     ],
     cta: 'Başlangıç Planına Geç',
@@ -91,7 +96,7 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlanCode, SubscriptionPlanDe
   pro: {
     code: 'pro',
     name: 'Pro',
-    summary: 'Tek kullanıcı hesabıyla daha yüksek araç hacmi, gelişmiş takip ve dışa aktarım isteyen galeriler için.',
+    summary: 'Yüksek araç hacmi, gelişmiş takip ve dışa aktarım isteyen galeri sahipleri için.',
     monthlyPrice: 2500,
     yearlyPrice: 25000,
     vehicleLimit: 75,
@@ -99,6 +104,7 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlanCode, SubscriptionPlanDe
     features: PRO_FEATURES,
     highlights: [
       '75 araç limiti',
+      '1 kullanıcı hesabı',
       'Gelişmiş müşteri talebi yönetimi',
       'Gelişmiş analitik, Excel dışa aktarım ve toplu araç ekleme',
       'Özel domain, logo ve marka ayarları',
@@ -108,7 +114,7 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlanCode, SubscriptionPlanDe
   premium: {
     code: 'premium',
     name: 'Premium',
-    summary: 'Tek kullanıcı hesabıyla yüksek stok, marka kontrolü ve gelişmiş performans raporları için.',
+    summary: 'Yüksek stok, marka kontrolü ve gelişmiş performans raporları isteyen galeri sahipleri için.',
     monthlyPrice: 4990,
     yearlyPrice: 49900,
     vehicleLimit: 200,
@@ -116,7 +122,7 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlanCode, SubscriptionPlanDe
     features: PREMIUM_FEATURES,
     highlights: [
       '200 araç limiti',
-      'Tek kullanıcı hesabı',
+      '1 kullanıcı hesabı',
       'Lead, araç görüntülenme ve ilgi gören araç raporları',
       'Marka kaldırma ve öncelikli destek',
     ],
@@ -125,14 +131,14 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlanCode, SubscriptionPlanDe
   enterprise: {
     code: 'enterprise',
     name: 'Kurumsal',
-    summary: 'Tek kullanıcı hesabıyla özel limit, API ve danışmanlık gerektiren galeriler için.',
+    summary: 'Özel araç, API ve danışmanlık ihtiyaçları olan galeriler için.',
     monthlyPrice: null,
     yearlyPrice: null,
     vehicleLimit: null,
     userLimit: 1,
     features: PREMIUM_FEATURES,
     highlights: [
-      'Tek kullanıcı hesabı',
+      '1 kullanıcı hesabı',
       'Özel araç limiti',
       'API, veri taşıma ve özel kurulum desteği',
       'Özel destek ve danışmanlık',
@@ -184,6 +190,7 @@ export const subscriptionFeatureLabels: Record<SubscriptionFeature, string> = {
   'domain.custom': 'Özel domain',
   'branding.remove': 'Cebindegaleri markasını kaldırma',
   'export.excel': 'Excel dışa aktarım',
+  'team.manage': 'Personel hesabı yönetimi kullanılamaz',
 }
 
 export function normalizeSubscriptionPlanCode(value: unknown): SubscriptionPlanCode {

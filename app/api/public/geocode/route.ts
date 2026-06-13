@@ -31,7 +31,7 @@ export async function POST(request: Request) {
 
   try {
     const ip = getClientIp(request)
-    const rate = checkRateLimit({
+    const rate = await checkRateLimit({
       key: `public-geocode:${ip}`,
       limit: 20,
       windowMs: 5 * 60 * 1000,

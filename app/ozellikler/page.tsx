@@ -10,7 +10,7 @@ export const metadata: Metadata = createPageMetadata({
   description:
     "Cebindegaleri özellikleri: QR kodlu araç vitrini, panel yönetimi, müşteri talebi takibi, mobil etkileşim ve her temas noktasında tutarlı, güvenli galeri marka standardı.",
   path: "/ozellikler",
-  keywords: ["galeri özellikleri", "qr kodlu vitrin", "lead yönetimi", "galeri paneli", "güvenli galeri altyapısı", "galeri marka standardı"],
+  keywords: ["galeri özellikleri", "qr kodlu vitrin", "müşteri talebi yönetimi", "galeri paneli", "güvenli galeri altyapısı", "galeri marka standardı"],
 })
 
 export default function FeaturesPage() {

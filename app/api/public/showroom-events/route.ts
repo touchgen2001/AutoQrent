@@ -69,7 +69,7 @@ export async function POST(request: Request) {
   try {
     const ip = getClientIp(request)
     const userAgent = request.headers.get('user-agent') || 'unknown'
-    const rate = checkRateLimit({
+    const rate = await checkRateLimit({
       key: `showroom-events:${ip}`,
       limit: limits.vehicleEvents.limit,
       windowMs: limits.vehicleEvents.windowMs,

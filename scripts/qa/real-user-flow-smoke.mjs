@@ -30,14 +30,19 @@ loadDotEnvLocal()
 
 const baseUrl = (process.env.BASE_URL || 'https://cebindegaleri.com').replace(/\/$/, '')
 const allowTestData = process.env.REAL_FLOW_ALLOW_TEST_DATA === 'YES'
+const useExistingAccount = process.env.REAL_FLOW_USE_EXISTING_ACCOUNT === '1'
 const cleanupVehicle = process.env.REAL_FLOW_CLEANUP_VEHICLE !== '0'
-const cleanupQaData = process.env.REAL_FLOW_CLEANUP_QA_DATA !== '0'
+const cleanupQaData = !useExistingAccount && process.env.REAL_FLOW_CLEANUP_QA_DATA !== '0'
 const sessionCookieName = process.env.SMOKE_SESSION_COOKIE_NAME || 'autoqrent_panel_session'
 const safeQaEmailRe = /^akis-\d{14}@cebindegaleri\.com$/i
 
 const runStamp = new Date().toISOString().replace(/[-:T.Z]/g, '').slice(0, 14)
-const email = process.env.REAL_FLOW_EMAIL || `akis-${runStamp}@cebindegaleri.com`
-const password = process.env.REAL_FLOW_PASSWORD || `Cg-${runStamp}-Akis!`
+const email = useExistingAccount
+  ? process.env.SMOKE_TEST_EMAIL || process.env.REAL_FLOW_EMAIL || ''
+  : process.env.REAL_FLOW_EMAIL || `akis-${runStamp}@cebindegaleri.com`
+const password = useExistingAccount
+  ? process.env.SMOKE_TEST_PASSWORD || process.env.REAL_FLOW_PASSWORD || ''
+  : process.env.REAL_FLOW_PASSWORD || `Cg-${runStamp}-Akis!`
 const phone = process.env.REAL_FLOW_PHONE || '05309738240'
 
 function fail(message) {
@@ -379,6 +384,30 @@ async function register() {
   return cookie
 }
 
+async function loginExistingAccount() {
+  assert(email && password, 'Kalıcı QA hesabı için SMOKE_TEST_EMAIL ve SMOKE_TEST_PASSWORD gerekli.')
+
+  const response = await requestJson('/api/auth/login', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  })
+  assertJsonOk('persistent qa login', response)
+
+  const cookie = extractSessionCookie(response.headers['set-cookie'] || '')
+  assert(cookie, 'persistent qa login session cookie donmedi')
+  return cookie
+}
+
+async function getSettings(cookie) {
+  const response = await requestJson('/api/panel/settings', {
+    headers: { cookie },
+  })
+  assertJsonOk('settings read', response)
+  assert(/-[a-f0-9]{32}$/.test(response.data.settings?.slug || ''), 'settings slug guvenli token suffix tasimiyor')
+  return response.data.settings
+}
+
 async function patchSettings(cookie) {
   const response = await requestJson('/api/panel/settings', {
     method: 'PATCH',
@@ -434,10 +463,10 @@ async function uploadImage(cookie) {
   assert(duplicateItem?.publicUrl, 'duplicate upload publicUrl donmedi')
   assert(item.securityScan?.kind === 'png', 'upload guvenlik taramasi PNG sonucu donmedi')
   assert(duplicateItem.securityScan?.kind === 'png', 'duplicate upload guvenlik taramasi PNG sonucu donmedi')
-  return item.publicUrl
+  return response.data.items.map((uploadItem) => uploadItem.publicUrl).filter(Boolean)
 }
 
-async function createVehicle(cookie, photoUrl) {
+async function createVehicle(cookie, photoUrls) {
   const response = await requestJson('/api/panel/vehicles', {
     method: 'POST',
     headers: {
@@ -463,7 +492,7 @@ async function createVehicle(cookie, photoUrl) {
       serviceHistory: 'yes',
       warrantyStatus: 'no',
       description: 'Bakimlari duzenli yapilmis, sehir ici kullanima uygun aile araci.',
-      photos: [photoUrl],
+      photos: [photoUrls[0]],
     }),
   })
   assertJsonOk('vehicle create', response)
@@ -608,7 +637,94 @@ async function verifyPanelState(cookie, vehicleId, qrVehicle, settings) {
   }
 }
 
-async function cleanup(cookie, vehicleId, photoUrl) {
+async function assertPersistentQaGallery() {
+  const rows = await supabaseAdminFetch('persistent qa gallery verify', {
+    path: '/rest/v1/galleries',
+    query: {
+      select: 'id,owner_email,is_qa_account',
+      owner_email: `eq.${email}`,
+      limit: 2,
+    },
+  })
+  const gallery = Array.isArray(rows) ? rows[0] : null
+  assert(gallery?.id, 'Kalıcı QA galerisi bulunamadı.')
+  assert(rows.length === 1, 'Kalıcı QA hesabı yalnızca bir galeriye bağlı olmalı.')
+  assert(gallery.owner_email === email, 'Kalıcı QA galeri sahibi eşleşmiyor.')
+  assert(gallery.is_qa_account === true, 'Kalıcı QA galerisi is_qa_account=true olarak işaretlenmeli.')
+  return gallery
+}
+
+async function hardDeletePersistentQaArtifacts(vehicleId) {
+  if (!useExistingAccount) return { enabled: false }
+
+  const gallery = await assertPersistentQaGallery()
+
+  await supabaseAdminFetch('persistent qa lead cleanup', {
+    method: 'DELETE',
+    path: '/rest/v1/leads',
+    query: {
+      gallery_id: `eq.${gallery.id}`,
+      vehicle_id: `eq.${vehicleId}`,
+    },
+    prefer: 'return=minimal',
+  })
+  await supabaseAdminFetch('persistent qa vehicle hard cleanup', {
+    method: 'DELETE',
+    path: '/rest/v1/vehicles',
+    query: {
+      id: `eq.${vehicleId}`,
+      gallery_id: `eq.${gallery.id}`,
+    },
+    prefer: 'return=minimal',
+  })
+  await supabaseAdminFetch('persistent qa audit cleanup', {
+    method: 'DELETE',
+    path: '/rest/v1/audit_logs',
+    query: {
+      'metadata->>galleryId': `eq.${gallery.id}`,
+    },
+    prefer: 'return=minimal',
+  })
+  await supabaseAdminFetch('persistent qa uploaded asset row cleanup', {
+    method: 'DELETE',
+    path: '/rest/v1/uploaded_assets',
+    query: {
+      gallery_id: `eq.${gallery.id}`,
+      status: 'eq.deleted',
+    },
+    prefer: 'return=minimal',
+  })
+
+  const remainingVehicles = await supabaseAdminFetch('persistent qa vehicle cleanup verify', {
+    path: '/rest/v1/vehicles',
+    query: {
+      select: 'id',
+      id: `eq.${vehicleId}`,
+      gallery_id: `eq.${gallery.id}`,
+      limit: 1,
+    },
+  })
+  const remainingLeads = await supabaseAdminFetch('persistent qa lead cleanup verify', {
+    path: '/rest/v1/leads',
+    query: {
+      select: 'id',
+      gallery_id: `eq.${gallery.id}`,
+      vehicle_id: `eq.${vehicleId}`,
+      limit: 1,
+    },
+  })
+  assert(Array.isArray(remainingVehicles) && remainingVehicles.length === 0, 'Kalıcı QA araç kaydı temizlenemedi.')
+  assert(Array.isArray(remainingLeads) && remainingLeads.length === 0, 'Kalıcı QA lead kaydı temizlenemedi.')
+
+  return {
+    enabled: true,
+    galleryId: gallery.id,
+    vehicleHardDeleted: true,
+    leadDeleted: true,
+  }
+}
+
+async function cleanup(cookie, vehicleId, photoUrls) {
   if (!cleanupVehicle) return { vehicleDeleted: false, imageDeleted: false }
 
   const vehicleDelete = await requestJson(`/api/panel/vehicles/${encodeURIComponent(vehicleId)}`, {
@@ -624,12 +740,14 @@ async function cleanup(cookie, vehicleId, photoUrl) {
       'content-type': 'application/json',
     },
     body: JSON.stringify({
-      publicUrls: [photoUrl],
+      publicUrls: photoUrls,
     }),
   })
   assertJsonOk('image cleanup delete', imageDelete)
 
-  return { vehicleDeleted: true, imageDeleted: true }
+  const hardCleanup = await hardDeletePersistentQaArtifacts(vehicleId)
+
+  return { vehicleDeleted: true, imageDeleted: true, hardCleanup }
 }
 
 async function main() {
@@ -640,7 +758,7 @@ async function main() {
   console.log(`[real-user-flow-smoke] baseUrl=${baseUrl}`)
   let cookie = ''
   let settings = null
-  let photoUrl = ''
+  let photoUrls = []
   let vehicle = null
   let qrVehicle = null
   let panelState = null
@@ -650,13 +768,13 @@ async function main() {
   const cleanupErrors = []
 
   try {
-    cookie = await register()
+    cookie = useExistingAccount ? await loginExistingAccount() : await register()
     const session = await requestJson('/api/auth/session', { headers: { cookie } })
-    assertJsonOk('session after register', session)
+    assertJsonOk(useExistingAccount ? 'session after login' : 'session after register', session)
 
-    settings = await patchSettings(cookie)
-    photoUrl = await uploadImage(cookie)
-    vehicle = await createVehicle(cookie, photoUrl)
+    settings = useExistingAccount ? await getSettings(cookie) : await patchSettings(cookie)
+    photoUrls = await uploadImage(cookie)
+    vehicle = await createVehicle(cookie, photoUrls)
     qrVehicle = await findQrVehicle(cookie, vehicle.id)
     await verifyPublicPages(settings, qrVehicle)
     await createQrEvent(qrVehicle)
@@ -667,9 +785,9 @@ async function main() {
   } catch (error) {
     flowError = error
   } finally {
-    if (cookie && vehicle?.id && photoUrl && cleanupVehicle) {
+    if (cookie && vehicle?.id && photoUrls.length > 0 && cleanupVehicle) {
       try {
-        panelCleanupState = await cleanup(cookie, vehicle.id, photoUrl)
+        panelCleanupState = await cleanup(cookie, vehicle.id, photoUrls)
       } catch (error) {
         cleanupErrors.push(error instanceof Error ? error.message : 'panel cleanup failed')
       }
@@ -677,7 +795,7 @@ async function main() {
 
     if (cleanupQaData) {
       try {
-        qaCleanupState = await cleanupQaTestAccount(photoUrl)
+        qaCleanupState = await cleanupQaTestAccount(photoUrls[0] || '')
       } catch (error) {
         cleanupErrors.push(error instanceof Error ? error.message : 'qa account cleanup failed')
       }
@@ -695,7 +813,7 @@ async function main() {
   console.log(JSON.stringify({
     ok: true,
     baseUrl,
-    email,
+    accountMode: useExistingAccount ? 'persistent_qa' : 'ephemeral_qa',
     gallerySlug: settings.slug,
     vehicleId: vehicle.id,
     vehicleRouteId: qrVehicle.routeId,

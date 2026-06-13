@@ -4,6 +4,8 @@ import { blogPosts } from '@/lib/blog-posts'
 import { DEMO_VEHICLE_ROUTE_ID, getDemoShowroomHref } from '@/lib/demo-public-experience'
 import { getPublicSitemapEntries } from '@/lib/public-sitemap'
 import { absoluteUrl } from '@/lib/seo'
+import { cityLandings } from '@/lib/city-landing'
+import { comparisonLandings } from '@/lib/comparison-landings'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date()
@@ -26,6 +28,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: now,
       changeFrequency: 'weekly',
       priority: 0.9,
+    },
+    {
+      url: absoluteUrl('/basari-hikayeleri'),
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.82,
     },
     {
       url: absoluteUrl(getDemoShowroomHref()),
@@ -76,6 +84,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.75,
     },
     {
+      url: absoluteUrl('/guvenlik'),
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.75,
+    },
+    {
       url: absoluteUrl('/kariyer'),
       lastModified: now,
       changeFrequency: 'monthly',
@@ -114,7 +128,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }))
 
+  const cityRoutes: MetadataRoute.Sitemap = cityLandings.map((city) => ({
+    url: absoluteUrl(`/galeri-yazilimi/${city.slug}`),
+    lastModified: now,
+    changeFrequency: 'monthly',
+    priority: 0.72,
+  }))
+
+  const comparisonRoutes: MetadataRoute.Sitemap = comparisonLandings.map((landing) => ({
+    url: absoluteUrl(`/karsilastir/${landing.slug}`),
+    lastModified: now,
+    changeFrequency: 'monthly',
+    priority: 0.76,
+  }))
+
   const publicRoutes = await getPublicSitemapEntries(now)
 
-  return [...staticRoutes, ...blogRoutes, ...publicRoutes]
+  return [...staticRoutes, ...cityRoutes, ...comparisonRoutes, ...blogRoutes, ...publicRoutes]
 }

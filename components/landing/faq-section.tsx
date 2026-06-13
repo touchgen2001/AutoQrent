@@ -1,6 +1,6 @@
 import { faqItems, type FaqCategory } from '@/lib/faq-items'
 
-const categoryOrder: FaqCategory[] = ["Kurulum", "QR Kod", "Panel", "Lead Takibi", "Fiyatlandırma", "Destek"]
+const categoryOrder: FaqCategory[] = ["Kurulum", "QR Kod", "Panel", "Müşteri Talepleri", "Fiyatlandırma", "Destek"]
 
 const groupedFaqs = categoryOrder.map((category) => ({
   category,

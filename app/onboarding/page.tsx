@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { BrandLogo } from "@/components/brand/brand-logo"
+import { useRegistrationFunnel } from "@/components/analytics/use-registration-funnel"
 import {
   QrCode,
   Upload,
@@ -165,6 +166,7 @@ type OnboardingDraft = {
 
 export default function OnboardingPage() {
   const router = useRouter()
+  const { trackEvent } = useRegistrationFunnel({ eventType: "onboarding_view" })
   const logoInputRef = useRef<HTMLInputElement | null>(null)
   const [currentStep, setCurrentStep] = useState(1)
   const [isLoading, setIsLoading] = useState(false)
@@ -281,6 +283,11 @@ export default function OnboardingPage() {
     if (currentStep > 1) setCurrentStep((prev) => prev - 1)
   }
 
+  const handleSkip = () => {
+    trackEvent({ eventType: "onboarding_skip", step: currentStep })
+    router.push("/panel")
+  }
+
   const updateDayHours = (
     day: "weekdays" | "saturday" | "sunday",
     field: "start" | "end" | "closed",
@@ -340,7 +347,11 @@ export default function OnboardingPage() {
     }
 
     setErrorMessage(null)
-    if (currentStep < 4) setCurrentStep((prev) => prev + 1)
+    if (currentStep < 4) {
+      const nextStep = currentStep + 1
+      trackEvent({ eventType: "onboarding_step", step: nextStep })
+      setCurrentStep(nextStep)
+    }
   }
 
   const applyLogoFile = async (file: File) => {
@@ -518,6 +529,7 @@ export default function OnboardingPage() {
         window.localStorage.removeItem(ONBOARDING_DRAFT_STORAGE_KEY)
       }
 
+      trackEvent({ eventType: "onboarding_complete", step: 4 })
       router.push("/panel")
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Kurulum tamamlanamadı.")
@@ -534,7 +546,7 @@ export default function OnboardingPage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between gap-4">
             <BrandLogo href="/" tone="light" />
-            <Button variant="ghost" size="sm" onClick={() => router.push("/panel")}>
+            <Button variant="ghost" size="sm" onClick={handleSkip}>
               Daha Sonra Tamamla
             </Button>
           </div>

@@ -6,6 +6,14 @@ export type AuditAction =
   | 'vehicle_update'
   | 'lead_status_change'
   | 'lead_note_add'
+  | 'lead_follow_up_change'
+  | 'lead_whatsapp_open'
+  | 'reservation_create'
+  | 'reservation_update'
+  | 'review_moderate'
+  | 'vehicle_restore'
+  | 'customer_task_create'
+  | 'customer_task_status_change'
   | 'contact_form_submit'
   | 'contact_form_blocked'
   | 'public_vehicle_cta_click'
@@ -18,6 +26,7 @@ export type AuditAction =
   | 'landing_cta_impression'
   | 'landing_cta_click'
   | 'landing_cta_config_update'
+  | 'registration_funnel_event'
   | 'public_slug_rotation'
   | 'admin_user_delete'
   | 'admin_user_authorization_update'
@@ -45,6 +54,8 @@ export type AuditEntityType =
   | 'notification'
   | 'moderation'
   | 'admin_account'
+  | 'reservation'
+  | 'review'
 
 type AuditInput = {
   action: AuditAction

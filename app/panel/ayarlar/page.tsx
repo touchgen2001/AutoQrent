@@ -14,7 +14,6 @@ import {
   Building2,
   Phone,
   Mail,
-  MapPin,
   Clock,
   Globe,
   Instagram,
@@ -24,16 +23,18 @@ import {
   Upload,
   Save,
   ExternalLink,
-  Users,
   CreditCard,
   Palette,
   CheckCircle2,
   XCircle,
   Lock,
   ArrowUpRight,
+  DownloadCloud,
 } from 'lucide-react'
-import { getPanelAuthSession } from '@/lib/client/panel-auth'
 import { convertImageFile } from '@/lib/client/image-convert'
+import { InstallAppCard } from '@/components/panel/install-app-card'
+import { LocationPicker } from '@/components/panel/location-picker'
+import { PanelDataExportCard } from '@/components/panel/panel-data-export-card'
 import {
   DEFAULT_PUBLIC_SHOWROOM_THEME,
   PUBLIC_SHOWROOM_BACKGROUND_VALUES,
@@ -54,7 +55,7 @@ import {
   type SubscriptionStatus,
 } from '@/lib/subscription-plans'
 
-type SettingsTab = 'profile' | 'team' | 'appearance' | 'subscription'
+type SettingsTab = 'profile' | 'appearance' | 'subscription' | 'data'
 
 type DealerState = {
   galleryId: string | null
@@ -224,7 +225,7 @@ type GalleryLogoUploadResponse = {
 }
 
 function normalizeSettingsTab(value: string | null | undefined): SettingsTab {
-  if (value === 'team' || value === 'appearance' || value === 'subscription') {
+  if (value === 'appearance' || value === 'subscription' || value === 'data') {
     return value
   }
   return 'profile'
@@ -261,17 +262,6 @@ function isLatitudeValid(value: number) {
 
 function isLongitudeValid(value: number) {
   return value >= -180 && value <= 180
-}
-
-function buildOpenStreetMapEmbedUrl(latitude: number, longitude: number) {
-  const delta = 0.02
-  const minLon = longitude - delta
-  const minLat = latitude - delta
-  const maxLon = longitude + delta
-  const maxLat = latitude + delta
-  const bbox = `${minLon},${minLat},${maxLon},${maxLat}`
-  const marker = `${latitude},${longitude}`
-  return `https://www.openstreetmap.org/export/embed.html?bbox=${encodeURIComponent(bbox)}&layer=mapnik&marker=${encodeURIComponent(marker)}`
 }
 
 function buildGoogleMapsUrl(latitude: number, longitude: number) {
@@ -314,7 +304,6 @@ function SettingsPageContent() {
   const [isLogoUploading, setIsLogoUploading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [actionMessage, setActionMessage] = useState<string | null>(null)
-  const [sessionOwner, setSessionOwner] = useState<{ name: string; email: string } | null>(null)
   const [subscription, setSubscription] = useState<PanelSubscriptionState | null>(null)
   const [subscriptionPlans, setSubscriptionPlans] = useState<Record<SubscriptionPlanCode, SubscriptionPlanDefinition> | null>(null)
   const [billingInterval, setBillingInterval] = useState<BillingInterval>('monthly')
@@ -331,14 +320,6 @@ function SettingsPageContent() {
     && parsedLongitude !== null
     && isLatitudeValid(parsedLatitude)
     && isLongitudeValid(parsedLongitude)
-  const hasCoordinateInput = Boolean(dealer.latitude.trim() || dealer.longitude.trim())
-  const hasInvalidCoordinateInput = hasCoordinateInput && !hasValidCoordinates
-  const mapEmbedUrl = hasValidCoordinates
-    ? buildOpenStreetMapEmbedUrl(parsedLatitude as number, parsedLongitude as number)
-    : null
-  const mapsOpenUrl =
-    dealer.googleMapsUrl?.trim()
-    || (hasValidCoordinates ? buildGoogleMapsUrl(parsedLatitude as number, parsedLongitude as number) : '')
 
   const publicShowroomUrl = dealer.slug ? `/showroom/${dealer.slug}` : null
   const planList = subscriptionPlans
@@ -364,11 +345,11 @@ function SettingsPageContent() {
       },
       {
         label: 'Konum Verisi',
-        value: mapsOpenUrl ? 'Aktif' : 'Eksik',
-        detail: mapsOpenUrl ? 'Harita linki kaydedildi' : 'Koordinat veya harita linki yok',
+        value: hasValidCoordinates ? 'Aktif' : 'Eksik',
+        detail: hasValidCoordinates ? 'Harita konumu seçildi' : 'Haritadan konum seçilmedi',
       },
     ],
-    [dealer.phone, dealer.whatsapp, mapsOpenUrl, publicShowroomUrl],
+    [dealer.phone, dealer.whatsapp, hasValidCoordinates, publicShowroomUrl],
   )
 
   const updatePublicTheme = (patch: Partial<PublicShowroomThemeSettings>) => {
@@ -380,22 +361,6 @@ function SettingsPageContent() {
       },
     }))
   }
-
-  useEffect(() => {
-    let active = true
-    void (async () => {
-      const session = await getPanelAuthSession()
-      if (!active || !session) return
-      setSessionOwner({
-        name: session.fullName,
-        email: session.email,
-      })
-    })()
-
-    return () => {
-      active = false
-    }
-  }, [])
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -749,10 +714,6 @@ function SettingsPageContent() {
             <Building2 className='h-4 w-4' />
             <span className='hidden sm:inline'>Galeri Profili</span>
           </TabsTrigger>
-          <TabsTrigger value='team' className='gap-2'>
-            <Users className='h-4 w-4' />
-            <span className='hidden sm:inline'>Hesap</span>
-          </TabsTrigger>
           <TabsTrigger value='appearance' className='gap-2'>
             <Palette className='h-4 w-4' />
             <span className='hidden sm:inline'>Canlı Görünüm</span>
@@ -760,6 +721,10 @@ function SettingsPageContent() {
           <TabsTrigger value='subscription' className='gap-2'>
             <CreditCard className='h-4 w-4' />
             <span className='hidden sm:inline'>Abonelik</span>
+          </TabsTrigger>
+          <TabsTrigger value='data' className='gap-2'>
+            <DownloadCloud className='h-4 w-4' />
+            <span className='hidden sm:inline'>Veri</span>
           </TabsTrigger>
         </TabsList>
 
@@ -890,22 +855,15 @@ function SettingsPageContent() {
                   />
                 </div>
               </div>
-              <div className='space-y-2'>
-                <Label htmlFor='maps'>Google Maps Linki</Label>
-                <div className='relative'>
-                  <MapPin className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground' />
-                  <Input
-                    id='maps'
-                    value={dealer.googleMapsUrl || ''}
-                    onChange={(e) => setDealer({ ...dealer, googleMapsUrl: e.target.value })}
-                    className='pl-10'
-                    placeholder='https://www.google.com/maps?q=41.0082,28.9784'
-                  />
-                </div>
-              </div>
               <div className='space-y-2 sm:col-span-2'>
                 <Label htmlFor='address'>Adres</Label>
-                <Textarea id='address' value={dealer.address} onChange={(e) => setDealer({ ...dealer, address: e.target.value })} rows={2} />
+                <Textarea
+                  id='address'
+                  value={dealer.address}
+                  onChange={(e) => setDealer({ ...dealer, address: e.target.value })}
+                  rows={2}
+                  placeholder='Mahalle, cadde, sokak ve kapı numarası'
+                />
               </div>
               <div className='space-y-2'>
                 <Label htmlFor='city'>İl</Label>
@@ -915,61 +873,20 @@ function SettingsPageContent() {
                 <Label htmlFor='district'>İlçe</Label>
                 <Input id='district' value={dealer.district} onChange={(e) => setDealer({ ...dealer, district: e.target.value })} />
               </div>
-              <div className='space-y-2'>
-                <Label htmlFor='latitude'>Enlem (Latitude)</Label>
-                <Input
-                  id='latitude'
-                  inputMode='decimal'
-                  placeholder='41.008240'
-                  value={dealer.latitude}
-                  onChange={(e) => setDealer({ ...dealer, latitude: e.target.value })}
+              <div className='sm:col-span-2'>
+                <LocationPicker
+                  address={dealer.address}
+                  city={dealer.city}
+                  district={dealer.district}
+                  latitude={dealer.latitude}
+                  longitude={dealer.longitude}
+                  onLocationChange={(latitude, longitude) => setDealer((current) => ({
+                    ...current,
+                    latitude: latitude.toFixed(6),
+                    longitude: longitude.toFixed(6),
+                    googleMapsUrl: buildGoogleMapsUrl(latitude, longitude),
+                  }))}
                 />
-              </div>
-              <div className='space-y-2'>
-                <Label htmlFor='longitude'>Boylam (Longitude)</Label>
-                <Input
-                  id='longitude'
-                  inputMode='decimal'
-                  placeholder='28.978359'
-                  value={dealer.longitude}
-                  onChange={(e) => setDealer({ ...dealer, longitude: e.target.value })}
-                />
-              </div>
-              {hasInvalidCoordinateInput && (
-                <p className='sm:col-span-2 text-xs text-destructive'>
-                  Geçerli koordinat girin. Enlem -90..90, boylam -180..180 aralığında olmalıdır.
-                </p>
-              )}
-              <div className='sm:col-span-2 rounded-xl border border-border bg-muted/30 p-3'>
-                <div className='flex items-center justify-between gap-2'>
-                  <span className='text-sm text-muted-foreground'>Harita önizlemesi</span>
-                  {mapsOpenUrl ? (
-                    <Link
-                      href={mapsOpenUrl}
-                      target='_blank'
-                      rel='noreferrer'
-                      className='text-xs text-accent hover:underline inline-flex items-center gap-1'
-                    >
-                      Haritada Aç
-                      <ExternalLink className='h-3.5 w-3.5' />
-                    </Link>
-                  ) : null}
-                </div>
-                <div className='mt-3 h-56 rounded-lg overflow-hidden bg-muted'>
-                  {mapEmbedUrl ? (
-                    <iframe
-                      title='Galeri konum önizleme haritası'
-                      src={mapEmbedUrl}
-                      className='h-full w-full border-0'
-                      loading='lazy'
-                      referrerPolicy='no-referrer-when-downgrade'
-                    />
-                  ) : (
-                    <div className='h-full flex items-center justify-center px-4 text-center text-sm text-muted-foreground'>
-                      Koordinat girildiğinde harita önizlemesi burada görünür.
-                    </div>
-                  )}
-                </div>
               </div>
             </div>
           </Card>
@@ -1068,24 +985,6 @@ function SettingsPageContent() {
                   />
                 </div>
               </div>
-            </div>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value='team' className='space-y-6'>
-          <Card className='p-6 border-border/50'>
-            <h3 className='font-semibold text-foreground mb-4'>Gerçek Panel Erişimi</h3>
-            <p className='text-sm text-muted-foreground mb-4'>
-              Bu bölümde sadece doğrulanmış tekil hesap gösterilir. Backend entegrasyonu olmayan sahte kullanıcı listeleri kaldırıldı.
-            </p>
-            <div className='rounded-lg border border-border bg-muted/30 p-4'>
-              <p className='text-sm font-medium text-foreground'>Hesap Sahibi</p>
-              <p className='text-sm text-muted-foreground mt-1'>
-                {sessionOwner?.name || dealer.name || 'İsim bilgisi yok'}
-              </p>
-              <p className='text-sm text-muted-foreground'>
-                {sessionOwner?.email || dealer.email || 'E-posta bilgisi yok'}
-              </p>
             </div>
           </Card>
         </TabsContent>
@@ -1353,6 +1252,18 @@ function SettingsPageContent() {
           </Card>
         </TabsContent>
 
+        <TabsContent value='data' className='space-y-6'>
+          <InstallAppCard />
+          <PanelDataExportCard />
+          <Card className='border-border/50 p-6'>
+            <h3 className='font-semibold text-foreground'>Veri Sahipliği Notu</h3>
+            <p className='mt-2 text-sm leading-6 text-muted-foreground'>
+              Bu dışa aktarma araçları canlı panel API&apos;lerinden veri çeker. İndirilen dosyalar müşteri telefonu,
+              lead notları ve araç maliyet bilgileri içerebilir; dosyaları sadece yetkili cihazlarda saklayın.
+            </p>
+          </Card>
+        </TabsContent>
+
         <TabsContent value='subscription' className='space-y-6'>
           <Card className='border-border/50 p-6'>
             <div className='flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between'>
@@ -1393,10 +1304,9 @@ function SettingsPageContent() {
                 Abonelik bilgisi yükleniyor...
               </div>
             ) : subscription ? (
-              <div className='mt-6 grid gap-4 md:grid-cols-2'>
+              <div className='mt-6 grid gap-4'>
                 {[
-                  { label: 'Araç kullanımı', metric: subscription.usage.vehicles, singleUser: false },
-                  { label: 'Hesap modeli', metric: subscription.usage.users, singleUser: true },
+                  { label: 'Araç kullanımı', metric: subscription.usage.vehicles, kind: 'vehicles' },
                 ].map((item) => (
                   <div key={item.label} className='rounded-2xl border border-border/70 bg-background p-4'>
                     <div className='flex items-center justify-between gap-3'>
@@ -1410,9 +1320,7 @@ function SettingsPageContent() {
                       />
                     </div>
                     <p className='mt-2 text-xs text-muted-foreground'>
-                      {item.singleUser
-                        ? 'Tekil kullanıcı modeli aktiftir; paketler ek kullanıcı hakkı içermez.'
-                        : item.metric.limit === null
+                      {item.metric.limit === null
                         ? 'Kurumsal limit özel teklif ile belirlenir.'
                         : `${item.metric.remaining} araç hakkı kaldı.`}
                     </p>
@@ -1490,8 +1398,8 @@ function SettingsPageContent() {
                         <span className='font-semibold'>{plan.vehicleLimit ?? 'Özel'}</span>
                       </div>
                       <div className='flex items-center justify-between gap-2'>
-                        <span className={isCurrentPlan ? 'text-background/75' : 'text-muted-foreground'}>Hesap modeli</span>
-                        <span className='font-semibold'>Tekil kullanıcı</span>
+                        <span className={isCurrentPlan ? 'text-background/75' : 'text-muted-foreground'}>Kullanıcı limiti</span>
+                        <span className='font-semibold'>{plan.userLimit ?? 'Özel'}</span>
                       </div>
                     </div>
 

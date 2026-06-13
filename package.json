@@ -24,6 +24,7 @@
     "security:backup:contract": "node scripts/qa/verify-storage-backup-contract.mjs",
     "security:ops-monitoring": "node scripts/qa/verify-ops-monitoring-contract.mjs",
     "security:restore:supabase": "bash scripts/security/supabase-restore.sh",
+    "security:restore:drill:linked": "bash scripts/security/supabase-linked-restore-drill.sh",
     "release:gate": "pnpm verify && pnpm security:predeploy && pnpm smoke:panel-api && E2E_SKIP_BUILD=1 pnpm e2e:safe && bash scripts/qa/check-node-leaks.sh release:after",
     "deploy": "pnpm lint && pnpm typecheck && pnpm test:unit && vercel --prod --yes",
     "security:vault:encrypt": "bash scripts/security/encrypt-important-files.sh",
@@ -38,9 +39,11 @@
     "quality:panel": "node scripts/qa/verify-panel-quality-contract.mjs",
     "quality:subscription": "node scripts/qa/verify-subscription-contract.mjs",
     "quality:qr-system": "node scripts/qa/verify-qr-system-contract.mjs",
+    "quality:qa-isolation": "node scripts/qa/verify-qa-isolation-contract.mjs",
     "quality:vehicle-inputs": "node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-transform-types scripts/qa/verify-vehicle-input-limits.mjs",
     "smoke:real-flow:contract": "node scripts/qa/verify-real-flow-smoke-contract.mjs",
     "smoke:real-flow": "node scripts/qa/real-user-flow-smoke.mjs",
+    "smoke:prod:real-flow": "bash scripts/qa/prod-real-flow-with-vercel-env.sh",
     "e2e": "bash scripts/qa/e2e-safe.sh",
     "e2e:safe": "bash scripts/qa/e2e-safe.sh",
     "smoke:panel-api": "bash scripts/qa/smoke-safe.sh",
@@ -58,7 +61,8 @@
     "super-admin:bundle-budget": "node scripts/qa/verify-super-admin-bundle-budget.mjs",
     "super-admin:typecheck": "pnpm --dir apps/super-admin typecheck",
     "super-admin:contract": "node scripts/qa/verify-super-admin-core-contract.mjs",
-    "smoke:prod:auth": "bash scripts/qa/prod-smoke-with-vercel-env.sh"
+    "smoke:prod:auth": "bash scripts/qa/prod-smoke-with-vercel-env.sh",
+    "quality:ops-release": "node scripts/qa/verify-ops-release-readiness-contract.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

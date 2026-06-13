@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, ImageIcon, Info, Save, Upload, X } from 'lucide-react'
+import { ArrowLeft, ImageIcon, Info, Save, Sparkles, Upload, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -30,6 +30,7 @@ import {
   toSocialImageVehicle,
   type SocialImageGallery,
 } from '@/components/panel/vehicle-social-image-dialog'
+import { generateVehicleDescription } from '@/lib/sales-intelligence'
 
 type VehicleDetailApiResponse =
   | {
@@ -94,6 +95,9 @@ type VehicleFormState = {
   previousOwners: string
   serviceHistory: string
   warrantyStatus: string
+  purchasePrice: string
+  expenseTotal: string
+  targetProfit: string
   description: string
   photos: string[]
 }
@@ -117,6 +121,9 @@ const emptyForm: VehicleFormState = {
   previousOwners: '1',
   serviceHistory: 'no',
   warrantyStatus: 'no',
+  purchasePrice: '',
+  expenseTotal: '',
+  targetProfit: '',
   description: '',
   photos: [],
 }
@@ -141,6 +148,9 @@ function toFormState(vehicle: PanelVehicle): VehicleFormState {
     previousOwners: vehicle.previousOwners || '1',
     serviceHistory: vehicle.serviceHistory || 'no',
     warrantyStatus: vehicle.warrantyStatus || 'no',
+    purchasePrice: vehicle.purchasePrice ? String(vehicle.purchasePrice) : '',
+    expenseTotal: vehicle.expenseTotal ? String(vehicle.expenseTotal) : '',
+    targetProfit: vehicle.targetProfit ? String(vehicle.targetProfit) : '',
     description: vehicle.description || '',
     photos: vehicle.photos,
   }
@@ -336,6 +346,9 @@ export default function EditVehiclePage() {
           previousOwners: formData.previousOwners,
           serviceHistory: formData.serviceHistory,
           warrantyStatus: formData.warrantyStatus,
+          purchasePrice: formData.purchasePrice ? Number(formData.purchasePrice) : undefined,
+          expenseTotal: formData.expenseTotal ? Number(formData.expenseTotal) : undefined,
+          targetProfit: formData.targetProfit ? Number(formData.targetProfit) : undefined,
           description: formData.description,
           photos: formData.photos,
         }),
@@ -353,6 +366,30 @@ export default function EditVehiclePage() {
     } finally {
       setIsSaving(false)
     }
+  }
+
+  const handleGenerateDescription = () => {
+    setFormData((current) => ({
+      ...current,
+      description: generateVehicleDescription({
+        brand: current.brand,
+        model: current.model,
+        variant: current.variant,
+        year: current.year ? Number(current.year) : undefined,
+        price: current.price ? Number(current.price) : undefined,
+        mileage: current.mileage ? Number(current.mileage) : undefined,
+        fuel: current.fuel,
+        transmission: current.transmission,
+        color: current.color,
+        bodyType: current.bodyType,
+        engineSize: current.engineSize,
+        horsePower: current.horsePower,
+        hasDamage: current.hasDamage as 'yes' | 'no',
+        previousOwners: current.previousOwners,
+        serviceHistory: current.serviceHistory as 'yes' | 'partial' | 'no',
+        warrantyStatus: current.warrantyStatus as 'yes' | 'no',
+      }),
+    }))
   }
 
   const openImagePicker = () => {
@@ -777,6 +814,29 @@ export default function EditVehiclePage() {
               </div>
 
               <div className="pt-2 md:col-span-2">
+                <h3 className="text-sm font-semibold text-foreground">Maliyet ve Kâr Takibi</h3>
+                <p className="text-xs text-muted-foreground">Bu bilgiler yalnızca yönetim panelinde görünür</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="purchasePrice">Alış Fiyatı (TL)</Label>
+                <Input id="purchasePrice" type="number" min="0" value={formData.purchasePrice} onChange={(event) => setFormData((prev) => ({ ...prev, purchasePrice: event.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="expenseTotal">Toplam Masraf (TL)</Label>
+                <Input id="expenseTotal" type="number" min="0" value={formData.expenseTotal} onChange={(event) => setFormData((prev) => ({ ...prev, expenseTotal: event.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="targetProfit">Hedef Kâr (TL)</Label>
+                <Input id="targetProfit" type="number" min="0" value={formData.targetProfit} onChange={(event) => setFormData((prev) => ({ ...prev, targetProfit: event.target.value }))} />
+              </div>
+              <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3">
+                <p className="text-xs text-muted-foreground">Beklenen Kâr</p>
+                <p className="mt-1 font-semibold text-emerald-600">
+                  {(Number(formData.price || 0) - Number(formData.purchasePrice || 0) - Number(formData.expenseTotal || 0)).toLocaleString('tr-TR')} TL
+                </p>
+              </div>
+
+              <div className="pt-2 md:col-span-2">
                 <h3 className="text-sm font-semibold text-foreground">Ekspertiz Bilgileri</h3>
                 <p className="text-xs text-muted-foreground">Araç geçmişi ve durum bilgileri</p>
               </div>
@@ -844,7 +904,13 @@ export default function EditVehiclePage() {
                 </div>
               )}
               <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="description">Açıklama</Label>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <Label htmlFor="description">Açıklama</Label>
+                  <Button type="button" variant="outline" size="sm" onClick={handleGenerateDescription}>
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    AI Açıklama Oluştur
+                  </Button>
+                </div>
                 <Textarea
                   id="description"
                   rows={4}

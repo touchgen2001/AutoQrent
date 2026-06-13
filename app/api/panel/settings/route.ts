@@ -228,13 +228,13 @@ function sanitizeEmailField(value: string | null | undefined) {
   return trimmed
 }
 
-async function fetchGallerySettingsRows(ownerEmail: string) {
+async function fetchGallerySettingsRows(galleryId: string) {
   try {
     const galleries = await supabaseAdminFetch<GalleryRow[]>({
       path: '/rest/v1/galleries',
       query: {
         select: THEME_GALLERY_SELECT,
-        owner_email: `eq.${ownerEmail}`,
+        id: `eq.${galleryId}`,
         limit: 1,
       },
     })
@@ -259,7 +259,7 @@ async function fetchGallerySettingsRows(ownerEmail: string) {
       path: '/rest/v1/galleries',
       query: {
         select: BASE_GALLERY_SELECT,
-        owner_email: `eq.${ownerEmail}`,
+        id: `eq.${galleryId}`,
         limit: 1,
       },
     })
@@ -271,8 +271,8 @@ async function fetchGallerySettingsRows(ownerEmail: string) {
   }
 }
 
-async function fetchSettingsPayload(ownerEmail: string) {
-  const { galleries, themeStorageReady } = await fetchGallerySettingsRows(ownerEmail)
+async function fetchSettingsPayload(galleryId: string) {
+  const { galleries, themeStorageReady } = await fetchGallerySettingsRows(galleryId)
 
   const gallery = galleries[0] || null
   if (!gallery) return null
@@ -321,6 +321,7 @@ async function fetchSettingsPayload(ownerEmail: string) {
     query: {
       select: 'id,status',
       gallery_id: `eq.${gallery.id}`,
+      deleted_at: 'is.null',
       limit: 10000,
     },
   })
@@ -368,7 +369,7 @@ export async function GET(request: Request) {
     const session = await requirePanelSessionOrThrow(request)
     requireSupabaseAdminConfig()
 
-    const payload = await fetchSettingsPayload(session.email)
+    const payload = await fetchSettingsPayload(session.galleryId)
     if (!payload) {
       return NextResponse.json(
         {
@@ -403,6 +404,16 @@ export async function PATCH(request: Request) {
     const session = await requirePanelSessionOrThrow(request)
     requireSupabaseAdminConfig()
 
+    if (session.role !== 'owner') {
+      return NextResponse.json(
+        {
+          ok: false,
+          message: 'Galeri ayarlarını sadece hesap sahibi güncelleyebilir.',
+        },
+        { status: 403 },
+      )
+    }
+
     const parsed = updateSchema.safeParse(await request.json())
     if (!parsed.success) {
       return NextResponse.json(
@@ -414,7 +425,7 @@ export async function PATCH(request: Request) {
       )
     }
 
-    const payload = await fetchSettingsPayload(session.email)
+    const payload = await fetchSettingsPayload(session.galleryId)
     if (!payload) {
       return NextResponse.json(
         {
@@ -614,7 +625,7 @@ export async function PATCH(request: Request) {
       })
     }
 
-    const updatedPayload = await fetchSettingsPayload(session.email)
+    const updatedPayload = await fetchSettingsPayload(session.galleryId)
 
     return NextResponse.json({
       ok: true,

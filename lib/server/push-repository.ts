@@ -1,4 +1,5 @@
 import { supabaseAdminFetch } from '@/lib/server/supabase-admin'
+import { resolvePanelGalleryIdByEmail } from '@/lib/server/panel-team-repository'
 
 // Storage for dealer Web Push subscriptions (see migration
 // 20260610120000_add_push_subscriptions.sql). Service-role access only.
@@ -10,11 +11,7 @@ export type StoredPushSubscription = {
 }
 
 export async function resolveGalleryIdByOwner(ownerEmail: string): Promise<string | null> {
-  const rows = await supabaseAdminFetch<Array<{ id: string }>>({
-    path: '/rest/v1/galleries',
-    query: { select: 'id', owner_email: `eq.${ownerEmail}`, limit: 1 },
-  })
-  return rows[0]?.id ?? null
+  return resolvePanelGalleryIdByEmail(ownerEmail)
 }
 
 // Upsert on the unique `endpoint` so re-subscribing the same device is

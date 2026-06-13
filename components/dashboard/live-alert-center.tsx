@@ -127,7 +127,7 @@ export function LiveAlertCenter() {
               Canlı Uyarı Merkezi
             </CardTitle>
             <CardDescription>
-              Yeni müşteri talebi, talep düşüşü, yanıtsız talep ve düşük dönüşüm sinyalleri otomatik izlenir.
+              Yeni talep, geciken takip, yanıtsız talep ve düşük dönüşüm sinyalleri otomatik izlenir.
             </CardDescription>
           </div>
           <Button variant="outline" size="sm" onClick={() => void fetchAlerts(true)} disabled={isRefreshing}>

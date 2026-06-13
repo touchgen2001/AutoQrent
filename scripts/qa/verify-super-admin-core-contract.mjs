@@ -180,13 +180,15 @@ const checks = [
     'login screen exists and creates admin api session',
     login.includes('Süper Admin Girişi')
       && login.includes('Admin kullanıcı adı veya e-posta')
-      && auth.includes('SESSION_STORAGE_KEY')
       && auth.includes('/api/admin/login')
+      && auth.includes('/api/admin/session')
       && auth.includes("credentials: 'include'"),
   ],
   ['sidebar navigation exists', layout.includes('navigationItems') && layout.includes('getAllowedNavigation')],
   ['top header exists', layout.includes('Aramayı Galeriler, Kullanıcılar ve Operasyon içinde kullanın') && layout.includes('Admin Profili')],
   ['profile menu exists', layout.includes('DropdownMenu') && layout.includes('Çıkış yap')],
+  ['admin session is not persisted in browser storage', !auth.includes('localStorage') && !auth.includes('SESSION_STORAGE_KEY')],
+  ['role preview cannot mutate the active admin role', !auth.includes('switchRoleForPreview') && !layout.includes('olarak önizle')],
   ['bell notification panel wired', layout.includes('NotificationBellPanel') && notificationBell.includes('platformApi.getOperationsSnapshot')],
   ['responsive sidebar exists', layout.includes('lg:fixed') && layout.includes('translate-x-0')],
   ['dashboard route is platform command center', app.includes("title: 'Platform Yönetim Ekranı'") && app.includes('komuta merkezi')],
@@ -564,11 +566,14 @@ const checks = [
       && adminOperationsModerationRoute.includes('recordAdminModerationAction'),
   ],
   [
-    'live operations repository uses audit logs without fake support tickets',
+    'live operations repository uses support tables and audit logs without fake support tickets',
     adminOperationsRepository.includes('/rest/v1/audit_logs')
       && adminOperationsRepository.includes('/rest/v1/galleries')
+      && adminOperationsRepository.includes('/rest/v1/support_tickets')
+      && adminOperationsRepository.includes('/rest/v1/moderation_reports')
+      && adminOperationsRepository.includes('/rest/v1/admin_broadcasts')
       && adminOperationsRepository.includes('Destek talebi tablosu bağlı değil')
-      && adminOperationsRepository.includes('tickets: []')
+      && adminOperationsRepository.includes('buildSupportTickets')
       && adminOperationsRepository.includes('admin_moderation_action'),
   ],
   [

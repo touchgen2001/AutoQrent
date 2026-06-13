@@ -16,7 +16,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/lib/auth'
 import { cn } from '@/lib/utils'
-import { getAllowedNavigation, roleLabels, type AdminRole, type NavigationItem } from '@/lib/rbac'
+import { getAllowedNavigation, roleLabels, type NavigationItem } from '@/lib/rbac'
 
 type SuperAdminLayoutProps = {
   children: ReactNode
@@ -46,7 +46,7 @@ export function SuperAdminLayout({
   onNavigate,
   onNavigateIntent,
 }: SuperAdminLayoutProps) {
-  const { session, logout, switchRoleForPreview } = useAuth()
+  const { session, logout } = useAuth()
   const [mobileOpen, setMobileOpen] = useState(false)
   const user = session!.user
   const allowedItems = useMemo(() => getAllowedNavigation(user.role), [user.role])
@@ -58,8 +58,8 @@ export function SuperAdminLayout({
     onNavigate(path)
   }
 
-  function handleLogout() {
-    logout()
+  async function handleLogout() {
+    await logout()
     onNavigate('/login')
   }
 
@@ -180,13 +180,7 @@ export function SuperAdminLayout({
                     <span className="block text-xs font-normal text-muted-foreground">{roleLabels[user.role]}</span>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {(['SUPER_ADMIN', 'PLATFORM_ADMIN', 'SUPPORT_AGENT', 'FINANCE_ADMIN'] as AdminRole[]).map((role) => (
-                    <DropdownMenuItem key={role} onClick={() => switchRoleForPreview(role)}>
-                      {roleLabels[role]} olarak önizle
-                    </DropdownMenuItem>
-                  ))}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout}>Çıkış yap</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => void handleLogout()}>Çıkış yap</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>

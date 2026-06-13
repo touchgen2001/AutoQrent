@@ -19,6 +19,76 @@ type GalleryRow = {
   created_at: string | null
 }
 
+type SupportTicketRow = {
+  id: string
+  gallery_id: string | null
+  requester_name: string | null
+  requester_email: string | null
+  requester_phone: string | null
+  subject: string
+  channel: string
+  status: string
+  priority: string
+  updated_at: string
+}
+
+type SupportTicketNoteRow = {
+  id: string
+  ticket_id: string
+  author: string
+  body: string
+  created_at: string
+}
+
+type SupportTicketAttachmentRow = {
+  id: string
+  ticket_id: string
+  file_name: string
+  size_bytes: number | null
+  uploaded_at: string
+}
+
+type SupportTicketEventRow = {
+  id: string
+  ticket_id: string
+  actor: string
+  event: string
+  created_at: string
+}
+
+type ModerationReportRow = {
+  id: string
+  source_audit_log_id: number | null
+  gallery_id: string | null
+  kind: string
+  reporter: string | null
+  severity: string
+  status: string
+  reason: string
+  evidence: string | null
+  created_at: string
+}
+
+type ModerationReportEventRow = {
+  id: string
+  report_id: string
+  actor: string
+  event: string
+  created_at: string
+}
+
+type AdminBroadcastRow = {
+  id: string
+  target: string
+  subject: string
+  body: string
+  channel: string
+  target_count: number
+  delivery_provider: string
+  delivery_status: string
+  created_at: string
+}
+
 export type OperationPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
 export type OperationModerationKind = 'SUSPICIOUS_GALLERY' | 'SPAM_REPORT' | 'ABUSE_REPORT'
 export type OperationModerationStatus = 'NEW' | 'WARNED' | 'SUSPENDED' | 'CONTENT_REMOVED' | 'DISMISSED'
@@ -136,6 +206,41 @@ const RISK_ACTIONS = new Set([
   'admin_user_delete',
 ])
 
+function isMissingOperationsTableError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error || '')
+  return (
+    message.includes('support_tickets')
+    || message.includes('support_ticket_notes')
+    || message.includes('support_ticket_attachments')
+    || message.includes('support_ticket_events')
+    || message.includes('moderation_reports')
+    || message.includes('moderation_report_events')
+    || message.includes('admin_broadcasts')
+  ) && (
+    message.includes('does not exist')
+    || message.includes('Could not find the table')
+    || message.includes('PGRST205')
+  )
+}
+
+async function fetchOperationsTable<T>(input: Parameters<typeof supabaseAdminFetch>[0]) {
+  try {
+    return {
+      connected: true,
+      rows: await supabaseAdminFetch<T>(input),
+    }
+  } catch (error) {
+    if (isMissingOperationsTableError(error)) {
+      return {
+        connected: false,
+        rows: [] as T,
+      }
+    }
+
+    throw error
+  }
+}
+
 function asString(value: unknown) {
   return typeof value === 'string' && value.trim() ? value.trim() : null
 }
@@ -152,6 +257,42 @@ function pickString(metadata: Record<string, unknown> | null, keys: string[]) {
 function mapBroadcastTarget(value: unknown): OperationBroadcastTarget {
   if (value === 'ACTIVE_TENANTS' || value === 'TRIAL_TENANTS' || value === 'SUSPENDED_TENANTS') return value
   return 'ALL_TENANTS'
+}
+
+function mapTicketChannel(value: string): OperationSupportTicket['channel'] {
+  if (value === 'EMAIL' || value === 'PHONE' || value === 'WHATSAPP' || value === 'PANEL') return value
+  return 'PANEL'
+}
+
+function mapTicketStatus(value: string): OperationSupportTicket['status'] {
+  if (value === 'OPEN' || value === 'PENDING' || value === 'SOLVED' || value === 'CLOSED') return value
+  return 'OPEN'
+}
+
+function mapPriority(value: string): OperationPriority {
+  if (value === 'LOW' || value === 'MEDIUM' || value === 'HIGH' || value === 'URGENT') return value
+  return 'MEDIUM'
+}
+
+function mapModerationKind(value: string): OperationModerationKind {
+  if (value === 'SUSPICIOUS_GALLERY' || value === 'SPAM_REPORT' || value === 'ABUSE_REPORT') return value
+  return 'SUSPICIOUS_GALLERY'
+}
+
+function mapModerationStatus(value: string): OperationModerationStatus {
+  if (value === 'NEW' || value === 'WARNED' || value === 'SUSPENDED' || value === 'CONTENT_REMOVED' || value === 'DISMISSED') return value
+  return 'NEW'
+}
+
+function formatBytes(value: number | null) {
+  if (!value || value <= 0) return 'Boyut yok'
+  if (value < 1024) return `${value} B`
+  if (value < 1024 * 1024) return `${Math.round(value / 1024)} KB`
+  return `${(value / 1024 / 1024).toFixed(1)} MB`
+}
+
+function looksLikeUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
 }
 
 function mapRiskKind(row: AuditLogRow): OperationModerationKind {
@@ -255,6 +396,100 @@ function buildModerationReports(auditRows: AuditLogRow[], galleries: GalleryRow[
     })
 }
 
+function buildSupportTickets(input: {
+  tickets: SupportTicketRow[]
+  notes: SupportTicketNoteRow[]
+  attachments: SupportTicketAttachmentRow[]
+  events: SupportTicketEventRow[]
+  galleries: GalleryRow[]
+}) {
+  const galleryById = new Map(input.galleries.map((gallery) => [gallery.id, gallery.name]))
+  const notesByTicketId = new Map<string, SupportTicketNoteRow[]>()
+  const attachmentsByTicketId = new Map<string, SupportTicketAttachmentRow[]>()
+  const eventsByTicketId = new Map<string, SupportTicketEventRow[]>()
+
+  for (const note of input.notes) {
+    const rows = notesByTicketId.get(note.ticket_id) || []
+    rows.push(note)
+    notesByTicketId.set(note.ticket_id, rows)
+  }
+
+  for (const attachment of input.attachments) {
+    const rows = attachmentsByTicketId.get(attachment.ticket_id) || []
+    rows.push(attachment)
+    attachmentsByTicketId.set(attachment.ticket_id, rows)
+  }
+
+  for (const event of input.events) {
+    const rows = eventsByTicketId.get(event.ticket_id) || []
+    rows.push(event)
+    eventsByTicketId.set(event.ticket_id, rows)
+  }
+
+  return input.tickets.map((ticket): OperationSupportTicket => ({
+    id: ticket.id,
+    subject: ticket.subject,
+    requester: ticket.requester_name || ticket.requester_email || ticket.requester_phone || 'Bilinmeyen talep sahibi',
+    gallery: ticket.gallery_id ? galleryById.get(ticket.gallery_id) || 'Galeri adı paylaşılmadı' : 'Galeri seçilmedi',
+    channel: mapTicketChannel(ticket.channel),
+    status: mapTicketStatus(ticket.status),
+    priority: mapPriority(ticket.priority),
+    updatedAt: ticket.updated_at,
+    internalNotes: (notesByTicketId.get(ticket.id) || []).map((note) => ({
+      id: note.id,
+      author: note.author,
+      body: note.body,
+      createdAt: note.created_at,
+    })),
+    attachments: (attachmentsByTicketId.get(ticket.id) || []).map((attachment) => ({
+      id: attachment.id,
+      fileName: attachment.file_name,
+      sizeLabel: formatBytes(attachment.size_bytes),
+      uploadedAt: attachment.uploaded_at,
+    })),
+    history: (eventsByTicketId.get(ticket.id) || []).map((event) => ({
+      id: event.id,
+      actor: event.actor,
+      event: event.event,
+      at: event.created_at,
+    })),
+  }))
+}
+
+function buildPersistedModerationReports(input: {
+  reports: ModerationReportRow[]
+  events: ModerationReportEventRow[]
+  galleries: GalleryRow[]
+}) {
+  const galleryById = new Map(input.galleries.map((gallery) => [gallery.id, gallery.name]))
+  const eventsByReportId = new Map<string, ModerationReportEventRow[]>()
+
+  for (const event of input.events) {
+    const rows = eventsByReportId.get(event.report_id) || []
+    rows.push(event)
+    eventsByReportId.set(event.report_id, rows)
+  }
+
+  return input.reports.map((report): OperationModerationReport => ({
+    id: report.id,
+    sourceAuditId: report.source_audit_log_id || 0,
+    kind: mapModerationKind(report.kind),
+    targetGallery: report.gallery_id ? galleryById.get(report.gallery_id) || 'Galeri adı paylaşılmadı' : 'Galeri seçilmedi',
+    reporter: report.reporter || 'Sistem',
+    severity: mapPriority(report.severity),
+    status: mapModerationStatus(report.status),
+    reason: report.reason,
+    evidence: report.evidence || 'Kanıt paylaşılmadı',
+    createdAt: report.created_at,
+    history: (eventsByReportId.get(report.id) || []).map((event) => ({
+      id: event.id,
+      actor: event.actor,
+      event: event.event,
+      at: event.created_at,
+    })),
+  }))
+}
+
 function buildBroadcasts(auditRows: AuditLogRow[]) {
   return auditRows
     .filter((row) => row.action === 'admin_notification_send')
@@ -279,6 +514,25 @@ function buildBroadcasts(auditRows: AuditLogRow[]) {
         deliveryProvider: 'not_connected',
       }
     })
+}
+
+function buildPersistedBroadcasts(rows: AdminBroadcastRow[]) {
+  return rows.map((row): OperationBroadcastRecord => ({
+    id: row.id,
+    target: mapBroadcastTarget(row.target),
+    subject: row.subject,
+    body: row.body,
+    channels: {
+      email: row.channel === 'email',
+      sms: row.channel === 'sms',
+      panel: row.channel === 'panel',
+      push: false,
+    },
+    createdAt: row.created_at,
+    status: 'AUDIT_ONLY',
+    delivered: false,
+    deliveryProvider: 'not_connected',
+  }))
 }
 
 function buildNotifications(reports: OperationModerationReport[], broadcasts: OperationBroadcastRecord[]) {
@@ -327,38 +581,179 @@ async function fetchGalleries() {
   })
 }
 
+async function fetchSupportTicketRows() {
+  const tickets = await fetchOperationsTable<SupportTicketRow[]>({
+    path: '/rest/v1/support_tickets',
+    query: {
+      select: 'id,gallery_id,requester_name,requester_email,requester_phone,subject,channel,status,priority,updated_at',
+      order: 'updated_at.desc',
+      limit: 100,
+    },
+  })
+
+  if (!tickets.connected || tickets.rows.length === 0) {
+    return {
+      connected: tickets.connected,
+      tickets: tickets.rows,
+      notes: [] as SupportTicketNoteRow[],
+      attachments: [] as SupportTicketAttachmentRow[],
+      events: [] as SupportTicketEventRow[],
+    }
+  }
+
+  const ticketIds = tickets.rows.map((ticket) => ticket.id).join(',')
+  const [notes, attachments, events] = await Promise.all([
+    fetchOperationsTable<SupportTicketNoteRow[]>({
+      path: '/rest/v1/support_ticket_notes',
+      query: {
+        select: 'id,ticket_id,author,body,created_at',
+        ticket_id: `in.(${ticketIds})`,
+        order: 'created_at.desc',
+        limit: 300,
+      },
+    }),
+    fetchOperationsTable<SupportTicketAttachmentRow[]>({
+      path: '/rest/v1/support_ticket_attachments',
+      query: {
+        select: 'id,ticket_id,file_name,size_bytes,uploaded_at',
+        ticket_id: `in.(${ticketIds})`,
+        order: 'uploaded_at.desc',
+        limit: 300,
+      },
+    }),
+    fetchOperationsTable<SupportTicketEventRow[]>({
+      path: '/rest/v1/support_ticket_events',
+      query: {
+        select: 'id,ticket_id,actor,event,created_at',
+        ticket_id: `in.(${ticketIds})`,
+        order: 'created_at.desc',
+        limit: 300,
+      },
+    }),
+  ])
+
+  return {
+    connected: tickets.connected && notes.connected && attachments.connected && events.connected,
+    tickets: tickets.rows,
+    notes: notes.rows,
+    attachments: attachments.rows,
+    events: events.rows,
+  }
+}
+
+async function fetchPersistedModerationRows() {
+  const reports = await fetchOperationsTable<ModerationReportRow[]>({
+    path: '/rest/v1/moderation_reports',
+    query: {
+      select: 'id,source_audit_log_id,gallery_id,kind,reporter,severity,status,reason,evidence,created_at',
+      order: 'created_at.desc',
+      limit: 100,
+    },
+  })
+
+  if (!reports.connected || reports.rows.length === 0) {
+    return {
+      connected: reports.connected,
+      reports: reports.rows,
+      events: [] as ModerationReportEventRow[],
+    }
+  }
+
+  const reportIds = reports.rows.map((report) => report.id).join(',')
+  const events = await fetchOperationsTable<ModerationReportEventRow[]>({
+    path: '/rest/v1/moderation_report_events',
+    query: {
+      select: 'id,report_id,actor,event,created_at',
+      report_id: `in.(${reportIds})`,
+      order: 'created_at.desc',
+      limit: 300,
+    },
+  })
+
+  return {
+    connected: reports.connected && events.connected,
+    reports: reports.rows,
+    events: events.rows,
+  }
+}
+
+async function fetchPersistedBroadcastRows() {
+  return fetchOperationsTable<AdminBroadcastRow[]>({
+    path: '/rest/v1/admin_broadcasts',
+    query: {
+      select: 'id,target,subject,body,channel,target_count,delivery_provider,delivery_status,created_at',
+      order: 'created_at.desc',
+      limit: 24,
+    },
+  })
+}
+
 export async function getAdminOperationsSnapshot(): Promise<AdminOperationsSnapshot> {
   requireSupabaseAdminConfig()
 
-  const [auditRows, galleries] = await Promise.all([fetchAuditLogs(), fetchGalleries()])
-  const moderationReports = buildModerationReports(auditRows, galleries)
-  const broadcasts = buildBroadcasts(auditRows)
+  const [auditRows, galleries, supportRows, persistedModerationRows, persistedBroadcastRows] = await Promise.all([
+    fetchAuditLogs(),
+    fetchGalleries(),
+    fetchSupportTicketRows(),
+    fetchPersistedModerationRows(),
+    fetchPersistedBroadcastRows(),
+  ])
+  const tickets = buildSupportTickets({
+    tickets: supportRows.tickets,
+    notes: supportRows.notes,
+    attachments: supportRows.attachments,
+    events: supportRows.events,
+    galleries,
+  })
+  const persistedModerationReports = buildPersistedModerationReports({
+    reports: persistedModerationRows.reports,
+    events: persistedModerationRows.events,
+    galleries,
+  })
+  const auditModerationReports = buildModerationReports(auditRows, galleries)
+  const moderationReports = [...persistedModerationReports, ...auditModerationReports]
+    .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))
+    .slice(0, 60)
+  const persistedBroadcasts = buildPersistedBroadcasts(persistedBroadcastRows.rows)
+  const auditBroadcasts = buildBroadcasts(auditRows)
+  const broadcasts = [...persistedBroadcasts, ...auditBroadcasts]
+    .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))
+    .slice(0, 24)
+  const supportConnected = supportRows.connected
 
   return {
     ok: true,
     generatedAt: new Date().toISOString(),
     source: 'supabase',
     supportSource: {
-      connected: false,
+      connected: supportConnected,
       tableName: 'support_tickets',
-      message: 'Destek talebi tablosu bağlı değil. Bu yüzden sahte destek talebi gösterilmiyor.',
+      message: supportConnected
+        ? 'Destek talepleri canlı support_tickets kaynağından okunur.'
+        : 'Destek talebi tablosu bağlı değil. Bu yüzden sahte destek talebi gösterilmiyor.',
     },
-    tickets: [],
+    tickets,
     moderationReports,
     broadcasts,
     notifications: buildNotifications(moderationReports, broadcasts),
     stats: {
-      openTickets: 0,
-      pendingTickets: 0,
-      highPriorityTickets: 0,
+      openTickets: tickets.filter((ticket) => ticket.status === 'OPEN').length,
+      pendingTickets: tickets.filter((ticket) => ticket.status === 'PENDING').length,
+      highPriorityTickets: tickets.filter((ticket) => ticket.priority === 'HIGH' || ticket.priority === 'URGENT').length,
       newModerationReports: moderationReports.filter((report) => report.status === 'NEW').length,
       recentBroadcasts: broadcasts.length,
       auditEvents: auditRows.length,
     },
     notes: {
-      support: 'Destek akışı için gerçek destek talebi kaynağı bağlanana kadar kayıt gösterilmez.',
-      moderation: 'Moderasyon kuyruğu canlı denetim risk olaylarından türetilir.',
-      broadcast: 'Bildirim talepleri denetim kaydı olarak kaydedilir; harici e-posta/SMS/uygulama bildirimi teslimatı bağlı değilse teslim edildi denmez.',
+      support: supportConnected
+        ? 'Destek akışı canlı support_tickets, not, ek ve geçmiş tablolarından okunur.'
+        : 'Destek akışı için gerçek destek talebi kaynağı bağlanana kadar kayıt gösterilmez.',
+      moderation: persistedModerationRows.connected
+        ? 'Moderasyon kuyruğu canlı moderation_reports tablosu ve denetim risk olayları birlikte okunur.'
+        : 'Moderasyon kuyruğu canlı denetim risk olaylarından türetilir.',
+      broadcast: persistedBroadcastRows.connected
+        ? 'Bildirim talepleri admin_broadcasts ve denetim kayıtlarından okunur; teslimat sağlayıcısı bağlı değilse teslim edildi denmez.'
+        : 'Bildirim talepleri denetim kaydı olarak kaydedilir; harici e-posta/SMS/uygulama bildirimi teslimatı bağlı değilse teslim edildi denmez.',
     },
   }
 }
@@ -374,6 +769,44 @@ export async function recordAdminModerationAction(input: {
   requireSupabaseAdminConfig()
 
   if (!input.dryRun) {
+    if (looksLikeUuid(input.reportId)) {
+      await supabaseAdminFetch<unknown>({
+        method: 'PATCH',
+        path: '/rest/v1/moderation_reports',
+        query: {
+          id: `eq.${input.reportId}`,
+        },
+        body: {
+          status: input.status,
+          metadata: {
+            lastAdminAction: input.status,
+            lastAdminReason: input.reason,
+            lastAdminActor: input.adminUsername,
+          },
+        },
+        prefer: 'return=minimal',
+      })
+
+      await supabaseAdminFetch<unknown>({
+        method: 'POST',
+        path: '/rest/v1/moderation_report_events',
+        body: [
+          {
+            report_id: input.reportId,
+            actor: input.adminUsername,
+            status: input.status,
+            event: input.reason,
+            metadata: {
+              targetGallery: input.targetGallery,
+              deliveryProvider: 'not_connected',
+              deliveryStatus: 'audit_only',
+            },
+          },
+        ],
+        prefer: 'return=minimal',
+      })
+    }
+
     await insertAuditLog({
       action: 'admin_moderation_action',
       entityType: 'moderation',

@@ -36,7 +36,7 @@ export async function POST(request: Request) {
   const limits = getSecurityLimits()
   try {
     const ip = getClientIp(request)
-    const rate = checkRateLimit({
+    const rate = await checkRateLimit({
       key: `price-alert:${ip}`,
       limit: limits.vehicleEvents.limit,
       windowMs: limits.vehicleEvents.windowMs,

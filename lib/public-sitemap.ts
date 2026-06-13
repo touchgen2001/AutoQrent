@@ -52,6 +52,7 @@ export async function getPublicSitemapEntries(now = new Date()): Promise<Metadat
         query: {
           select: 'slug,updated_at,created_at',
           status: 'eq.active',
+          deleted_at: 'is.null',
           order: 'updated_at.desc',
           limit: 1000,
         },

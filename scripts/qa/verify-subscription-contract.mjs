@@ -53,6 +53,7 @@ for (const feature of [
   'domain.custom',
   'branding.remove',
   'export.excel',
+  'team.manage',
 ]) {
   addCheck(`feature gate catalog contains ${feature}`, planCatalog.includes(`'${feature}'`))
 }
@@ -65,7 +66,7 @@ addCheck('premium vehicle limit is 200', planCatalog.includes('vehicleLimit: 200
 addCheck('starter monthly price is 999', planCatalog.includes('monthlyPrice: 999'))
 addCheck('pro monthly price is 2500', planCatalog.includes('monthlyPrice: 2500'))
 addCheck('premium monthly price is 4990', planCatalog.includes('monthlyPrice: 4990'))
-addCheck('all paid plans use single user limit', planCatalog.includes("summary: 'Tek kullanıcı hesabıyla daha yüksek araç hacmi") && planCatalog.includes("summary: 'Tek kullanıcı hesabıyla yüksek stok"))
+addCheck('all plans enforce one user', (planCatalog.match(/userLimit: 1/g) || []).length === 4 && !planCatalog.includes('userLimit: 3') && !planCatalog.includes('userLimit: 8'))
 
 addCheck('subscription migration exists', Boolean(migrationPath))
 addCheck('migration creates gallery_subscriptions', migration.includes('create table if not exists public.gallery_subscriptions'))
@@ -76,7 +77,7 @@ addCheck('migration backfills existing galleries', migration.includes('migration
 
 addCheck('central assertFeatureAccess exists', subscriptionRepo.includes('export async function assertFeatureAccess'))
 addCheck('central assertVehicleCreateAllowed exists', subscriptionRepo.includes('export async function assertVehicleCreateAllowed'))
-addCheck('central user invite guard is disabled for single user model', subscriptionRepo.includes('export async function assertUserInviteAllowed') && subscriptionRepo.includes('Ek kullanıcı daveti kapalıdır'))
+addCheck('central user invite guard blocks extra users', subscriptionRepo.includes('export async function assertUserInviteAllowed') && subscriptionRepo.includes("feature: 'team.manage'") && subscriptionRepo.includes('tek kullanıcı hesabı'))
 addCheck('trial creation helper exists', subscriptionRepo.includes('ensureTrialSubscriptionForGallery'))
 addCheck('trial is 14 days', planCatalog.includes('TRIAL_DAYS = 14') && subscriptionRepo.includes('TRIAL_DAYS'))
 addCheck('trial expiry requires plan selection', subscriptionRepo.includes('requiresPlanSelection') && subscriptionRepo.includes('Deneme süreniz sona erdi'))
@@ -100,6 +101,7 @@ addCheck('settings page fetches subscription API', settingsPage.includes('/api/p
 addCheck('settings page shows monthly yearly toggle', settingsPage.includes("(['monthly', 'yearly'] as BillingInterval[])"))
 addCheck('settings page shows enterprise quote CTA', settingsPage.includes('Teklif Al') || settingsPage.includes('Kurumsal'))
 addCheck('settings page shows payment provider missing', settingsPage.includes('paymentProviderMessage'))
+addCheck('settings page does not expose team management', !settingsPage.includes("value='team'") && !settingsPage.includes('TeamMembersManager'))
 addCheck('panel layout redirects expired subscription to plan tab', panelLayoutClient.includes('/panel/ayarlar?tab=subscription') && panelLayoutClient.includes('requiresPlanSelection'))
 
 const failed = checks.filter((check) => !check.passed)

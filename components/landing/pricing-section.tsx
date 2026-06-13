@@ -1,11 +1,17 @@
 'use client'
 
 import Link from "next/link"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Check, Dot } from "lucide-react"
+import { Check, Dot, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useLandingCtaExperiment } from "@/components/landing/use-landing-cta-experiment"
-import { SUBSCRIPTION_PLANS, formatPlanPrice, type SubscriptionPlanCode } from "@/lib/subscription-plans"
+import {
+  SUBSCRIPTION_PLANS,
+  formatPlanPrice,
+  type BillingInterval,
+  type SubscriptionPlanCode,
+} from "@/lib/subscription-plans"
 
 const plans = [
   {
@@ -18,20 +24,21 @@ const plans = [
     highlights: [
       "15 araç limiti",
       "QR kodlu araç vitrini",
-      "Temel lead toplama",
-      "Tekil kullanıcı hesabı",
+      "Temel müşteri talebi toplama",
+      "1 kullanıcı hesabı",
     ],
   },
   {
     key: "pro" as SubscriptionPlanCode,
     plan: SUBSCRIPTION_PLANS.pro,
-    focus: "Aktif stok ve düzenli lead takibi yapan galeriler için",
+    focus: "Aktif stok ve düzenli müşteri talebi takibi yapan galeriler için",
     support: "Öncelikli destek",
     cta: "14 Gün Ücretsiz Başla",
     popular: true,
     highlights: [
       "75 araç limiti",
-      "Lead takibi ve operasyon analitiği",
+      "1 kullanıcı hesabı",
+      "Müşteri talebi takibi ve operasyon analitiği",
       "Toplu QR yazdırma",
       "Excel dışa aktarım",
     ],
@@ -45,6 +52,7 @@ const plans = [
     popular: false,
     highlights: [
       "200 araç limiti",
+      "1 kullanıcı hesabı",
       "Marka kaldırma",
       "Gelişmiş analitik",
       "Öncelikli destek",
@@ -59,9 +67,9 @@ const plans = [
     popular: false,
     highlights: [
       "Özel araç limiti",
+      "1 kullanıcı hesabı",
       "API ve veri taşıma desteği",
       "Özel kurulum danışmanlığı",
-      "Tekil kullanıcı hesabı",
     ],
   },
 ]
@@ -77,7 +85,7 @@ const comparisonRows = [
     },
   },
   {
-    title: "Lead Takibi",
+    title: "Müşteri Talebi Takibi",
     values: {
       starter: "Temel akış",
       pro: "Detaylı durum yönetimi",
@@ -88,10 +96,10 @@ const comparisonRows = [
   {
     title: "Hesap Kullanımı",
     values: {
-      starter: "Tekil kullanıcı",
-      pro: "Tekil kullanıcı",
-      premium: "Tekil kullanıcı",
-      enterprise: "Tekil kullanıcı",
+      starter: "1 kullanıcı",
+      pro: "1 kullanıcı",
+      premium: "1 kullanıcı",
+      enterprise: "1 kullanıcı",
     },
   },
   {
@@ -116,29 +124,72 @@ const comparisonRows = [
 
 export function PricingSection() {
   const { trackClick } = useLandingCtaExperiment("pricing")
+  const [billingInterval, setBillingInterval] = useState<BillingInterval>("monthly")
 
   const getPricingHref = (planKey: SubscriptionPlanCode) => {
     if (planKey === "enterprise") {
       return `/iletisim?konu=kurumsal-teklif&utm_source=pricing&utm_content=${planKey}`
     }
 
-    return `/kayit?plan=${planKey}&utm_source=pricing&utm_content=${planKey}`
+    return `/kayit?plan=${planKey}&billing=${billingInterval}&utm_source=pricing&utm_content=${planKey}`
+  }
+
+  const changeBillingInterval = (nextInterval: BillingInterval) => {
+    setBillingInterval(nextInterval)
+    trackClick(
+      "billing_toggle",
+      `/fiyatlar?billing=${nextInterval}`,
+      nextInterval === "yearly" ? "Yıllık fiyatlandırma" : "Aylık fiyatlandırma",
+    )
   }
 
   return (
     <section id="fiyatlar" className="py-20 md:py-28 bg-muted/30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="max-w-3xl">
-          <h2 className="text-3xl sm:text-4xl font-bold text-foreground">Net fiyatlı SaaS paketleri</h2>
-          <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-            Başlangıç, Pro ve Premium paketlerde 14 gün ücretsiz deneme başlar; kredi kartı gerekmez. Kurumsal ihtiyaçlarda özel teklif alınır.
-          </p>
+        <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+          <div className="max-w-3xl">
+            <h2 className="text-3xl sm:text-4xl font-bold text-foreground">Net fiyatlı SaaS paketleri</h2>
+            <p className="mt-4 text-base leading-relaxed text-muted-foreground">
+              Başlangıç, Pro ve Premium paketlerde 14 gün ücretsiz deneme başlar; kredi kartı gerekmez. Yıllık ödemede iki ay avantaj sağlanır.
+            </p>
+          </div>
+          <div
+            className="inline-flex w-full rounded-xl border border-border/70 bg-card p-1 md:w-auto"
+            aria-label="Faturalama dönemi"
+          >
+            <button
+              type="button"
+              onClick={() => changeBillingInterval("monthly")}
+              className={cn(
+                "flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors md:flex-none",
+                billingInterval === "monthly"
+                  ? "bg-foreground text-background shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              Aylık
+            </button>
+            <button
+              type="button"
+              onClick={() => changeBillingInterval("yearly")}
+              className={cn(
+                "flex flex-1 items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-colors md:flex-none",
+                billingInterval === "yearly"
+                  ? "bg-foreground text-background shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              Yıllık
+              <span className="rounded-full bg-accent/15 px-1.5 py-0.5 text-[10px] text-accent">2 ay avantaj</span>
+            </button>
+          </div>
         </div>
 
         <div className="mt-10 grid gap-4 lg:grid-cols-4">
           {plans.map((plan) => {
             const href = getPricingHref(plan.key)
-            const price = formatPlanPrice(plan.plan.monthlyPrice)
+            const selectedPrice = billingInterval === "yearly" ? plan.plan.yearlyPrice : plan.plan.monthlyPrice
+            const monthlyEquivalent = plan.plan.yearlyPrice === null ? null : Math.round(plan.plan.yearlyPrice / 12)
             return (
               <article
                 key={plan.key}
@@ -157,10 +208,20 @@ export function PricingSection() {
                 </div>
                 <p className="mt-3 text-sm text-muted-foreground">{plan.focus}</p>
                 <div className="mt-5">
-                  <p className="text-3xl font-black tracking-tight text-foreground">{price}</p>
+                  <p className="text-3xl font-black tracking-tight text-foreground">{formatPlanPrice(selectedPrice)}</p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {plan.key === "enterprise" ? "Kurumsal teklif" : "Aylık, 14 gün ücretsiz deneme"}
+                    {plan.key === "enterprise"
+                      ? "Kurumsal teklif"
+                      : billingInterval === "yearly"
+                        ? `Yıllık toplam • aylık karşılığı ${formatPlanPrice(monthlyEquivalent)}`
+                        : "Aylık, 14 gün ücretsiz deneme"}
                   </p>
+                  {billingInterval === "yearly" && plan.key !== "enterprise" ? (
+                    <p className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-accent">
+                      <Sparkles className="h-3.5 w-3.5" />
+                      Aylığa göre 2 ay avantaj
+                    </p>
+                  ) : null}
                 </div>
                 <p className="mt-2 text-sm text-muted-foreground">
                   <span className="font-medium text-foreground">Destek:</span> {plan.support}

@@ -40,7 +40,7 @@ export function HomePricingPreview() {
               14 gün ücretsiz deneyin, sonra ihtiyaca göre paket seçin
             </h2>
             <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-              Anasayfada sadece karar için gerekli özet yer alır. Detaylı kapsam ve karşılaştırma fiyatlar sayfasında bulunur.
+              Anasayfada karar için gerekli özet yer alır. Aylık ve iki ay avantajlı yıllık seçenekleri fiyatlar sayfasında karşılaştırabilirsiniz.
             </p>
           </div>
           <Button asChild variant="outline" className="w-full md:w-auto">
@@ -79,6 +79,7 @@ export function HomePricingPreview() {
                     {formatPlanPrice(plan.monthlyPrice)}
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">Aylık, 14 gün ücretsiz deneme</p>
+                  <p className="mt-2 text-xs font-medium text-accent">Yıllık ödemede 2 ay avantaj</p>
                 </div>
 
                 <ul className="mt-5 space-y-2">

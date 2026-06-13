@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
-import { trustedMutationOriginResponse } from '@/lib/security/request-guards'
+import { checkRateLimit, getClientIp, trustedMutationOriginResponse } from '@/lib/security/request-guards'
 import { registerWithSupabase, setPanelSessionCookie } from '@/lib/server/panel-auth'
 import { mapPanelAuthError } from '@/lib/server/panel-auth-errors'
-import { SUBSCRIPTION_PLAN_CODES } from '@/lib/subscription-plans'
+import { BILLING_INTERVALS, SUBSCRIPTION_PLAN_CODES } from '@/lib/subscription-plans'
 
 export const runtime = 'nodejs'
 
@@ -15,11 +15,30 @@ const schema = z.object({
   phone: z.string().trim().min(10, 'Geçerli bir telefon numarası girin.').max(30),
   password: z.string().trim().min(8, 'Şifre en az 8 karakter olmalı.').max(160),
   planCode: z.enum(SUBSCRIPTION_PLAN_CODES).optional(),
+  billingInterval: z.enum(BILLING_INTERVALS).optional(),
 })
 
 export async function POST(request: Request) {
   const blockedOrigin = trustedMutationOriginResponse(request)
   if (blockedOrigin) return blockedOrigin
+
+  const rateLimit = await checkRateLimit({
+    key: `auth-register:${getClientIp(request)}`,
+    limit: 5,
+    windowMs: 15 * 60 * 1000,
+  })
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: 'Çok fazla kayıt denemesi yapıldı. Lütfen kısa süre sonra tekrar deneyin.',
+      },
+      {
+        status: 429,
+        headers: { 'retry-after': String(rateLimit.retryAfterSeconds) },
+      },
+    )
+  }
 
   try {
     const body = await request.json()
@@ -45,6 +64,7 @@ export async function POST(request: Request) {
         fullName: session.fullName,
         galleryId: session.galleryId,
         galleryName: session.galleryName,
+        role: session.role,
         expiresAt: session.expiresAt,
       },
     })

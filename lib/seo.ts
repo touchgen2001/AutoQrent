@@ -7,12 +7,12 @@ export const siteConfig = {
   siteUrl: rawSiteUrl.replace(/\/$/, ''),
   defaultTitle: 'Cebindegaleri - Dijital Araç Vitrini',
   defaultDescription:
-    'Araç galerileri için QR kodlu dijital showroom, stok yönetimi, lead takibi ve satış analitiği platformu.',
+    'Araç galerileri için QR kodlu dijital showroom, stok yönetimi, müşteri talebi takibi ve satış analitiği platformu.',
   defaultKeywords: [
     'araç galerisi yazılımı',
     'QR kodlu dijital vitrin',
     'oto galeri stok yönetimi',
-    'galeri lead takibi',
+    'galeri müşteri talebi takibi',
     'mobil araç sayfası',
   ],
 }

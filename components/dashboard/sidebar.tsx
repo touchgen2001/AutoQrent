@@ -9,12 +9,17 @@ import {
   QrCode, 
   Users, 
   BarChart3, 
+  ClipboardList,
+  CalendarDays,
   ShieldCheck,
   Settings,
   LogOut,
   ChevronLeft,
   Menu,
-  ExternalLink
+  ExternalLink,
+  CalendarCheck2,
+  MessageSquareText,
+  ArchiveRestore,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -61,14 +66,39 @@ const navItems = [
     icon: Users
   },
   {
+    title: "Rezervasyonlar",
+    href: "/panel/rezervasyonlar",
+    icon: CalendarCheck2
+  },
+  {
+    title: "Galeri Yorumları",
+    href: "/panel/yorumlar",
+    icon: MessageSquareText
+  },
+  {
+    title: "Takvim & Takip",
+    href: "/panel/takvim",
+    icon: CalendarDays
+  },
+  {
     title: "Analitik",
     href: "/panel/analitik",
     icon: BarChart3
   },
   {
+    title: "Yönetici Raporu",
+    href: "/panel/raporlar",
+    icon: ClipboardList
+  },
+  {
     title: "Denetim Kayıtları",
     href: "/panel/audit-logs",
     icon: ShieldCheck
+  },
+  {
+    title: "Araç Çöp Kutusu",
+    href: "/panel/arsiv",
+    icon: ArchiveRestore
   },
   {
     title: "Ayarlar",
@@ -154,7 +184,7 @@ export function DashboardSidebar({ isCollapsed, onToggle, isMobileOpen, onMobile
       {/* Sidebar */}
       <aside 
         className={cn(
-          "fixed top-0 left-0 z-50 h-full bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-all duration-300",
+          "fixed top-0 left-0 z-50 h-full bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-all duration-300 print:hidden",
           isCollapsed ? "w-[70px]" : "w-[260px]",
           isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
@@ -166,7 +196,7 @@ export function DashboardSidebar({ isCollapsed, onToggle, isMobileOpen, onMobile
             isCollapsed ? "justify-center" : "justify-between"
           )}>
             {!isCollapsed && (
-              <BrandLogo href="/panel" tone="sidebar" className="[&_span:first-child]:size-9" />
+              <BrandLogo href="/panel" tone="sidebar" />
             )}
             {isCollapsed && (
               <BrandMark tone="sidebar" className="[&_span]:size-9" />

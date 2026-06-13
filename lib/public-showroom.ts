@@ -306,7 +306,7 @@ export async function listPublicGalleries(limit = 12): Promise<PublicGallerySumm
       }),
       supabaseAdminFetch<Array<{ gallery_id: string | null }>>({
         path: '/rest/v1/vehicles',
-        query: { select: 'gallery_id', status: 'eq.active', limit: 5000 },
+        query: { select: 'gallery_id', status: 'eq.active', deleted_at: 'is.null', limit: 5000 },
       }).catch(() => [] as Array<{ gallery_id: string | null }>),
     ])
 
@@ -345,6 +345,7 @@ export async function listPublicShowroomVehicles(dealershipId: string): Promise<
       select: 'id,gallery_id,slug,brand,model,variant,year,price,km,fuel,transmission,color,description,status,views,highlighted,photos,created_at,updated_at',
       gallery_id: `eq.${dealershipId}`,
       status: 'eq.active',
+      deleted_at: 'is.null',
       order: 'created_at.desc',
       limit: 300,
     },
@@ -443,6 +444,38 @@ export async function listPublicDemoExamples(limit = 2): Promise<PublicDemoExamp
       vehicleTitle: firstVehicle?.title || null,
       vehicleCount: vehicles.length,
       location: location || 'Konum bilgisi girilmemiş',
+    })
+  }
+
+  return examples
+}
+
+const NON_SHOWCASE_NAME_PATTERN = /\b(demo|test|smoke|varsayilan|varsayılan|default|ornek|örnek|example|dummy|deneme)\b/i
+
+function hasShowcaseDealerName(value: string) {
+  const trimmed = value.trim()
+  return trimmed.length >= 4 && !NON_SHOWCASE_NAME_PATTERN.test(trimmed)
+}
+
+export async function listPublicShowcaseExamples(limit = 12): Promise<PublicDemoExample[]> {
+  const galleries = await listPublicGalleries(Math.max(limit * 3, 24))
+  const examples: PublicDemoExample[] = []
+
+  for (const gallery of galleries) {
+    if (examples.length >= limit) break
+    if (!hasShowcaseDealerName(gallery.name)) continue
+
+    const showroom = await getPublicShowroomData(gallery.slug).catch(() => null)
+    if (!showroom || showroom.vehicles.length === 0) continue
+
+    const firstVehicle = showroom.vehicles[0]
+    examples.push({
+      dealerName: showroom.dealer.name,
+      showroomHref: `/showroom/${showroom.dealer.slug}`,
+      vehicleHref: `/arac/${firstVehicle.routeId}?src=showroom&ref=${showroom.dealer.slug}`,
+      vehicleTitle: firstVehicle.title,
+      vehicleCount: showroom.vehicles.length,
+      location: [showroom.dealer.district, showroom.dealer.city].filter(Boolean).join(' / ') || 'Konum bilgisi girilmemiş',
     })
   }
 

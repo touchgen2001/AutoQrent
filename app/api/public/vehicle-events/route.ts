@@ -33,6 +33,7 @@ async function resolveVehicleEventId(vehicleRouteId: string) {
       select: 'id,gallery_id,slug',
       slug: `eq.${vehicleRouteId.trim()}`,
       status: 'eq.active',
+      deleted_at: 'is.null',
       limit: 1,
     },
   })
@@ -50,7 +51,7 @@ export async function POST(request: Request) {
     const ip = getClientIp(request)
     const userAgent = request.headers.get('user-agent') || 'unknown'
 
-    const rate = checkRateLimit({
+    const rate = await checkRateLimit({
       key: `vehicle-events:${ip}`,
       limit: limits.vehicleEvents.limit,
       windowMs: limits.vehicleEvents.windowMs,

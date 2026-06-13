@@ -1,4 +1,5 @@
 import { getSecurityLimits } from '@/lib/security/limits'
+import { captureCriticalFailure } from '@/lib/server/critical-error-reporter'
 
 type TimedEvent = {
   route: string
@@ -149,6 +150,15 @@ export function recordApiError(input: {
     24 * 60 * 60 * 1000,
     now,
   )
+
+  if (input.status >= 500) {
+    captureCriticalFailure({
+      area: input.area || 'system',
+      route: input.route,
+      status: input.status,
+      message: input.message,
+    })
+  }
 }
 
 export function recordOperationalEvent(input: {

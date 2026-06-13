@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { listAuditLogs } from '@/lib/server/audit-repository'
-import { panelAuthErrorResponse, requirePanelSessionOrThrow } from '@/lib/server/panel-auth-guard'
+import { panelAuthErrorResponse, requirePanelPermissionOrThrow, requirePanelSessionOrThrow } from '@/lib/server/panel-auth-guard'
 
 export const runtime = 'nodejs'
 
@@ -14,6 +14,14 @@ const querySchema = z.object({
       'vehicle_update',
       'lead_status_change',
       'lead_note_add',
+      'lead_follow_up_change',
+      'lead_whatsapp_open',
+      'reservation_create',
+      'reservation_update',
+      'review_moderate',
+      'vehicle_restore',
+      'customer_task_create',
+      'customer_task_status_change',
       'contact_form_submit',
       'contact_form_blocked',
       'public_vehicle_cta_click',
@@ -35,7 +43,7 @@ const querySchema = z.object({
       'admin_notification_send',
     ])
     .optional(),
-  entityType: z.enum(['vehicle', 'lead', 'contact', 'system', 'marketing', 'user', 'subscription', 'notification', 'moderation']).optional(),
+  entityType: z.enum(['vehicle', 'lead', 'contact', 'system', 'marketing', 'user', 'subscription', 'notification', 'moderation', 'reservation', 'review']).optional(),
   source: z.string().trim().max(80).optional(),
   from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
@@ -46,6 +54,7 @@ const querySchema = z.object({
 export async function GET(request: Request) {
   try {
     const session = await requirePanelSessionOrThrow(request)
+    await requirePanelPermissionOrThrow(session, 'audit.view')
 
     const url = new URL(request.url)
     const parsed = querySchema.safeParse({
