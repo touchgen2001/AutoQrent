@@ -3,55 +3,57 @@
 import Link from "next/link"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { QrCode, Menu, X } from "lucide-react"
+import { Menu, X } from "lucide-react"
+import { BrandLogo } from "@/components/brand/brand-logo"
+import { useLandingCtaExperiment } from "@/components/landing/use-landing-cta-experiment"
 
 const navLinks = [
-  { name: "Güven", href: "/#guven" },
-  { name: "Özellikler", href: "/#ozellikler" },
-  { name: "Nasıl Çalışır", href: "/#nasil-calisir" },
-  { name: "Fiyatlar", href: "/#fiyatlar" },
-  { name: "SSS", href: "/#sss" },
+  { name: "Özellikler", href: "/ozellikler" },
+  { name: "Nasıl Çalışır", href: "/nasil-calisir" },
+  { name: "Fiyatlar", href: "/fiyatlar" },
+  { name: "SSS", href: "/sss" },
   { name: "İletişim", href: "/iletisim" },
 ]
 
 export function LandingHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const { config, trackClick } = useLandingCtaExperiment('header')
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center">
-              <QrCode className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="text-lg font-bold text-foreground tracking-tight">Cebindegaleri</span>
-          </Link>
+        <div className="flex items-center justify-between gap-4 h-16">
+          <BrandLogo href="/" tone="light" shimmer className="shrink-0" />
 
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden lg:flex items-center gap-6 xl:gap-8">
             {navLinks.map((link) => (
               <Link
                 key={link.name}
                 href={link.href}
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                className="whitespace-nowrap text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
                 {link.name}
               </Link>
             ))}
           </nav>
 
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden lg:flex items-center gap-3 shrink-0">
             <Button variant="ghost" asChild>
               <Link href="/giris">Giriş Yap</Link>
             </Button>
             <Button asChild className="bg-accent hover:bg-accent/90 text-accent-foreground">
-              <Link href="/kayit">Ücretsiz Başla</Link>
+              <Link
+                href={config.primaryHref}
+                onClick={() => trackClick('primary', config.primaryHref, config.primaryLabel)}
+              >
+                {config.primaryLabel}
+              </Link>
             </Button>
           </div>
 
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-lg hover:bg-muted transition-colors"
+            className="lg:hidden p-2 rounded-lg hover:bg-muted transition-colors"
             aria-label={mobileMenuOpen ? "Menüyü kapat" : "Menüyü aç"}
           >
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -60,7 +62,7 @@ export function LandingHeader() {
       </div>
 
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-border bg-background">
+        <div className="lg:hidden border-t border-border bg-background">
           <nav className="px-4 py-4 space-y-2">
             {navLinks.map((link) => (
               <Link
@@ -77,7 +79,12 @@ export function LandingHeader() {
                 <Link href="/giris">Giriş Yap</Link>
               </Button>
               <Button asChild className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
-                <Link href="/kayit">Ücretsiz Başla</Link>
+                <Link
+                  href={config.primaryHref}
+                  onClick={() => trackClick('primary', config.primaryHref, config.primaryLabel)}
+                >
+                  {config.primaryLabel}
+                </Link>
               </Button>
             </div>
           </nav>

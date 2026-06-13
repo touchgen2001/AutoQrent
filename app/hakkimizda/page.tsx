@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { ArrowRight, Car, CheckCircle2, LineChart, QrCode, Shield, Target, Users, Zap } from 'lucide-react'
+import { ArrowRight, CheckCircle2, LineChart, QrCode, Shield, Target, Users, Zap } from 'lucide-react'
 
+import { BrandLogo } from '@/components/brand/brand-logo'
 import { MarketingPageHero, MarketingPageLayout, MarketingPageSection } from '@/components/landing/marketing-page-layout'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -35,34 +36,34 @@ const values = [
 ]
 
 const highlights = [
-  { label: 'Aktif Galeri', value: '500+' },
-  { label: 'Yönetilen Araç', value: '25.000+' },
-  { label: 'Aylık QR Tarama', value: '1 Milyon+' },
-  { label: 'Ortalama Kurulum Süresi', value: '5 Dakika' },
+  { label: 'Araç başı dijital sayfa', value: 'QR' },
+  { label: 'Müşteri temas takibi', value: 'Lead' },
+  { label: 'Panelden güncellenen vitrin', value: 'Stok' },
+  { label: 'Kurulum ve destek akışı', value: 'Destek' },
 ]
 
 const principles = [
   'Sade arayüz, hızlı onboarding ve minimum eğitim ihtiyacı',
   'Mobil öncelikli araç sayfaları ve kolay iletişim kanalları',
   'Veriye dayalı satış kararları için anlık analitik görünürlük',
-  'Büyüyen ekipler için çok kullanıcılı yönetim altyapısı',
+  'Tek galeri hesabında kontrollü ve izlenebilir yönetim altyapısı',
 ]
 
-const showroomBrands = [
-  { name: 'Prestij Otomotiv', city: 'İstanbul', mark: 'PO' },
-  { name: 'Anadolu Motor', city: 'Ankara', mark: 'AM' },
-  { name: 'Ege Car Plaza', city: 'İzmir', mark: 'EP' },
-  { name: 'Atlas Auto', city: 'Bursa', mark: 'AA' },
-  { name: 'Vizyon Gallery', city: 'Antalya', mark: 'VG' },
-  { name: 'Nova Motors', city: 'Konya', mark: 'NM' },
+const brandStandards = [
+  { name: 'Logo ve galeri kimliği', detail: 'Showroom ve araç sayfalarında aynı görünüm', mark: 'LG' },
+  { name: 'QR müşteri akışı', detail: 'Araç sayfası, iletişim ve lead akışı birlikte', mark: 'QR' },
+  { name: 'Panel operasyonu', detail: 'Araç, lead ve ayarlar tek yönetim alanında', mark: 'PN' },
+  { name: 'Güvenli görsel yükleme', detail: 'Fotoğraf kabulü sunucu tarafında doğrulanır', mark: 'IMG' },
+  { name: 'Mobil öncelikli vitrin', detail: 'Araç başında hızlı okunabilir müşteri deneyimi', mark: 'MB' },
+  { name: 'Destek ve kurulum', detail: 'Canlı kurulum görüşmesiyle netleştirilen süreç', mark: 'DS' },
 ]
 
 export const metadata: Metadata = createPageMetadata({
-  title: 'Hakkımızda',
+  title: 'Hakkımızda ve Ürün Vizyonu',
   description:
-    'Cebindegaleri’nin misyonu, vizyonu ve araç galerileri için geliştirdiği dijital vitrin yaklaşımını keşfedin.',
+    'Cebindegaleri misyonunu, ürün vizyonunu ve araç galerileri için geliştirdiği dijital vitrin operasyon modelini keşfedin.',
   path: '/hakkimizda',
-  keywords: ['hakkımızda', 'galeri dijital dönüşüm', 'oto galeri teknoloji'],
+  keywords: ['hakkimizda', 'galeri dijital donusum', 'oto galeri teknoloji', 'qr vitrin altyapisi'],
 })
 
 export default function HakkimizdaPage() {
@@ -71,7 +72,7 @@ export default function HakkimizdaPage() {
       <MarketingPageHero
         badge="Hakkımızda"
         title="Galerilerin Dijital Vitrin Altyapısını Kuruyoruz"
-        description="Cebindegaleri; araç stok yönetimi, QR kodlu ilan deneyimi ve müşteri takip süreçlerini tek panelde birleştirerek satış ekiplerinin hızını artırır."
+        description="Cebindegaleri; araç stok yönetimi, QR kodlu ilan deneyimi ve müşteri takip süreçlerini tek panelde birleştirerek galeri operasyonunu hızlandırır."
         actions={
           <>
             <Button asChild className="bg-accent hover:bg-accent/90 text-accent-foreground">
@@ -112,18 +113,18 @@ export default function HakkimizdaPage() {
 
             <div className="w-full max-w-sm rounded-2xl border border-background/20 bg-background/10 p-5 backdrop-blur-sm">
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent text-accent-foreground">
-                  <Car className="h-6 w-6" />
+                <div className="rounded-2xl bg-background/10 p-3">
+                  <BrandLogo href="/" tone="dark" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs uppercase tracking-wide text-background/70">Marka Kimliği</p>
                   <p className="text-lg font-semibold">Cebindegaleri</p>
                 </div>
               </div>
               <div className="mt-4 space-y-2 text-sm text-background/85">
-                <p className="flex items-center justify-between"><span>Tema Tutarlılığı</span><span className="font-semibold">%100</span></p>
-                <p className="flex items-center justify-between"><span>Mobil Deneyim</span><span className="font-semibold">Öncelikli</span></p>
-                <p className="flex items-center justify-between"><span>Canlı Kurulum</span><span className="font-semibold">5 Dakika</span></p>
+                <p className="flex items-center justify-between gap-4"><span>Tema Tutarlılığı</span><span className="font-semibold">Standart</span></p>
+                <p className="flex items-center justify-between gap-4"><span>Mobil Deneyim</span><span className="font-semibold">Öncelikli</span></p>
+                <p className="flex items-center justify-between gap-4"><span>Kurulum</span><span className="font-semibold">Görüşmeyle netleşir</span></p>
               </div>
             </div>
           </div>
@@ -153,11 +154,11 @@ export default function HakkimizdaPage() {
             <CardContent className="space-y-4 text-sm leading-relaxed text-muted-foreground">
               <p>
                 Galerilerde araç bilgisi paylaşımı çoğunlukla dağınık WhatsApp mesajları, manuel notlar ve farklı platformlarda tekrar eden ilan girişleriyle yürütülüyor.
-                Bu durum hem müşteri deneyimini hem de satış ekibinin verimliliğini düşürüyor.
+                Bu durum hem müşteri deneyimini hem de galeri operasyonunun verimliliğini düşürüyor.
               </p>
               <p>
                 Cebindegaleri ile her araç için tek bir dijital sayfa oluşturulur. QR kod, ilan ve iletişim akışları tek bir kayıt üzerinden yönetilir.
-                Böylece ekipler daha hızlı yanıt verir, daha çok lead takip eder ve satışa odaklanır.
+                Böylece galeri daha hızlı yanıt verir, daha çok lead takip eder ve satışa odaklanır.
               </p>
             </CardContent>
           </Card>
@@ -196,12 +197,12 @@ export default function HakkimizdaPage() {
         </div>
 
         <div className="mt-12">
-          <h2 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">Bize Güvenen Galeri Markaları</h2>
+          <h2 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">Platformda korunan marka standartları</h2>
           <p className="mt-2 text-sm text-muted-foreground sm:text-base">
-            Farklı şehirlerdeki galeriler vitrin deneyimi, lead takibi ve QR dönüşüm süreçlerini tek altyapıda yönetiyor.
+            Her yeni galeride aynı kaliteyi korumak için görünüm, güvenlik ve müşteri akışı standart hale getirilir.
           </p>
           <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {showroomBrands.map((brand) => (
+            {brandStandards.map((brand) => (
               <Card key={brand.name} className="border-border/70 bg-card/80">
                 <CardContent className="flex items-center gap-3 py-5">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-sm font-semibold text-accent">
@@ -209,7 +210,7 @@ export default function HakkimizdaPage() {
                   </div>
                   <div>
                     <p className="font-medium text-foreground">{brand.name}</p>
-                    <p className="text-xs text-muted-foreground">{brand.city}</p>
+                    <p className="text-xs text-muted-foreground">{brand.detail}</p>
                   </div>
                 </CardContent>
               </Card>

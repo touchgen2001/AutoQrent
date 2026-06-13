@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<!--
+  Cebindegaleri brand logo — single visual source of truth.
+  One file renders every variant; the variant is chosen via the URL hash and
+  applied to <body data-variant>. scripts/brand/generate-logo.mjs drives this
+  with Playwright to emit the favicon / touch icon / OG tile + standalone files.
+
+  Variants:
+    #tile             square dark rounded tile + CG monogram   (favicon, apple-icon, OG tile)
+    #mark             CG monogram only, transparent            (maskable / freeform)
+    #horizontal       CG monogram + wordmark, transparent      (wide headers)
+    #full             full stacked lockup on dark background    (hero / share master)
+    #full-transparent full stacked lockup, transparent          (overlay on light/dark)
+-->
+<style>
+  @font-face { font-family: 'Outfit'; src: url('fonts/Outfit-Bold.ttf'); font-weight: 700; }
+  @font-face { font-family: 'GeistMono'; src: url('fonts/GeistMono-Regular.ttf'); font-weight: 400; }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: transparent; }
+
+  /* Metallic fills — bright specular band through the middle. */
+  .gold {
+    background: linear-gradient(174deg,#5e4715 0%,#9a7526 14%,#d8b757 30%,#f6e7a8 44%,#fffbe9 50%,#e6c96f 57%,#b48b30 73%,#7c5f1f 88%,#d8b257 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .silver {
+    background: linear-gradient(174deg,#5f656b 0%,#8d9399 14%,#c0c6cc 30%,#eef1f4 44%,#ffffff 50%,#d2d7dc 57%,#9aa0a6 73%,#71777d 88%,#cdd2d7 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+
+  #art {
+    position: relative;
+    width: 1440px; height: 1440px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-family: 'Outfit', sans-serif;
+    overflow: hidden;
+  }
+
+  /* Interlocked CG monogram with metallic depth. */
+  .mono { position: relative; display: flex; align-items: center; justify-content: center; filter: drop-shadow(0 14px 22px rgba(0,0,0,0.55)); }
+  .mono .ltr {
+    font-family: 'Outfit'; font-weight: 700; font-size: 352px; line-height: 1;
+    text-shadow:
+      0 2px 0 rgba(255,255,255,0.32),
+      0 -2px 0 rgba(0,0,0,0.30),
+      0 1px 2px rgba(255,255,255,0.16);
+  }
+  .mono .c { position: relative; z-index: 2; filter: drop-shadow(8px 7px 10px rgba(0,0,0,0.55)); }
+  .mono .g { position: relative; z-index: 1; margin-left: -58px; }
+
+  /* Car silhouette — single continuous line, gold→silver. */
+  .car { width: 384px; height: auto; margin-top: 30px; opacity: 0.96; }
+
+  /* Wordmark. */
+  .word {
+    margin-top: 50px; font-family: 'Outfit'; font-weight: 700; font-size: 99px;
+    letter-spacing: 0.13em; white-space: nowrap;
+    filter: drop-shadow(0 5px 7px rgba(0,0,0,0.45));
+  }
+
+  /* Tagline. */
+  .tag { margin-top: 33px; display: flex; align-items: center; gap: 26px; }
+  .tag .rule { width: 92px; height: 1px; background: linear-gradient(90deg, rgba(201,164,78,0) 0%, rgba(201,164,78,0.9) 100%); }
+  .tag .rule.r { background: linear-gradient(90deg, rgba(201,164,78,0.9) 0%, rgba(201,164,78,0) 100%); }
+  .tag .txt { font-family: 'GeistMono'; font-weight: 400; font-size: 27px; letter-spacing: 0.36em; color: #c5a96a; text-indent: 0.36em; }
+
+  /* ---- Variant: full lockup + social cards on dark background --------- */
+  body[data-variant="full"] #art,
+  body[data-variant="social-profile"] #art,
+  body[data-variant="social-cover"] #art {
+    background:
+      radial-gradient(56% 44% at 50% 40%, rgba(201,164,78,0.11) 0%, rgba(201,164,78,0) 60%),
+      radial-gradient(120% 120% at 50% 50%, #131313 0%, #070707 62%, #000 100%);
+  }
+
+  /* ---- Variant: full lockup, transparent ------------------------------- */
+  /* (no background; uses default lockup sizing) */
+
+  /* ---- Variant: square dark tile + monogram (icons) -------------------- */
+  body[data-variant="tile"] #art {
+    width: 512px; height: 512px; border-radius: 116px;
+    background-image:
+      radial-gradient(116% 78% at 27% -12%, rgba(255,255,255,0.20), rgba(255,255,255,0) 56%),
+      linear-gradient(152deg, #2c2c2f 0%, #18181a 52%, #0a0a0a 100%);
+    box-shadow: inset 0 3px 0 rgba(255,255,255,0.10), inset 0 0 0 2px rgba(255,255,255,0.04);
+  }
+  body[data-variant="tile"] .mono .ltr { font-size: 372px; }
+  body[data-variant="tile"] .mono .g { margin-left: -62px; }
+  body[data-variant="tile"] .car,
+  body[data-variant="tile"] .word,
+  body[data-variant="tile"] .tag { display: none; }
+
+  /* ---- Variant: monogram only, transparent ----------------------------- */
+  body[data-variant="mark"] #art { width: 720px; height: 720px; }
+  body[data-variant="mark"] .car,
+  body[data-variant="mark"] .word,
+  body[data-variant="mark"] .tag { display: none; }
+
+  /* ---- Variant: horizontal lockup, transparent ------------------------- */
+  body[data-variant="horizontal"] #art {
+    width: 2200px; height: 760px; flex-direction: row; gap: 96px;
+  }
+  body[data-variant="horizontal"] .mono .ltr { font-size: 470px; }
+  body[data-variant="horizontal"] .mono .g { margin-left: -78px; }
+  body[data-variant="horizontal"] .car,
+  body[data-variant="horizontal"] .tag { display: none; }
+  body[data-variant="horizontal"] .wordwrap { display: flex; flex-direction: column; align-items: flex-start; }
+  body[data-variant="horizontal"] .word { margin-top: 0; font-size: 150px; }
+  body[data-variant="horizontal"] .tagh {
+    margin-top: 22px; font-family: 'GeistMono'; font-weight: 400; font-size: 38px;
+    letter-spacing: 0.34em; color: #c5a96a;
+  }
+  .tagh { display: none; }
+
+  /* ---- Variant: maskable icon (Android adaptive, full-bleed safe zone) - */
+  body[data-variant="tile-maskable"] #art {
+    width: 512px; height: 512px; border-radius: 0;
+    background-image:
+      radial-gradient(116% 78% at 27% -12%, rgba(255,255,255,0.18), rgba(255,255,255,0) 56%),
+      linear-gradient(152deg, #2c2c2f 0%, #18181a 52%, #0a0a0a 100%);
+  }
+  body[data-variant="tile-maskable"] .mono .ltr { font-size: 300px; }
+  body[data-variant="tile-maskable"] .mono .g { margin-left: -50px; }
+  body[data-variant="tile-maskable"] .car,
+  body[data-variant="tile-maskable"] .word,
+  body[data-variant="tile-maskable"] .tag { display: none; }
+
+  /* ---- Variant: social profile (1080², circular-crop safe) ------------ */
+  body[data-variant="social-profile"] #art { width: 1080px; height: 1080px; }
+  body[data-variant="social-profile"] .mono .ltr { font-size: 560px; }
+  body[data-variant="social-profile"] .mono .g { margin-left: -92px; }
+  body[data-variant="social-profile"] .car,
+  body[data-variant="social-profile"] .word,
+  body[data-variant="social-profile"] .tag { display: none; }
+
+  /* ---- Variant: social cover (1640×624 banner) ------------------------ */
+  body[data-variant="social-cover"] #art { width: 1640px; height: 624px; flex-direction: row; gap: 58px; padding: 0 90px; }
+  body[data-variant="social-cover"] .mono .ltr { font-size: 286px; }
+  body[data-variant="social-cover"] .mono .g { margin-left: -48px; }
+  body[data-variant="social-cover"] .car,
+  body[data-variant="social-cover"] .tag { display: none; }
+  body[data-variant="social-cover"] .wordwrap { display: flex; flex-direction: column; align-items: flex-start; }
+  body[data-variant="social-cover"] .word { margin-top: 0; font-size: 88px; letter-spacing: 0.06em; }
+  body[data-variant="social-cover"] .tagh {
+    display: block; margin-top: 16px; font-family: 'GeistMono'; font-weight: 400;
+    font-size: 25px; letter-spacing: 0.26em; color: #c5a96a;
+  }
+</style>
+</head>
+<body data-variant="full">
+  <div id="art">
+    <!-- Interlocked CG monogram -->
+    <div class="mono">
+      <span class="ltr c gold">C</span>
+      <span class="ltr g silver">G</span>
+    </div>
+
+    <!-- Car silhouette: one continuous line, gold→silver, under the monogram -->
+    <svg class="car" viewBox="0 0 600 132" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="carGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#caa14a"/>
+          <stop offset="0.42" stop-color="#f4e2a0"/>
+          <stop offset="0.62" stop-color="#e9edf0"/>
+          <stop offset="1" stop-color="#aeb4ba"/>
+        </linearGradient>
+      </defs>
+      <path d="M30 92 C 96 90, 140 86, 190 70 C 236 55, 262 36, 322 35 C 398 34, 470 56, 540 90 C 560 99, 576 102, 594 99"
+            stroke="url(#carGrad)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M44 96 C 170 124, 360 126, 556 94"
+            stroke="url(#carGrad)" stroke-width="4.5" stroke-linecap="round" opacity="0.5"/>
+    </svg>
+
+    <!-- Wordmark (+ horizontal tagline, shown only in the horizontal variant) -->
+    <div class="wordwrap">
+      <div class="word"><span class="gold">CEBİNDE</span><span class="silver">GALERİ</span></div>
+      <div class="tagh">AXYRONIS TECHNOLOGIES A.Ş</div>
+    </div>
+
+    <!-- Stacked tagline (full lockups) -->
+    <div class="tag">
+      <span class="rule"></span>
+      <span class="txt">AXYRONIS TECHNOLOGIES A.Ş</span>
+      <span class="rule r"></span>
+    </div>
+  </div>
+
+  <script>
+    // Pick the variant from the URL hash. Known: tile, tile-maskable, mark,
+    // horizontal, full, full-transparent, social-profile, social-cover.
+    // Defaults to the full lockup.
+    document.body.dataset.variant = (location.hash || '#full').slice(1) || 'full';
+  </script>
+</body>
+</html>

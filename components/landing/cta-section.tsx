@@ -1,30 +1,25 @@
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { ArrowRight } from "lucide-react"
+import { SectionCtaActions } from "@/components/landing/section-cta-actions"
 
 export function CtaSection() {
   return (
-    <section className="py-20 md:py-28">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h2 className="text-3xl sm:text-4xl font-bold text-foreground">
-          Galerinizi Bugün Dijitale Taşıyın
-        </h2>
-        <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-          14 gün ücretsiz deneyin. Kredi kartı gerektirmez. 
-          Binlerce galeri gibi siz de dijital dönüşümün parçası olun.
-        </p>
-        <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-          <Button size="lg" asChild className="bg-accent hover:bg-accent/90 text-accent-foreground h-12 px-8 text-base">
-            <Link href="/kayit">
-              Ücretsiz Başla
-              <ArrowRight className="ml-2 w-5 h-5" />
-            </Link>
-          </Button>
-          <Button size="lg" variant="outline" asChild className="h-12 px-8 text-base">
-            <Link href="/giris">
-              Demo İncele
-            </Link>
-          </Button>
+    <section className="py-16 md:py-24">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div
+          className="relative overflow-hidden rounded-3xl border border-amber-500/20 bg-card px-6 py-14 text-center shadow-sm md:px-12"
+          style={{
+            backgroundImage:
+              "radial-gradient(70% 90% at 50% -10%, rgba(217,167,79,0.16), transparent 60%), radial-gradient(60% 80% at 105% 110%, rgba(99,102,241,0.12), transparent 55%)",
+          }}
+        >
+          <h2 className="text-3xl sm:text-4xl font-bold text-foreground">
+            Galerinizi Bugün{" "}
+            <span className="bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400 bg-clip-text text-transparent">Dijitale Taşıyın</span>
+          </h2>
+          <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
+            Kredi kartı gerekmeden 2 dakikada hesabınızı açın ve 14 gün ücretsiz deneyin.
+            Önce görmek isterseniz canlı demo akışını hemen inceleyin.
+          </p>
+          <SectionCtaActions />
         </div>
       </div>
     </section>

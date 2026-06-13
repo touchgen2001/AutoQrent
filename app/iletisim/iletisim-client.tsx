@@ -9,13 +9,19 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { useLandingCtaExperiment } from '@/components/landing/use-landing-cta-experiment'
 
 type ContactFormData = {
   name: string
   email: string
   phone: string
+  galleryName: string
+  vehicleCount: string
+  currentManagement: string
   subject: string
   message: string
+  website: string
+  formStartedAt: number
 }
 
 const channels = [
@@ -46,12 +52,20 @@ const initialFormData: ContactFormData = {
   name: '',
   email: '',
   phone: '',
+  galleryName: '',
+  vehicleCount: '',
+  currentManagement: '',
   subject: '',
   message: '',
+  website: '',
+  formStartedAt: Date.now(),
 }
 
 export default function IletisimPage() {
+  const { trackClick } = useLandingCtaExperiment('contact')
   const [formData, setFormData] = useState<ContactFormData>(initialFormData)
+  const [quickDemoGalleryName, setQuickDemoGalleryName] = useState('')
+  const [quickDemoVehicleCount, setQuickDemoVehicleCount] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitState, setSubmitState] = useState<'idle' | 'success' | 'error'>('idle')
   const [submitMessage, setSubmitMessage] = useState('')
@@ -61,15 +75,44 @@ export default function IletisimPage() {
     return (
       formData.name.trim().length >= 2 &&
       formData.email.trim().length > 0 &&
+      formData.galleryName.trim().length >= 2 &&
+      formData.vehicleCount.length > 0 &&
+      formData.currentManagement.length > 0 &&
       formData.subject.trim().length >= 3 &&
       formData.message.trim().length >= 10
     )
   }, [formData])
 
+  const quickDemoWhatsAppUrl = useMemo(() => {
+    const galleryName = quickDemoGalleryName.trim()
+    if (galleryName.length < 2 || !quickDemoVehicleCount) return null
+
+    const message = [
+      'Merhaba, Cebindegaleri için hızlı demo talep ediyorum.',
+      `Galeri: ${galleryName}`,
+      `Aktif araç sayısı: ${quickDemoVehicleCount}`,
+      'Uygun olduğunuzda benimle iletişime geçebilir misiniz?',
+    ].join('\n')
+
+    return `https://wa.me/905309738240?text=${encodeURIComponent(message)}`
+  }, [quickDemoGalleryName, quickDemoVehicleCount])
+
+  const openQuickDemoWhatsApp = () => {
+    if (!quickDemoWhatsAppUrl) return
+    trackClick('whatsapp', quickDemoWhatsAppUrl, 'Hazır WhatsApp demo talebi')
+    window.open(quickDemoWhatsAppUrl, '_blank', 'noopener,noreferrer')
+  }
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
-    if (isSubmitting || !canSubmit) {
+    if (isSubmitting) {
+      return
+    }
+
+    if (!canSubmit) {
+      setSubmitState('error')
+      setSubmitMessage('Lütfen zorunlu alanları kontrol edin ve tekrar deneyin.')
       return
     }
 
@@ -103,7 +146,11 @@ export default function IletisimPage() {
       setSubmitState('success')
       setSubmitMessage(data.message ?? 'Mesajınız başarıyla alındı.')
       setManualFollowupUrl(data.fallbackWhatsAppUrl ?? null)
-      setFormData(initialFormData)
+      trackClick('contact_submit', '/api/contact', 'İletişim formu gönderildi')
+      setFormData({
+        ...initialFormData,
+        formStartedAt: Date.now(),
+      })
     } catch {
       setSubmitState('error')
       setSubmitMessage('Ağ hatası oluştu. Lütfen tekrar deneyin.')
@@ -143,6 +190,16 @@ export default function IletisimPage() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+                <input
+                  type="text"
+                  name="website"
+                  autoComplete="off"
+                  tabIndex={-1}
+                  aria-hidden="true"
+                  value={formData.website}
+                  onChange={(event) => setFormData((prev) => ({ ...prev, website: event.target.value }))}
+                  className="absolute left-[-9999px] top-[-9999px] h-0 w-0 opacity-0"
+                />
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label htmlFor="name" className="mb-2 block text-sm font-medium text-foreground">
@@ -185,6 +242,63 @@ export default function IletisimPage() {
                     onChange={(event) => setFormData((prev) => ({ ...prev, phone: event.target.value }))}
                     placeholder="05xx xxx xx xx"
                   />
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label htmlFor="galleryName" className="mb-2 block text-sm font-medium text-foreground">
+                      Galeri Adı
+                    </label>
+                    <Input
+                      id="galleryName"
+                      name="galleryName"
+                      value={formData.galleryName}
+                      onChange={(event) => setFormData((prev) => ({ ...prev, galleryName: event.target.value }))}
+                      placeholder="Örn. Merkez Otomotiv"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="vehicleCount" className="mb-2 block text-sm font-medium text-foreground">
+                      Aktif Araç Sayısı
+                    </label>
+                    <select
+                      id="vehicleCount"
+                      name="vehicleCount"
+                      value={formData.vehicleCount}
+                      onChange={(event) => setFormData((prev) => ({ ...prev, vehicleCount: event.target.value }))}
+                      className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                      required
+                    >
+                      <option value="">Seçin</option>
+                      <option value="1-15">1 - 15 araç</option>
+                      <option value="16-50">16 - 50 araç</option>
+                      <option value="51-100">51 - 100 araç</option>
+                      <option value="101-200">101 - 200 araç</option>
+                      <option value="200+">200+ araç</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="currentManagement" className="mb-2 block text-sm font-medium text-foreground">
+                    Araç ve Müşteri Takibini Şu An Nasıl Yapıyorsunuz?
+                  </label>
+                  <select
+                    id="currentManagement"
+                    name="currentManagement"
+                    value={formData.currentManagement}
+                    onChange={(event) => setFormData((prev) => ({ ...prev, currentManagement: event.target.value }))}
+                    className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                    required
+                  >
+                    <option value="">Seçin</option>
+                    <option value="excel-whatsapp">Excel ve WhatsApp</option>
+                    <option value="ilan-platformlari">İlan platformları</option>
+                    <option value="baska-yazilim">Başka bir galeri yazılımı</option>
+                    <option value="manuel">Kağıt / manuel notlar</option>
+                    <option value="sistem-yok">Düzenli bir sistem kullanmıyoruz</option>
+                  </select>
                 </div>
 
                 <div>
@@ -239,7 +353,11 @@ export default function IletisimPage() {
                   </a>
                 )}
 
-                <Button type="submit" disabled={isSubmitting || !canSubmit} className="bg-accent hover:bg-accent/90 text-accent-foreground">
+                <Button
+                  type="submit"
+                  disabled={!canSubmit || isSubmitting}
+                  className="bg-accent hover:bg-accent/90 text-accent-foreground"
+                >
                   <Send className="mr-2 h-4 w-4" />
                   {isSubmitting ? 'Gönderiliyor...' : 'Mesajı Gönder'}
                 </Button>
@@ -265,6 +383,54 @@ export default function IletisimPage() {
                 <div>
                   <p className="font-medium text-foreground">Merkez</p>
                   <p>Maslak, İstanbul</p>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-border/70 bg-muted/40 p-4">
+                <p className="font-medium text-foreground">WhatsApp ile Hızlı Demo</p>
+                <p className="mt-1 text-sm">
+                  Galeri adınızı ve araç sayınızı girin; hazır demo talebini WhatsApp&apos;ta açın.
+                </p>
+                <div className="mt-4 space-y-3">
+                  <div>
+                    <label htmlFor="quickDemoGalleryName" className="mb-1.5 block text-xs font-medium text-foreground">
+                      Galeri Adı
+                    </label>
+                    <Input
+                      id="quickDemoGalleryName"
+                      value={quickDemoGalleryName}
+                      onChange={(event) => setQuickDemoGalleryName(event.target.value)}
+                      placeholder="Örn. Merkez Otomotiv"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="quickDemoVehicleCount" className="mb-1.5 block text-xs font-medium text-foreground">
+                      Aktif Araç Sayısı
+                    </label>
+                    <select
+                      id="quickDemoVehicleCount"
+                      value={quickDemoVehicleCount}
+                      onChange={(event) => setQuickDemoVehicleCount(event.target.value)}
+                      className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                    >
+                      <option value="">Seçin</option>
+                      <option value="1 - 15 araç">1 - 15 araç</option>
+                      <option value="16 - 50 araç">16 - 50 araç</option>
+                      <option value="51 - 100 araç">51 - 100 araç</option>
+                      <option value="101 - 200 araç">101 - 200 araç</option>
+                      <option value="200+ araç">200+ araç</option>
+                    </select>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={openQuickDemoWhatsApp}
+                    disabled={!quickDemoWhatsAppUrl}
+                    className="w-full bg-emerald-600 text-white hover:bg-emerald-700"
+                  >
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                    WhatsApp Demo Talebi Oluştur
+                  </Button>
                 </div>
               </div>
 

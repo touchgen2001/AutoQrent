@@ -1,0 +1,113 @@
+name: Production Smoke And Monitor
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - develop
+  deployment_status:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prod-smoke-monitor-${{ github.workflow }}-${{ github.ref || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  post_deploy_smoke:
+    name: Post Deploy Smoke
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'deployment_status' && github.event.deployment_status.state == 'success')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check node leaks before smoke
+        run: bash scripts/qa/check-node-leaks.sh prod-smoke-before
+
+      - name: Wait production health
+        env:
+          PRODUCTION_BASE_URL: ${{ secrets.PRODUCTION_BASE_URL }}
+          MONITOR_SHARED_KEY: ${{ secrets.MONITOR_SHARED_KEY }}
+        run: node scripts/qa/wait-for-http-ready.mjs
+
+      - name: Run full production smoke package
+        env:
+          PRODUCTION_BASE_URL: ${{ secrets.PRODUCTION_BASE_URL }}
+          PRODUCTION_WWW_BASE_URL: ${{ secrets.PRODUCTION_WWW_BASE_URL }}
+          SMOKE_TEST_EMAIL: ${{ secrets.SMOKE_TEST_EMAIL }}
+          SMOKE_TEST_PASSWORD: ${{ secrets.SMOKE_TEST_PASSWORD }}
+          PROD_SMOKE_REQUIRE_AUTH: '1'
+          MONITOR_SHARED_KEY: ${{ secrets.MONITOR_SHARED_KEY }}
+        run: pnpm smoke:prod
+
+      - name: Check node leaks after smoke
+        run: bash scripts/qa/check-node-leaks.sh prod-smoke-after
+
+  uptime_monitor:
+    name: Production Uptime Monitor
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check node leaks before monitor
+        run: bash scripts/qa/check-node-leaks.sh prod-monitor-before
+
+      - name: Monitor production health and latency
+        env:
+          PRODUCTION_BASE_URL: ${{ secrets.PRODUCTION_BASE_URL }}
+          MONITOR_ALERT_WEBHOOK_URL: ${{ secrets.MONITOR_ALERT_WEBHOOK_URL }}
+          MONITOR_MAX_LATENCY_MS: ${{ secrets.MONITOR_MAX_LATENCY_MS }}
+          MONITOR_LOGIN_FAIL_SPIKE_THRESHOLD: ${{ secrets.MONITOR_LOGIN_FAIL_SPIKE_THRESHOLD }}
+          MONITOR_UPLOAD_ERROR_THRESHOLD: ${{ secrets.MONITOR_UPLOAD_ERROR_THRESHOLD }}
+          MONITOR_STORAGE_DELETE_FAILURE_THRESHOLD: ${{ secrets.MONITOR_STORAGE_DELETE_FAILURE_THRESHOLD }}
+          MONITOR_QR_API_ERROR_THRESHOLD: ${{ secrets.MONITOR_QR_API_ERROR_THRESHOLD }}
+          MONITOR_LEAD_API_ERROR_THRESHOLD: ${{ secrets.MONITOR_LEAD_API_ERROR_THRESHOLD }}
+          MONITOR_CONTACT_API_ERROR_THRESHOLD: ${{ secrets.MONITOR_CONTACT_API_ERROR_THRESHOLD }}
+          MONITOR_NODE_LEAK_FAILURE_THRESHOLD: ${{ secrets.MONITOR_NODE_LEAK_FAILURE_THRESHOLD }}
+          MONITOR_SHARED_KEY: ${{ secrets.MONITOR_SHARED_KEY }}
+        run: pnpm monitor:prod:uptime
+
+      - name: Check node leaks after monitor
+        run: bash scripts/qa/check-node-leaks.sh prod-monitor-after

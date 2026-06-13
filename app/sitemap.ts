@@ -1,9 +1,13 @@
 import type { MetadataRoute } from 'next'
 
 import { blogPosts } from '@/lib/blog-posts'
+import { DEMO_VEHICLE_ROUTE_ID, getDemoShowroomHref } from '@/lib/demo-public-experience'
+import { getPublicSitemapEntries } from '@/lib/public-sitemap'
 import { absoluteUrl } from '@/lib/seo'
+import { cityLandings } from '@/lib/city-landing'
+import { comparisonLandings } from '@/lib/comparison-landings'
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date()
 
   const staticRoutes: MetadataRoute.Sitemap = [
@@ -26,6 +30,48 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.9,
     },
     {
+      url: absoluteUrl('/basari-hikayeleri'),
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.82,
+    },
+    {
+      url: absoluteUrl(getDemoShowroomHref()),
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.65,
+    },
+    {
+      url: absoluteUrl(`/arac/${DEMO_VEHICLE_ROUTE_ID}`),
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.65,
+    },
+    {
+      url: absoluteUrl('/ozellikler'),
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.85,
+    },
+    {
+      url: absoluteUrl('/nasil-calisir'),
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.85,
+    },
+    {
+      url: absoluteUrl('/fiyatlar'),
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.85,
+    },
+    {
+      url: absoluteUrl('/sss'),
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    },
+    {
       url: absoluteUrl('/blog'),
       lastModified: now,
       changeFrequency: 'weekly',
@@ -33,6 +79,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     {
       url: absoluteUrl('/iletisim'),
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.75,
+    },
+    {
+      url: absoluteUrl('/guvenlik'),
       lastModified: now,
       changeFrequency: 'monthly',
       priority: 0.75,
@@ -71,10 +123,26 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   const blogRoutes: MetadataRoute.Sitemap = blogPosts.map((post) => ({
     url: absoluteUrl(`/blog/${post.slug}`),
-    lastModified: now,
+    lastModified: new Date(post.updatedAt || post.publishedAt),
     changeFrequency: 'monthly',
     priority: 0.7,
   }))
 
-  return [...staticRoutes, ...blogRoutes]
+  const cityRoutes: MetadataRoute.Sitemap = cityLandings.map((city) => ({
+    url: absoluteUrl(`/galeri-yazilimi/${city.slug}`),
+    lastModified: now,
+    changeFrequency: 'monthly',
+    priority: 0.72,
+  }))
+
+  const comparisonRoutes: MetadataRoute.Sitemap = comparisonLandings.map((landing) => ({
+    url: absoluteUrl(`/karsilastir/${landing.slug}`),
+    lastModified: now,
+    changeFrequency: 'monthly',
+    priority: 0.76,
+  }))
+
+  const publicRoutes = await getPublicSitemapEntries(now)
+
+  return [...staticRoutes, ...cityRoutes, ...comparisonRoutes, ...blogRoutes, ...publicRoutes]
 }

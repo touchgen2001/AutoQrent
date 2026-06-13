@@ -1,0 +1,98 @@
+name: Daily Supabase Backup And Restore Drill
+
+on:
+  schedule:
+    - cron: '30 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      restore-postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: restore-drill-password
+          POSTGRES_DB: restore_drill
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d restore_drill"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      BACKUP_ROOT: security/backups/supabase
+      BACKUP_RETENTION_DAYS: '60'
+      SUPABASE_STORAGE_BACKUP_DOWNLOAD: '1'
+      SUPABASE_STORAGE_BACKUP_MAX_OBJECTS: '2000'
+      SUPABASE_STORAGE_BACKUP_MAX_BYTES: '2147483648'
+      SUPABASE_RESTORE_TEST_DB_URL: postgresql://postgres:restore-drill-password@127.0.0.1:5432/restore_drill
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate backup configuration
+        id: backup_config
+        run: |
+          db_ready=1
+          storage_ready=1
+
+          if [ -z "${SUPABASE_DB_URL}" ]; then
+            echo "SUPABASE_DB_URL secret is missing. Database dump and restore drill will be skipped."
+            db_ready=0
+          fi
+          if [ -z "${SUPABASE_URL}" ]; then
+            echo "SUPABASE_URL secret is missing."
+            storage_ready=0
+          fi
+          if [ -z "${SUPABASE_SERVICE_ROLE_KEY}" ]; then
+            echo "SUPABASE_SERVICE_ROLE_KEY secret is missing."
+            storage_ready=0
+          fi
+
+          echo "db_ready=${db_ready}" >> "$GITHUB_OUTPUT"
+          echo "storage_ready=${storage_ready}" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "### Backup configuration"
+            echo "- Database backup: $([ "$db_ready" = "1" ] && echo enabled || echo skipped_missing_SUPABASE_DB_URL)"
+            echo "- Storage backup: $([ "$storage_ready" = "1" ] && echo enabled || echo skipped_missing_supabase_api_secrets)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Install PostgreSQL client
+        if: steps.backup_config.outputs.db_ready == '1'
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Run backup
+        if: steps.backup_config.outputs.db_ready == '1'
+        run: bash scripts/security/supabase-backup.sh
+
+      - name: Verify latest backup
+        if: steps.backup_config.outputs.db_ready == '1'
+        run: bash scripts/security/supabase-backup-verify.sh
+
+      - name: Restore latest backup into disposable PostgreSQL
+        if: steps.backup_config.outputs.db_ready == '1'
+        run: |
+          BACKUP_FILE="$(ls -1t "${BACKUP_ROOT}"/supabase_*.dump | head -n 1)"
+          bash scripts/security/supabase-restore-drill.sh "${BACKUP_FILE}"
+
+      - name: Run storage backup and integrity check
+        if: steps.backup_config.outputs.storage_ready == '1'
+        run: node scripts/security/supabase-storage-backup.mjs
+
+      - name: Upload backup artifact
+        if: steps.backup_config.outputs.db_ready == '1' || steps.backup_config.outputs.storage_ready == '1'
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-backup-${{ github.run_id }}
+          path: security/backups/supabase/
+          if-no-files-found: error
+          retention-days: 30

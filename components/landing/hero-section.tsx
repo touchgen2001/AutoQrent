@@ -1,13 +1,20 @@
 import Image from "next/image"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { ArrowRight, QrCode, Smartphone, BarChart3 } from "lucide-react"
+import { Check, QrCode } from "lucide-react"
+import { HeroCtaActions } from "@/components/landing/hero-cta-actions"
+import { IMAGE_PRESETS } from "@/lib/image-presets"
 
 export function HeroSection() {
   return (
     <section className="relative pt-24 md:pt-32 pb-16 md:pb-24 overflow-hidden">
-      {/* Background gradient */}
+      {/* Background gradient + brand-gold / indigo glows for warmth */}
       <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-muted/30" />
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundImage:
+            "radial-gradient(55% 50% at 88% -5%, rgba(217,167,79,0.22), transparent 60%), radial-gradient(45% 45% at -5% 105%, rgba(99,102,241,0.12), transparent 55%)",
+        }}
+      />
       
       {/* Subtle grid pattern */}
       <div 
@@ -21,49 +28,44 @@ export function HeroSection() {
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           {/* Left Content */}
           <div className="text-center lg:text-left">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-accent/10 text-accent rounded-full text-sm font-medium mb-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-500/10 text-amber-700 ring-1 ring-inset ring-amber-500/25 rounded-full text-sm font-medium mb-6">
               <QrCode className="w-4 h-4" />
-              <span>Türkiye&apos;nin 1 Numaralı Galeri Yazılımı</span>
+              <span>14 gün ücretsiz deneme + QR odaklı dijital showroom</span>
             </div>
-            
+
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground leading-tight tracking-tight text-balance">
-              Galerinin Cebindeki{" "}
-              <span className="text-accent">Dijital Vitrini</span>
+              QR Okutan Müşteriyi{" "}
+              <span className="bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400 bg-clip-text text-transparent">Araç Sayfasına</span> Taşıyın
             </h1>
             
             <p className="mt-6 text-lg text-muted-foreground max-w-xl mx-auto lg:mx-0 leading-relaxed">
-              Araç camındaki QR kod ile müşteriyi direkt mobil ilana bağlayan, 
-              stok yönetimi ve müşteri takibini tek panelden yapmanızı sağlayan 
-              profesyonel galeri yazılımı.
+              Cebindegaleri; size özel galeri sitenizi, araç sayfalarınızı, QR kodlarınızı ve müşteri taleplerini tek panelde toplar.
+              Galerici aracı yönetir, müşteri telefondan doğru bilgiye ulaşır.
             </p>
             
-            <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <Button size="lg" asChild className="bg-accent hover:bg-accent/90 text-accent-foreground h-12 px-8 text-base">
-                <Link href="/kayit">
-                  Ücretsiz Başla
-                  <ArrowRight className="ml-2 w-5 h-5" />
-                </Link>
-              </Button>
-              <Button size="lg" variant="outline" asChild className="h-12 px-8 text-base">
-                <Link href="#nasil-calisir">
-                  Nasıl Çalışır?
-                </Link>
-              </Button>
+            <HeroCtaActions />
+
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm text-muted-foreground lg:justify-start">
+              {["Kredi kartı gerekmez", "2 dakikada kurulum", "14 gün ücretsiz"].map((item) => (
+                <span key={item} className="inline-flex items-center gap-1.5">
+                  <Check className="h-4 w-4 text-emerald-600" />
+                  {item}
+                </span>
+              ))}
             </div>
             
-            {/* Stats */}
-            <div className="mt-12 grid grid-cols-3 gap-8 pt-8 border-t border-border">
-              <div>
-                <div className="text-2xl sm:text-3xl font-bold text-foreground">500+</div>
-                <div className="text-sm text-muted-foreground mt-1">Aktif Galeri</div>
+            <div className="mt-10 grid gap-4 border-t border-border pt-8 sm:grid-cols-3">
+              <div className="rounded-xl border border-border/70 bg-card/70 p-4">
+                <div className="text-base font-semibold text-foreground">Size Özel Galeri Sitesi</div>
+                <div className="mt-1 text-sm text-muted-foreground">Her galeri kendi logosu, iletişimi ve araçlarıyla yayınlanır</div>
               </div>
-              <div>
-                <div className="text-2xl sm:text-3xl font-bold text-foreground">25K+</div>
-                <div className="text-sm text-muted-foreground mt-1">Araç Kaydı</div>
+              <div className="rounded-xl border border-border/70 bg-card/70 p-4">
+                <div className="text-base font-semibold text-foreground">Standart QR Kod</div>
+                <div className="mt-1 text-sm text-muted-foreground">Araç başındaki QR doğrudan ilgili mobil araç sayfasını açar</div>
               </div>
-              <div>
-                <div className="text-2xl sm:text-3xl font-bold text-foreground">1M+</div>
-                <div className="text-sm text-muted-foreground mt-1">QR Tarama</div>
+              <div className="rounded-xl border border-border/70 bg-card/70 p-4">
+                <div className="text-base font-semibold text-foreground">Tekil Kullanıcı Paneli</div>
+                <div className="mt-1 text-sm text-muted-foreground">Araç, müşteri talebi ve abonelik işlemleri tek hesapta yönetilir</div>
               </div>
             </div>
           </div>
@@ -73,51 +75,17 @@ export function HeroSection() {
             <div className="relative w-full max-w-[420px]">
               <div className="relative overflow-hidden rounded-[2rem] border border-border/70 bg-card shadow-2xl">
                 <Image
-                  src="/hero-showroom-preview.svg"
-                  alt="Cebindegaleri mobil vitrin ekranı"
-                  width={900}
-                  height={1200}
+                  src="/landing-hero-qr-flow-simple.png"
+                  alt="Cebindegaleri QR ziyaret, müşteri talebi ve analiz akışını gösteren mobil vitrin görseli"
+                  width={1024}
+                  height={1024}
                   preload
-                  sizes="(max-width: 640px) 90vw, (max-width: 1024px) 70vw, 420px"
+                  loading="eager"
+                  fetchPriority="high"
+                  quality={IMAGE_PRESETS.landingHero.quality}
+                  sizes={IMAGE_PRESETS.landingHero.sizes}
                   className="h-auto w-full"
                 />
-              </div>
-
-              {/* Floating Elements */}
-              <div className="absolute -left-8 top-20 p-4 bg-card rounded-xl shadow-lg border border-border hidden sm:block">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
-                    <QrCode className="w-5 h-5 text-accent" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium">QR Tarandı</div>
-                    <div className="text-xs text-muted-foreground">Az önce</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="absolute -right-8 top-1/2 p-4 bg-card rounded-xl shadow-lg border border-border hidden sm:block">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
-                    <Smartphone className="w-5 h-5 text-accent" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium">Yeni Lead</div>
-                    <div className="text-xs text-muted-foreground">+3 bugün</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="absolute -left-4 bottom-20 p-4 bg-card rounded-xl shadow-lg border border-border hidden sm:block">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
-                    <BarChart3 className="w-5 h-5 text-accent" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium">%45 Artış</div>
-                    <div className="text-xs text-muted-foreground">Bu hafta</div>
-                  </div>
-                </div>
               </div>
             </div>
           </div>

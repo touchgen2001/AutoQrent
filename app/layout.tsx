@@ -29,11 +29,13 @@ export const metadata: Metadata = {
     title: siteConfig.defaultTitle,
     description: siteConfig.defaultDescription,
     url: absoluteUrl('/'),
+    images: [{ url: absoluteUrl('/og'), alt: siteConfig.defaultTitle }],
   },
   twitter: {
     card: 'summary_large_image',
     title: siteConfig.defaultTitle,
     description: siteConfig.defaultDescription,
+    images: [absoluteUrl('/og')],
   },
   icons: {
     icon: [

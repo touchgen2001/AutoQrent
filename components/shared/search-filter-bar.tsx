@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/select'
 import { Search, SlidersHorizontal, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { carBrands } from '@/lib/mock-data'
+import { carBrands } from '@/lib/vehicle-display'
 
 interface SearchFilterBarProps {
   onSearch?: (query: string) => void
